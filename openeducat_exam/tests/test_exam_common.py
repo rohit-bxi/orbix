@@ -1,0 +1,82 @@
+###############################################################################
+#
+#    OpenEduCat Inc
+#    Copyright (C) 2009-TODAY OpenEduCat Inc(<https://www.openeducat.org>).
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU Lesser General Public License as
+#    published by the Free Software Foundation, either version 3 of the
+#    License, or (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU Lesser General Public License for more details.
+#
+#    You should have received a copy of the GNU Lesser General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+###############################################################################
+
+from odoo.tests import common
+
+
+class TestExamCommon(common.TransactionCase):
+    def setUp(self):
+        super(TestExamCommon, self).setUp()
+        self.op_exam = self.env['op.exam']
+        self.op_exam_attendees = self.env['op.exam.attendees']
+        self.op_exam_room = self.env['op.exam.room']
+        self.op_exam_session = self.env['op.exam.session']
+        self.op_exam_type = self.env['op.exam.type']
+        self.op_grade_configuration = self.env['op.grade.configuration']
+        self.op_marksheet_line = self.env['op.marksheet.line']
+        self.op_marksheet_register = self.env['op.marksheet.register']
+        self.op_res_partner = self.env['res.partner']
+        self.op_result_line = self.env['op.result.line']
+        self.op_result_template = self.env['op.result.template']
+        self.op_held_exam = self.env['op.held.exam']
+        self.op_room_distribution = self.env['op.room.distribution']
+
+
+        # Setup basic data
+        self.course = self.env['op.course'].create({'name': 'Test course', 'code': 'TC1'})
+        self.batch = self.env['op.batch'].create({
+            'name': 'Test Batch', 'code': 'TB1', 'course_id': self.course.id,
+            'start_date': '2025-01-01', 'end_date': '2025-12-31'
+        })
+        self.subject = self.env['op.subject'].create({'name': 'Test Subject', 'code': 'TS1'})
+        self.student = self.env['op.student'].create({
+            'first_name': 'Test', 'last_name': 'Student', 'gender': 'm',
+            'birth_date': '2010-01-01',
+        })
+        self.exam_type = self.env['op.exam.type'].create({'name': 'Final', 'code': 'F1'})
+        self.classroom = self.env['op.classroom'].create({
+            'name': 'Room 1', 
+            'code': 'R1',
+            'capacity': 30
+        })
+        self.session = self.op_exam_session.create({
+            'name': 'Test Session',
+            'course_id': self.course.id,
+            'batch_id': self.batch.id,
+            'exam_code': 'S001',
+            'start_date': '2025-01-01',
+            'end_date': '2025-12-31',
+            'exam_type': self.exam_type.id,
+        })
+        self.exam = self.op_exam.create({
+            'session_id': self.session.id,
+            'subject_id': self.subject.id,
+            'exam_code': 'E001',
+            'name': 'Test Exam',
+            'total_marks': 100,
+            'min_marks': 40,
+            'start_time': '2025-01-01 10:00:00',
+            'end_time': '2025-01-01 13:00:00',
+            'state': 'done',
+        })
+        self.result_template = self.op_result_template.create({
+            'name': 'Test Template',
+            'exam_session_id': self.session.id,
+        })
