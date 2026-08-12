@@ -11,7 +11,7 @@
     </record>
     <!-- Openeducat Menu -->
     <menuitem id="menu_op_school_root"
-              name="SIS"
+              name="Student Information System"
               sequence="220"
               web_icon="openeducat_core,static/description/sis.png"/>
 
