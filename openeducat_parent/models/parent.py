@@ -25,6 +25,8 @@ from odoo.exceptions import ValidationError
 class OpParent(models.Model):
     _name = "op.parent"
     _description = "Parent"
+    _inherit = ['mail.thread', 'mail.activity.mixin']
+    _inherits = {"res.partner": "partner_id"}
 
     name = fields.Many2one('res.partner', 'Name', required=True,
                            domain="[('is_parent', '=', True)]")
@@ -35,6 +37,12 @@ class OpParent(models.Model):
     active = fields.Boolean(default=True)
     relationship_id = fields.Many2one('op.parent.relationship',
                                       'Relation with Student', required=True)
+    gender = fields.Selection([
+        ('m', 'Male'),
+        ('f', 'Female'),
+        ('o', 'Other')
+    ], 'Gender', required=True, default='m')
+    birth_date = fields.Date('DOB')
 
     _unique_parent = models.Constraint('unique(name)',
                                        'Can not create parent multiple times.!')
