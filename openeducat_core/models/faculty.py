@@ -24,7 +24,7 @@ from odoo.exceptions import ValidationError
 
 class OpFaculty(models.Model):
     _name = "op.faculty"
-    _description = "OpenEduCat Faculty"
+    _description = "Teachers Management"
     _inherit = ['mail.thread', 'mail.activity.mixin']
     _inherits = {"res.partner": "partner_id"}
     _parent_name = False
@@ -72,6 +72,24 @@ class OpFaculty(models.Model):
     name = fields.Char(related='partner_id.name', inherited=True, readonly=False)
     email = fields.Char(related='partner_id.email', readonly=False)
     active = fields.Boolean(default=True)
+    faculty_subject_id = fields.Many2one('op.subject', string='Specialization/Subject',
+                                           tracking=True)
+    joining_date = fields.Date(string='Joining Date')
+    age = fields.Integer(string='Age')
+    #Academic Details
+    highest_qualification = fields.Char(string='Highest Qualification', readonly=False)
+    years_of_experience = fields.Char(string='Years of Experience')
+    previous_school = fields.Char(string='Previous School')
+    assigned_class_ids = fields.Many2many(
+        'op.classroom', string='Assigned Class')
+    teacher_documents_ids = fields.Many2many(
+        comodel_name='ir.attachment',
+        relation='op_faculty_document_record_rel',
+        column1='partner_id',
+        column2='attachment_id',
+        string='Teacher Documents',
+        help='Upload Teacher related Documents.'
+    )
 
     @api.constrains('birth_date')
     def _check_birthdate(self):
