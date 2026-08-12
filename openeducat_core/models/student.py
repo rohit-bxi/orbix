@@ -78,6 +78,8 @@ class OpStudent(models.Model):
         ('O-', 'O-ve'),
         ('AB-', 'AB-ve')
     ], string='Blood Group')
+    is_allergy = fields.Boolean(string="Is Allergy")
+    allergy = fields.Char(string="Allergy")
     gender = fields.Selection([
         ('m', 'Male'),
         ('f', 'Female'),

@@ -20,7 +20,7 @@
             <field name="priority" eval="10"/>
             <field name="arch" type="xml">
                 <field name="gr_no" position="after">
-                    <field name="library_card_id"/>
+                    <field name="library_card_id" options='{"no_open": True, "no_create": True}'/>
                 </field>
                 <xpath expr="//div[@name='button_box']" position="inside">
                     <button class="btn oe_stat_button"

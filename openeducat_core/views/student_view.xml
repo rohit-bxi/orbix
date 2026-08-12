@@ -143,11 +143,13 @@
                             <group>
                                 <field name="lang"/>
                                 <field name="blood_group"/>
+                                <field name="is_allergy"/>
+                                <field name="allergy" invisible="not is_allergy"/>
                                 <field name="nationality"/>
                                 <field name="visa_info"/>
-                                <field name="category_id"/>
+                                <field name="category_id" options="{'no_open': True, 'no_quick_create': True}"/>
                                 <field name="user_id" string="User" readonly="1"/>
-                                <field name="partner_id" placeholder="Partner" required="0"/>
+                                <field name="partner_id" placeholder="Partner" required="0" options="{'no_open': True, 'no_quick_create': True}" readonly="1" force_save="1"/>
                             </group>
                         </group>
                         <notebook colspan="4">
