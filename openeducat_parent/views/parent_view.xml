@@ -75,6 +75,8 @@
                                 <field name="user_id" readonly="1"/>
                                 <field name="birth_date"/>
                                 <field name="relationship_id" required="1"/>
+                                <field name="additional_document_ids"
+                                           widget="many2many_binary"/>
                             </group>
                         </group>
                         <separator colspan="4" string="Student(s)"/>

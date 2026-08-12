@@ -26,7 +26,7 @@ class OpParent(models.Model):
     _name = "op.parent"
     _description = "Parent"
     _inherit = ['mail.thread', 'mail.activity.mixin']
-    # _inherits = {"res.partner": "partner_id"}
+
 
     name = fields.Many2one('res.partner', 'Name', required=True,
                            domain="[('is_parent', '=', True)]")
@@ -37,7 +37,6 @@ class OpParent(models.Model):
     active = fields.Boolean(default=True)
     relationship_id = fields.Many2one('op.parent.relationship',
                                       'Relation with Student', required=True)
-    # partner_id = fields.Many2one('res.partner', required=True, ondelete='cascade')
     gender = fields.Selection([
         ('m', 'Male'),
         ('f', 'Female'),
@@ -50,6 +49,13 @@ class OpParent(models.Model):
     state_id = fields.Many2one('res.country.state', string='State')
     zip = fields.Char(string='Zip')
     country_id = fields.Many2one('res.country', string='Country')
+    additional_document_ids = fields.Many2many(
+        comodel_name='ir.attachment',
+        relation='op_additional_document_rel',
+        column1='name',
+        column2='attachment_id',
+        string='Additional Document',
+    )
 
     _unique_parent = models.Constraint('unique(name)',
                                        'Can not create parent multiple times.!')
