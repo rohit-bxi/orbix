@@ -20,6 +20,7 @@
 
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
+from dateutil.relativedelta import relativedelta
 
 
 class OpFaculty(models.Model):
@@ -75,7 +76,7 @@ class OpFaculty(models.Model):
     faculty_subject_id = fields.Many2one('op.subject', string='Specialization/Subject',
                                            tracking=True)
     joining_date = fields.Date(string='Joining Date')
-    age = fields.Integer(string='Age')
+    age = fields.Integer(string='Age', compute='_compute_age', store=True)
     #Academic Details
     highest_qualification = fields.Char(string='Highest Qualification', readonly=False)
     years_of_experience = fields.Char(string='Years of Experience')
@@ -90,6 +91,12 @@ class OpFaculty(models.Model):
         string='Teacher Documents',
         help='Upload Teacher related Documents.'
     )
+
+    @api.depends('birth_date')
+    def _compute_age(self):
+        today = fields.Date.context_today(self)
+        for rec in self:
+            rec.age = relativedelta(today, rec.birth_date).years if rec.birth_date else 0
 
     @api.constrains('birth_date')
     def _check_birthdate(self):
