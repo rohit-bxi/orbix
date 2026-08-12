@@ -145,6 +145,7 @@
                                 <field name="blood_group"/>
                                 <field name="is_allergy"/>
                                 <field name="allergy" invisible="not is_allergy"/>
+                                <field name="medical_record_ids" widget="many2many_binary" invisible="not is_allergy"/>
                                 <field name="nationality"/>
                                 <field name="visa_info"/>
                                 <field name="category_id" options="{'no_open': True, 'no_quick_create': True}"/>

@@ -80,6 +80,14 @@ class OpStudent(models.Model):
     ], string='Blood Group')
     is_allergy = fields.Boolean(string="Is Allergy")
     allergy = fields.Char(string="Allergy")
+    medical_record_ids = fields.Many2many(
+        comodel_name='ir.attachment',
+        relation='op_student_medical_record_rel',
+        column1='student_id',
+        column2='attachment_id',
+        string='Upload Medical Records',
+        help='Upload medical certificates, fitness reports, allergy info, etc.'
+    )
     gender = fields.Selection([
         ('m', 'Male'),
         ('f', 'Female'),
