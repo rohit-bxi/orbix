@@ -44,6 +44,12 @@ class OpParent(models.Model):
         ('o', 'Other')
     ], 'Gender', required=True, default='m')
     birth_date = fields.Date('DOB')
+    street = fields.Char(string='Street')
+    street2 = fields.Char(string='Street2')
+    city = fields.Char(string='City')
+    state_id = fields.Many2one('res.country.state', string='State')
+    zip = fields.Char(string='Zip')
+    country_id = fields.Many2one('res.country', string='Country')
 
     _unique_parent = models.Constraint('unique(name)',
                                        'Can not create parent multiple times.!')
