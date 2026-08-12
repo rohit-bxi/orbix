@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
         <record model="ir.ui.view" id="kanban_view_faculty">
-            <field name="name">Faculty Kanban</field>
+            <field name="name">Teacher Kanban</field>
             <field name="model">op.faculty</field>
             <field name="arch" type="xml">
                 <kanban sample="1" class="o_faculty_kanban">
@@ -55,7 +55,7 @@
             <field name="model">op.faculty</field>
             <field name="priority" eval="8"/>
             <field name="arch" type="xml">
-                <list string="Faculty">
+                <list string="Teachers">
                     <field name="title"/>
                     <field name="name"/>
                     <field name="gender" optional="show"/>
@@ -75,7 +75,7 @@
             <field name="model">op.faculty</field>
             <field name="priority" eval="8"/>
             <field name="arch" type="xml">
-                <form string="Faculty" js_class="hr_employee_form">
+                <form string="Teacher" js_class="hr_employee_form">
                     <header groups="openeducat_core.group_op_back_office_admin">
                     </header>
                     <sheet>
@@ -255,7 +255,7 @@
             <field name="model">op.faculty</field>
             <field name="priority" eval="8"/>
             <field name="arch" type="xml">
-                <search string="Faculty">
+                <search string="Teachers">
                     <field name="name"/>
                     <field name="blood_group"/>
                     <field name="main_department_id"/>
@@ -292,7 +292,7 @@
         </record>
 
         <record model="ir.actions.act_window" id="act_open_op_faculty_view">
-            <field name="name">Faculties</field>
+            <field name="name">Teachers</field>
             <field name="type">ir.actions.act_window</field>
             <field name="res_model">op.faculty</field>
             <field name="path">faculty</field>
@@ -325,7 +325,7 @@
         </record>
 
         <record model="ir.actions.act_window" id="act_open_op_faculty_view_2">
-            <field name="name">Faculties</field>
+            <field name="name">Teachers</field>
             <field name="type">ir.actions.act_window</field>
             <field name="res_model">op.faculty</field>
             <field name="path">faculties</field>

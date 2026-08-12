@@ -65,7 +65,7 @@
         </record>
 
         <record model="ir.rule" id="faculty_login_rule">
-            <field name="name">Faculty Login rule</field>
+            <field name="name">Teachers Login rule</field>
             <field name="model_id" ref="model_op_faculty"/>
             <field name="groups"
                    eval="[(4, ref('openeducat_core.group_op_faculty'))]"/>
@@ -73,7 +73,7 @@
         </record>
 
         <record model="ir.rule" id="view_faculty_rule">
-            <field name="name">View Faculties</field>
+            <field name="name">View Teachers</field>
             <field name="model_id" ref="model_op_faculty"/>
             <field name="groups"
                    eval="[(4, ref('openeducat_core.group_op_back_office_admin'))]"/>

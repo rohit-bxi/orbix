@@ -11,7 +11,7 @@
                     groups="openeducat_core.group_op_back_office_admin"
                     id="openeducat_core_setting">
                     <div name="openeducat_core">
-                        <h2 id="openeducat_sis">SIS</h2>
+                        <h2 id="openeducat_sis">Student Information System</h2>
                         <div class="row mt16 o_settings_container"
                             title="Specify different activities which is held in an institute.">
                             <div class="col-12 col-lg-6 o_setting_box"
@@ -855,7 +855,7 @@
                                             <div class="o_setting_right_pane">
                                                 <label for="module_openeducat_live_assignment" />
                                                 <span class="fa fa-info-circle " title="Openeducat Enterprise Module"/>
-                                                <div class="text-muted">Faculties can create, edit,
+                                                <div class="text-muted">Teachers can create, edit,
                                                     and assign team or individual assignments during
                                                     live sessions.
                                                 </div>
