@@ -251,7 +251,7 @@
                                     <field name="highest_qualification"/>
                                     <field name="years_of_experience"/>
                                     <field name="previous_school"/>
-                                    <field name="assigned_class_ids"/>
+                                    <!-- <field name="assigned_class_ids"/> -->
                                     <field name="teacher_documents_ids" widget="many2many_binary"/>
                                 </group>
                             </page>

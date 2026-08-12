@@ -80,8 +80,8 @@ class OpFaculty(models.Model):
     highest_qualification = fields.Char(string='Highest Qualification', readonly=False)
     years_of_experience = fields.Char(string='Years of Experience')
     previous_school = fields.Char(string='Previous School')
-    assigned_class_ids = fields.Many2many(
-        'op.classroom', string='Assigned Class')
+    # assigned_class_ids = fields.Many2many(
+    #     'op.classroom', string='Assigned Class')
     teacher_documents_ids = fields.Many2many(
         comodel_name='ir.attachment',
         relation='op_faculty_document_record_rel',
