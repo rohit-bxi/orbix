@@ -88,6 +88,27 @@ class OpStudent(models.Model):
         string='Upload Medical Records',
         help='Upload medical certificates, fitness reports, allergy info, etc.'
     )
+    birth_certificate_ids = fields.Many2many(
+        comodel_name='ir.attachment',
+        relation='op_student_birth_certificate_rel',
+        column1='student_id',
+        column2='attachment_id',
+        string='Birth Certificate',
+    )
+    transfer_certificate_ids = fields.Many2many(
+        comodel_name='ir.attachment',
+        relation='op_student_transfer_certificate_rel',
+        column1='student_id',
+        column2='attachment_id',
+        string='Transfer Certificate',
+    )
+    previous_school_certificate_ids = fields.Many2many(
+        comodel_name='ir.attachment',
+        relation='op_student_prev_school_cert_rel',
+        column1='student_id',
+        column2='attachment_id',
+        string='Previous School Certificate',
+    )
     gender = fields.Selection([
         ('m', 'Male'),
         ('f', 'Female'),

@@ -246,6 +246,18 @@
                                     <field name="gr_no"/>
                                 </group>
                             </page>
+                            <page string="Documents" name="student_documents">
+                                <group string="Medical &amp; Academic Records">
+                                    <field name="medical_record_ids"
+                                           widget="many2many_binary"/>
+                                    <field name="birth_certificate_ids"
+                                           widget="many2many_binary"/>
+                                    <field name="transfer_certificate_ids"
+                                           widget="many2many_binary"/>
+                                    <field name="previous_school_certificate_ids"
+                                           widget="many2many_binary"/>
+                                </group>
+                            </page>
                         </notebook>
                     </sheet>
                     <chatter/>
