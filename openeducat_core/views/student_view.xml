@@ -145,7 +145,7 @@
                                 <field name="blood_group"/>
                                 <field name="is_allergy"/>
                                 <field name="allergy" invisible="not is_allergy"/>
-                                <field name="medical_record_ids" widget="many2many_binary" invisible="not is_allergy"/>
+                                <!-- <field name="medical_record_ids" widget="many2many_binary" invisible="not is_allergy"/> -->
                                 <field name="nationality"/>
                                 <field name="visa_info"/>
                                 <field name="category_id" options="{'no_open': True, 'no_quick_create': True}"/>
@@ -249,7 +249,7 @@
                             <page string="Documents" name="student_documents">
                                 <group string="Medical &amp; Academic Records">
                                     <field name="medical_record_ids"
-                                           widget="many2many_binary"/>
+                                           widget="many2many_binary" invisible="not is_allergy"/>
                                     <field name="birth_certificate_ids"
                                            widget="many2many_binary"/>
                                     <field name="transfer_certificate_ids"
