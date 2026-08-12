@@ -37,6 +37,7 @@ class OpParent(models.Model):
     active = fields.Boolean(default=True)
     relationship_id = fields.Many2one('op.parent.relationship',
                                       'Relation with Student', required=True)
+    partner_id = fields.Many2one('res.partner', required=True, ondelete='cascade')
     gender = fields.Selection([
         ('m', 'Male'),
         ('f', 'Female'),
