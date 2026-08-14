@@ -121,6 +121,7 @@
                             <group>
                                 <field name="gender"/>
                                 <field name="birth_date"/>
+                                <field name="age"/>
                                 <label for="street" string="Address"/>
                                 <div name="o_address_format">
                                     <field name="street" placeholder="Street..."/>
@@ -163,6 +164,9 @@
                                 <field name="main_department_id"
                                         groups="openeducat_core.group_multi_department"/>
                                 <field name="blood_group"/>
+                                <field name="category_id"/>
+                                <field name="religion"/>
+                                <field name="cast"/>
                                 <field name="user_id" string="User" readonly="1"/>
                                 <field name="partner_id" placeholder="Partner" required="0"/>
                                 <field name="allowed_department_ids" widget="many2many_tags"
@@ -177,7 +181,6 @@
                                     <field name="regional_country_id" placeholder="Country" class="o_address_country" options="{'no_open': True, 'no_create': True}"/>
                                 </div>
                                 <field name="joining_date"/>
-                                <field name="age"/>
                             </group>
                         </group>
                         <notebook colspan="4">

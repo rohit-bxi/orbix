@@ -114,6 +114,20 @@ class OpFaculty(models.Model):
     regional_state_id = fields.Many2one('res.country.state', string="State")
     regional_zip = fields.Char(string="Zip")
     regional_country_id = fields.Many2one('res.country', string="Country")
+    category_id = fields.Many2one('op.category', 'Category')
+    religion = fields.Selection([
+        ('hindu', 'Hindu'),
+        ('muslim', 'Muslim'),
+        ('christian', 'Christian'),
+        ('sikh', 'Sikh'),
+        ('buddhist', 'Buddhist'),
+        ('jain', 'Jain'),
+        ('parsi', 'Parsi'),
+        ('jewish', 'Jewish'),
+        ('other', 'Other'),
+        ('prefer_not_to_say', 'Prefer not to say'),
+    ], string="Religion", help="Religion of the Teacher")
+    cast = fields.Char('Cast')
 
 
     @api.depends('birth_date')

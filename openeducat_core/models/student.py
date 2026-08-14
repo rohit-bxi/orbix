@@ -164,6 +164,7 @@ class OpStudent(models.Model):
         string="Physical Challenges / Special Abilities / Special Talent",
         help="Mention any physical challenges, special abilities, or special talents/trade of the student (if applicable)"
     )
+    trait = fields.Char('Trait')
 
     _unique_gr_no = models.Constraint('unique(gr_no)',
                                       'Registration Number must be unique per student!')

@@ -154,6 +154,7 @@
                                 <field name="nationality"/>
                                 <field name="visa_info"/>
                                 <field name="category_id" options="{'no_open': True, 'no_quick_create': True}"/>
+                                <field name="trait"/>
                                 <field name="mode_of_transport"/>
                                 <field name="religion"/>
                                 <field name="special_needs_and_abilities" placeholder="e.g. Hearing impairment, Chess champion, Classical dance..."/>
