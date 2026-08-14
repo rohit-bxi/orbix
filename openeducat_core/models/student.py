@@ -67,7 +67,34 @@ class OpStudent(models.Model):
     first_name = fields.Char('First Name',  translate=True)
     middle_name = fields.Char('Middle Name', translate=True)
     last_name = fields.Char('Last Name', translate=True)
+    nick_name = fields.Char('Nick Name', translate=True)
     birth_date = fields.Date('Birth Date')
+    aadhar_card = fields.Char('Aadhar Card #')
+    scolar_number = fields.Char('Scolar Number #')
+    admission_date = fields.Date('Admission Date')
+    other_sibling = fields.Char('Please mention if any sibling is already studying in this school')
+    pickup_person = fields.Char('Who will pick up/take care of the child after school?')
+    mode_of_transport = fields.Selection([
+        ('school_bus', 'School Bus'),
+        ('van', 'Van'),
+        ('private_vehicle', 'Private Vehicle (Parent/Guardian)'),
+        ('public_transport', 'Public Transport'),
+        ('walking', 'Walking'),
+        ('bicycle', 'Bicycle'),
+        ('other', 'Other'),
+    ], string="Mode of Transport", help="Mode of transport used by the student to commute to school")
+    religion = fields.Selection([
+        ('hindu', 'Hindu'),
+        ('muslim', 'Muslim'),
+        ('christian', 'Christian'),
+        ('sikh', 'Sikh'),
+        ('buddhist', 'Buddhist'),
+        ('jain', 'Jain'),
+        ('parsi', 'Parsi'),
+        ('jewish', 'Jewish'),
+        ('other', 'Other'),
+        ('prefer_not_to_say', 'Prefer not to say'),
+    ], string="Religion", help="Religion of the student")
     blood_group = fields.Selection([
         ('A+', 'A+ve'),
         ('B+', 'B+ve'),
@@ -133,6 +160,10 @@ class OpStudent(models.Model):
         copy=False,)
     name = fields.Char(related='partner_id.name', inherited=True, readonly=False)
     email = fields.Char(related='partner_id.email', readonly=False)
+    special_needs_and_abilities = fields.Text(
+        string="Physical Challenges / Special Abilities / Special Talent",
+        help="Mention any physical challenges, special abilities, or special talents/trade of the student (if applicable)"
+    )
 
     _unique_gr_no = models.Constraint('unique(gr_no)',
                                       'Registration Number must be unique per student!')

@@ -91,6 +91,30 @@ class OpFaculty(models.Model):
         string='Teacher Documents',
         help='Upload Teacher related Documents.'
     )
+    # ---------- Official Address ----------
+    official_street = fields.Char(string="Street")
+    official_street2 = fields.Char(string="Street2")
+    official_city = fields.Char(string="City")
+    official_state_id = fields.Many2one('res.country.state', string="State")
+    official_zip = fields.Char(string="Zip")
+    official_country_id = fields.Many2one('res.country', string="Country")
+
+    # ---------- Postal Address ----------
+    postal_street = fields.Char(string="Street")
+    postal_street2 = fields.Char(string="Street2")
+    postal_city = fields.Char(string="City")
+    postal_state_id = fields.Many2one('res.country.state', string="State")
+    postal_zip = fields.Char(string="Zip")
+    postal_country_id = fields.Many2one('res.country', string="Country")
+
+    # ---------- Regional Address ----------
+    regional_street = fields.Char(string="Street")
+    regional_street2 = fields.Char(string="Street2")
+    regional_city = fields.Char(string="City")
+    regional_state_id = fields.Many2one('res.country.state', string="State")
+    regional_zip = fields.Char(string="Zip")
+    regional_country_id = fields.Many2one('res.country', string="Country")
+
 
     @api.depends('birth_date')
     def _compute_age(self):
