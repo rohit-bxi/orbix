@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_lab_room_list" model="ir.ui.view">
+        <field name="name">lab.room.list</field>
+        <field name="model">lab.room</field>
+        <field name="arch" type="xml">
+            <list string="Lab Rooms">
+                <field name="code"/>
+                <field name="name"/>
+                <field name="lab_type"/>
+                <field name="department_id"/>
+                <field name="capacity"/>
+                <field name="instructor_id"/>
+                <field name="session_count"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_lab_room_form" model="ir.ui.view">
+        <field name="name">lab.room.form</field>
+        <field name="model">lab.room</field>
+        <field name="arch" type="xml">
+            <form string="Lab Room">
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="toggle_active" type="object" class="oe_stat_button" icon="fa-archive">
+                            <field name="active" widget="boolean_button"/>
+                        </button>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="code"/>
+                            <field name="lab_type"/>
+                        </group>
+                        <group>
+                            <field name="department_id"/>
+                            <field name="capacity"/>
+                            <field name="instructor_id"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Equipment">
+                            <field name="equipment_ids">
+                                <list editable="bottom">
+                                    <field name="name"/>
+                                    <field name="code"/>
+                                    <field name="quantity_total"/>
+                                    <field name="quantity_available"/>
+                                    <field name="condition"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_lab_room" model="ir.actions.act_window">
+        <field name="name">Lab Rooms</field>
+        <field name="res_model">lab.room</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

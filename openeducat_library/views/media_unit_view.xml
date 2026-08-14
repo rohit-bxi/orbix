@@ -47,6 +47,7 @@
                             <group>
                                 <field name="media_id"/>
                                 <field name="media_type_id"/>
+                                <field name="review"/>
                             </group>
                         </group>
                         <notebook>

@@ -18,7 +18,7 @@
 #
 ###############################################################################
 
-from odoo import fields, models
+from odoo import fields, models, api
 
 
 class OpMedia(models.Model):
@@ -46,6 +46,39 @@ class OpMedia(models.Model):
     unit_ids = fields.One2many('op.media.unit', 'media_id', 'Units')
     media_type_id = fields.Many2one('op.media.type', 'Media Type')
     active = fields.Boolean(default=True)
+    attachment_ids = fields.Many2many(
+        'ir.attachment', 
+        string="Attachments"
+    )
+    # Computed Binary and Filename fields linked to the PDF
+    attachment_pdf = fields.Binary(
+        string="PDF File", 
+        compute='_compute_attachment_pdf', 
+        store=True
+    )
+    pdf_filename = fields.Char(
+        string="PDF Filename", 
+        compute='_compute_attachment_pdf', 
+        store=True
+    )
+
+    @api.depends('attachment_ids', 'attachment_ids.datas', 'attachment_ids.name', 'attachment_ids.mimetype')
+    def _compute_attachment_pdf(self):
+        for record in self:
+            # Find the first PDF file in the attachment list
+            pdf_att = record.attachment_ids.filtered(
+                lambda att: att.mimetype == 'application/pdf' or (att.name and att.name.lower().endswith('.pdf'))
+            )
+            
+            if pdf_att:
+                # Take the first matching PDF attachment
+                attachment = pdf_att[0]
+                record.attachment_pdf = attachment.datas
+                record.pdf_filename = attachment.name
+            else:
+                record.attachment_pdf = False
+                record.pdf_filename = False
+
     _unique_name_isbn = models.Constraint('unique(isbn)',
                                           'ISBN code must be unique per media!')
 

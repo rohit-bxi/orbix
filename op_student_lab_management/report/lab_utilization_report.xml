@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="report_lab_utilization_document">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2>Lab Utilization Report</h2>
+                        <div class="row mt-3 mb-3">
+                            <div class="col-6">
+                                <strong>Lab Room:</strong> <span t-field="doc.name"/><br/>
+                                <strong>Code:</strong> <span t-field="doc.code"/><br/>
+                                <strong>Type:</strong> <span t-field="doc.lab_type"/>
+                            </div>
+                            <div class="col-6">
+                                <strong>Capacity:</strong> <span t-field="doc.capacity"/><br/>
+                                <strong>Total Sessions:</strong> <span t-esc="len(doc.session_ids)"/><br/>
+                                <strong>Total Occupied Hours:</strong>
+                                <span t-esc="'%.2f' % sum((s.end_time - s.start_time) for s in doc.session_ids if s.state != 'cancelled')"/>
+                            </div>
+                        </div>
+
+                        <table class="table table-sm table-bordered mt-3">
+                            <thead style="background-color:#f2f2f2;">
+                                <tr>
+                                    <th>Session</th>
+                                    <th>Date</th>
+                                    <th>Time</th>
+                                    <th>Course / Batch</th>
+                                    <th>Instructor</th>
+                                    <th>Status</th>
+                                    <th>Attendance</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="doc.session_ids.sorted(lambda s: s.date, reverse=True)" t-as="session">
+                                    <tr>
+                                        <td><span t-field="session.name"/></td>
+                                        <td><span t-field="session.date"/></td>
+                                        <td>
+                                            <span t-field="session.start_time" t-options="{'widget': 'float_time'}"/> -
+                                            <span t-field="session.end_time" t-options="{'widget': 'float_time'}"/>
+                                        </td>
+                                        <td>
+                                            <span t-field="session.course_id.name"/> /
+                                            <span t-field="session.batch_id.name"/>
+                                        </td>
+                                        <td><span t-field="session.faculty_id.name"/></td>
+                                        <td><span t-field="session.state"/></td>
+                                        <td>
+                                            <t t-set="present_count" t-value="len(session.attendance_ids.filtered(lambda a: a.status == 'present'))"/>
+                                            <span t-esc="present_count"/> / <span t-esc="len(session.attendance_ids)"/>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <record id="action_report_lab_utilization" model="ir.actions.report">
+        <field name="name">Lab Utilization Report</field>
+        <field name="model">lab.room</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">op_student_lab_management.report_lab_utilization_document</field>
+        <field name="report_file">op_student_lab_management.report_lab_utilization_document</field>
+        <field name="binding_model_id" ref="model_lab_room"/>
+        <field name="binding_type">report</field>
+        <field name="print_report_name">'Lab Utilization - %s' % (object.name)</field>
+    </record>
+</odoo>

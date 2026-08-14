@@ -10,6 +10,7 @@
                         <group>
                             <field name="media_id"/>
                             <field name="actual_return_date"/>
+                            <field name="review" required="1"/>
                         </group>
                         <group>
                             <field name="media_unit_id" domain="[('media_id','=',media_id)]"/>

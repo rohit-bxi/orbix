@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_lab_experiment_list" model="ir.ui.view">
+        <field name="name">lab.experiment.list</field>
+        <field name="model">lab.experiment</field>
+        <field name="arch" type="xml">
+            <list string="Experiments">
+                <field name="code"/>
+                <field name="name"/>
+                <field name="subject_id"/>
+                <field name="max_marks"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_lab_experiment_form" model="ir.ui.view">
+        <field name="name">lab.experiment.form</field>
+        <field name="model">lab.experiment</field>
+        <field name="arch" type="xml">
+            <form string="Experiment">
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="code"/>
+                        <field name="subject_id"/>
+                        <field name="max_marks"/>
+                        <field name="description"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_lab_experiment" model="ir.actions.act_window">
+        <field name="name">Experiments</field>
+        <field name="res_model">lab.experiment</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="view_lab_experiment_result_list" model="ir.ui.view">
+        <field name="name">lab.experiment.result.list</field>
+        <field name="model">lab.experiment.result</field>
+        <field name="arch" type="xml">
+            <list string="Experiment Results" editable="bottom">
+                <field name="session_id"/>
+                <field name="experiment_id"/>
+                <field name="student_id"/>
+                <field name="marks_obtained"/>
+                <field name="max_marks"/>
+                <field name="grade"/>
+                <field name="remark"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_lab_experiment_result" model="ir.actions.act_window">
+        <field name="name">Experiment Results</field>
+        <field name="res_model">lab.experiment.result</field>
+        <field name="view_mode">list</field>
+    </record>
+</odoo>

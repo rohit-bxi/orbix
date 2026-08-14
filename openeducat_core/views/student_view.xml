@@ -114,15 +114,18 @@
                                         <i class="fa fa-fw me-1 fa-phone text-primary" title="Phone"/>
                                         <field name="phone" class="w-100" widget="phone" placeholder="Phone"/>
                                     </div>
-
                                 </div>
                             </div>
                         </div>
                         <br/>
                         <group>
                             <group>
+                                <field name="nick_name"/>
                                 <field name="gender" required="1"/>
+                                <field name="aadhar_card"/>
                                 <field name="birth_date"/>
+                                <field name="scolar_number"/>
+                                <field name="admission_date"/>
                                 <field name="certificate_number" invisible="True"/>
                                 <label for="street" string="Address"/>
                                 <div name="o_address_format">
@@ -139,6 +142,8 @@
                                 </div>
                                 <field name="emergency_contact" context="{'show_address': 1}"
                                         options="{&quot;always_reload&quot;: True}"/>
+                                <field name="other_sibling"/>
+                                <field name="pickup_person"/>
                             </group>
                             <group>
                                 <field name="lang"/>
@@ -149,6 +154,10 @@
                                 <field name="nationality"/>
                                 <field name="visa_info"/>
                                 <field name="category_id" options="{'no_open': True, 'no_quick_create': True}"/>
+                                <field name="trait"/>
+                                <field name="mode_of_transport"/>
+                                <field name="religion"/>
+                                <field name="special_needs_and_abilities" placeholder="e.g. Hearing impairment, Chess champion, Classical dance..."/>
                                 <field name="user_id" string="User" readonly="1"/>
                                 <field name="partner_id" placeholder="Partner" required="0" options="{'no_open': True, 'no_quick_create': True}" readonly="1" force_save="1"/>
                             </group>

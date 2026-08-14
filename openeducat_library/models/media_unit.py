@@ -39,6 +39,7 @@ class OpMediaUnit(models.Model):
     media_type_id = fields.Many2one(related='media_id.media_type_id',
                                     store=True, string='Media Type')
     active = fields.Boolean(default=True)
+    review = fields.Text(string="Review Provided By Student")
 
     _unique_name_barcode = models.Constraint('unique(barcode)',
                                              'Barcode must be unique per Media unit!')

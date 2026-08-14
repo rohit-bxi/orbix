@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_lab_session_list" model="ir.ui.view">
+        <field name="name">lab.session.list</field>
+        <field name="model">lab.session</field>
+        <field name="arch" type="xml">
+            <list string="Lab Sessions" decoration-danger="state=='cancelled'" decoration-success="state=='done'">
+                <field name="name"/>
+                <field name="date"/>
+                <field name="room_id"/>
+                <field name="course_id"/>
+                <field name="batch_id"/>
+                <field name="faculty_id"/>
+                <field name="start_time" widget="float_time"/>
+                <field name="end_time" widget="float_time"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_lab_session_calendar" model="ir.ui.view">
+        <field name="name">lab.session.calendar</field>
+        <field name="model">lab.session</field>
+        <field name="arch" type="xml">
+            <calendar string="Lab Sessions" date_start="date" color="room_id" mode="week">
+                <field name="name"/>
+                <field name="room_id"/>
+                <field name="faculty_id"/>
+                <field name="batch_id"/>
+            </calendar>
+        </field>
+    </record>
+
+    <record id="view_lab_session_form" model="ir.ui.view">
+        <field name="name">lab.session.form</field>
+        <field name="model">lab.session</field>
+        <field name="arch" type="xml">
+            <form string="Lab Session">
+                <header>
+                    <button name="action_confirm" string="Confirm" type="object" class="oe_highlight" invisible="state != 'draft'"/>
+                    <button name="action_start" string="Start" type="object" class="oe_highlight" invisible="state != 'confirmed'"/>
+                    <button name="action_done" string="Mark Done" type="object" class="oe_highlight" invisible="state != 'in_progress'"/>
+                    <button name="action_cancel" string="Cancel" type="object" invisible="state in ('done', 'cancelled')"/>
+                    <button name="action_reset_draft" string="Reset to Draft" type="object" invisible="state != 'cancelled'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,confirmed,in_progress,done"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="room_id"/>
+                            <field name="course_id"/>
+                            <field name="batch_id"/>
+                            <field name="subject_id"/>
+                        </group>
+                        <group>
+                            <field name="faculty_id"/>
+                            <field name="experiment_id"/>
+                            <field name="date"/>
+                            <field name="start_time" widget="float_time"/>
+                            <field name="end_time" widget="float_time"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Students">
+                            <field name="student_ids" widget="many2many_tags"/>
+                        </page>
+                        <page string="Attendance">
+                            <field name="attendance_ids">
+                                <list editable="bottom">
+                                    <field name="student_id"/>
+                                    <field name="status"/>
+                                    <field name="remark"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Equipment Issued">
+                            <field name="issue_ids">
+                                <list editable="bottom">
+                                    <field name="equipment_id"/>
+                                    <field name="student_id"/>
+                                    <field name="issued_qty"/>
+                                    <field name="returned_qty"/>
+                                    <field name="state"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_lab_session" model="ir.actions.act_window">
+        <field name="name">Lab Sessions</field>
+        <field name="res_model">lab.session</field>
+        <field name="view_mode">calendar,list,form</field>
+    </record>
+</odoo>
