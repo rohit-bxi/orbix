@@ -1,0 +1,15 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_lab_room_admin,lab.room.admin,model_lab_room,group_lab_admin,1,1,1,1
+access_lab_room_instructor,lab.room.instructor,model_lab_room,group_lab_instructor,1,0,0,0
+access_lab_equipment_admin,lab.equipment.admin,model_lab_equipment,group_lab_admin,1,1,1,1
+access_lab_equipment_instructor,lab.equipment.instructor,model_lab_equipment,group_lab_instructor,1,0,0,0
+access_lab_session_admin,lab.session.admin,model_lab_session,group_lab_admin,1,1,1,1
+access_lab_session_instructor,lab.session.instructor,model_lab_session,group_lab_instructor,1,1,1,0
+access_lab_attendance_admin,lab.attendance.admin,model_lab_attendance,group_lab_admin,1,1,1,1
+access_lab_attendance_instructor,lab.attendance.instructor,model_lab_attendance,group_lab_instructor,1,1,1,0
+access_lab_experiment_admin,lab.experiment.admin,model_lab_experiment,group_lab_admin,1,1,1,1
+access_lab_experiment_instructor,lab.experiment.instructor,model_lab_experiment,group_lab_instructor,1,0,0,0
+access_lab_experiment_result_admin,lab.experiment.result.admin,model_lab_experiment_result,group_lab_admin,1,1,1,1
+access_lab_experiment_result_instructor,lab.experiment.result.instructor,model_lab_experiment_result,group_lab_instructor,1,1,1,0
+access_lab_equipment_issue_admin,lab.equipment.issue.admin,model_lab_equipment_issue,group_lab_admin,1,1,1,1
+access_lab_equipment_issue_instructor,lab.equipment.issue.instructor,model_lab_equipment_issue,group_lab_instructor,1,1,1,0

@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="report_lab_attendance_sheet_document">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2>Lab Session Attendance Sheet</h2>
+                        <div class="row mt-3 mb-3">
+                            <div class="col-6">
+                                <strong>Session:</strong> <span t-field="doc.name"/><br/>
+                                <strong>Lab Room:</strong> <span t-field="doc.room_id.name"/><br/>
+                                <strong>Course:</strong> <span t-field="doc.course_id.name"/><br/>
+                                <strong>Batch:</strong> <span t-field="doc.batch_id.name"/>
+                            </div>
+                            <div class="col-6">
+                                <strong>Date:</strong> <span t-field="doc.date"/><br/>
+                                <strong>Time:</strong>
+                                <span t-field="doc.start_time" t-options="{'widget': 'float_time'}"/> -
+                                <span t-field="doc.end_time" t-options="{'widget': 'float_time'}"/><br/>
+                                <strong>Instructor:</strong> <span t-field="doc.faculty_id.name"/><br/>
+                                <strong>Subject:</strong> <span t-field="doc.subject_id.name"/>
+                            </div>
+                        </div>
+
+                        <table class="table table-sm table-bordered mt-3">
+                            <thead style="background-color:#f2f2f2;">
+                                <tr>
+                                    <th style="width:5%">#</th>
+                                    <th>Student Name</th>
+                                    <th style="width:15%">GR No.</th>
+                                    <th style="width:15%">Status</th>
+                                    <th style="width:20%">Signature</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="doc.attendance_ids.sorted(lambda a: a.student_id.name or '')" t-as="line">
+                                    <tr>
+                                        <td><span t-esc="line_index + 1"/></td>
+                                        <td><span t-field="line.student_id.name"/></td>
+                                        <td><span t-field="line.student_id.gr_no"/></td>
+                                        <td><span t-esc="dict(line._fields['status'].selection).get(line.status)"/></td>
+                                        <td></td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+
+                        <div class="row mt-4" style="margin-top: 60px;">
+                            <div class="col-6">
+                                <p>_______________________<br/>Instructor Signature</p>
+                            </div>
+                            <div class="col-6">
+                                <p>_______________________<br/>Lab In-charge Signature</p>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <record id="action_report_lab_attendance_sheet" model="ir.actions.report">
+        <field name="name">Attendance Sheet</field>
+        <field name="model">lab.session</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">op_student_lab_management.report_lab_attendance_sheet_document</field>
+        <field name="report_file">op_student_lab_management.report_lab_attendance_sheet_document</field>
+        <field name="binding_model_id" ref="model_lab_session"/>
+        <field name="binding_type">report</field>
+        <field name="print_report_name">'Attendance Sheet - %s' % (object.name)</field>
+    </record>
+</odoo>

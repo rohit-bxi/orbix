@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_lab_root" name="Lab Management" sequence="60" web_icon="op_student_lab_management,static/description/icon.png"/>
+
+    <menuitem id="menu_lab_sessions" name="Sessions" parent="menu_lab_root" sequence="10"/>
+    <menuitem id="menu_lab_session_action" action="action_lab_session" parent="menu_lab_sessions" sequence="1"/>
+    <menuitem id="menu_lab_attendance_action" name="Attendance" action="action_lab_attendance" parent="menu_lab_sessions" sequence="2"/>
+
+    <menuitem id="menu_lab_academics" name="Academics" parent="menu_lab_root" sequence="20"/>
+    <menuitem id="menu_lab_experiment_action" action="action_lab_experiment" parent="menu_lab_academics" sequence="1"/>
+    <menuitem id="menu_lab_experiment_result_action" name="Results" action="action_lab_experiment_result" parent="menu_lab_academics" sequence="2"/>
+
+    <menuitem id="menu_lab_resources" name="Resources" parent="menu_lab_root" sequence="30"/>
+    <menuitem id="menu_lab_room_action" action="action_lab_room" parent="menu_lab_resources" sequence="1"/>
+    <menuitem id="menu_lab_equipment_action" action="action_lab_equipment" parent="menu_lab_resources" sequence="2"/>
+    <menuitem id="menu_lab_equipment_issue_action" name="Issue Log" action="action_lab_equipment_issue" parent="menu_lab_resources" sequence="3"/>
+
+    <menuitem id="menu_lab_config" name="Configuration" parent="menu_lab_root" sequence="90" groups="op_student_lab_management.group_lab_admin"/>
+</odoo>
