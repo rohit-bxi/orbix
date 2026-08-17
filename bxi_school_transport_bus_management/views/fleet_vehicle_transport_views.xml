@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_fleet_vehicle_form_transport" model="ir.ui.view">
+        <field name="name">fleet.vehicle.form.transport</field>
+        <field name="model">fleet.vehicle</field>
+        <field name="inherit_id" ref="fleet.fleet_vehicle_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button class="oe_stat_button" type="object" name="action_view_routes" icon="fa-road"
+                        invisible="not is_school_bus">
+                    <field string="Routes" name="route_count" widget="statinfo"/>
+                </button>
+            </xpath>
+            <xpath expr="//notebook" position="before">
+                <group string="School Bus">
+                    <group>
+                        <field name="is_school_bus"/>
+                        <field name="academic_year_id" invisible="not is_school_bus"/>
+                    </group>
+                    <group>
+                        <field name="bus_attendant_id" invisible="not is_school_bus"/>
+                        <field name="transport_driver_id" invisible="not is_school_bus" readonly="1"/>
+                    </group>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_fleet_vehicle_search_transport" model="ir.ui.view">
+        <field name="name">fleet.vehicle.search.transport</field>
+        <field name="model">fleet.vehicle</field>
+        <field name="inherit_id" ref="fleet.fleet_vehicle_view_search"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='cars']" position="after">
+                <filter string="School Buses" name="school_buses" domain="[('is_school_bus', '=', True)]"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_transport_bus_vehicle" model="ir.actions.act_window">
+        <field name="name">School Buses</field>
+        <field name="res_model">fleet.vehicle</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('is_school_bus', '=', True)]</field>
+        <field name="context">{'default_is_school_bus': True}</field>
+    </record>
+</odoo>

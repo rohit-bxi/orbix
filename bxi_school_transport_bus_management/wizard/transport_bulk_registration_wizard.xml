@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_transport_bulk_registration_wizard_form" model="ir.ui.view">
+        <field name="name">bxi.transport.bulk.registration.wizard.form</field>
+        <field name="model">bxi.transport.bulk.registration.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Bulk Register Students on a Bus Route">
+                <group>
+                    <field name="batch_id"/>
+                    <field name="route_id"/>
+                    <field name="stop_id"/>
+                    <field name="date_start"/>
+                </group>
+                <footer>
+                    <button name="action_register" type="object" string="Register" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_transport_bulk_registration_wizard" model="ir.actions.act_window">
+        <field name="name">Bulk Register Students</field>
+        <field name="res_model">bxi.transport.bulk.registration.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

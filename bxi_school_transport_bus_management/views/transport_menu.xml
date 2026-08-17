@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <menuitem id="menu_transport_root" name="Transport" sequence="75"
+              web_icon="bxi_school_transport_bus_management,static/description/icon.png"/>
+    <menuitem id="menu_transport_vehicle" name="Buses" parent="menu_transport_root"
+              action="action_transport_bus_vehicle" sequence="5"/>
+    <menuitem id="menu_transport_route" name="Bus Routes" parent="menu_transport_root"
+              action="action_transport_route" sequence="10"/>
+    <menuitem id="menu_transport_registration" name="Registrations" parent="menu_transport_root"
+              action="action_transport_registration" sequence="20"/>
+    <menuitem id="menu_transport_bulk_registration" name="Bulk Register" parent="menu_transport_root"
+              action="action_transport_bulk_registration_wizard" sequence="25"/>
+    <menuitem id="menu_transport_driver" name="Drivers" parent="menu_transport_root"
+              action="action_transport_driver" sequence="30"/>
+    <menuitem id="menu_transport_config" name="Configuration" parent="menu_transport_root" sequence="90"
+              groups="group_transport_manager"/>
+    <menuitem id="menu_transport_product_category" name="Product Categories" parent="menu_transport_config"
+              action="product.product_category_action_form" sequence="10"/>
+</odoo>
