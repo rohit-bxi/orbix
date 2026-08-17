@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="product_category_canteen" model="product.category">
+        <field name="name">Canteen</field>
+        <field name="parent_id" ref="product.product_category_goods"/>
+    </record>
+    <record id="product_category_canteen_snacks" model="product.category">
+        <field name="name">Snacks</field>
+        <field name="parent_id" ref="product_category_canteen"/>
+    </record>
+    <record id="product_category_canteen_beverages" model="product.category">
+        <field name="name">Beverages</field>
+        <field name="parent_id" ref="product_category_canteen"/>
+    </record>
+    <record id="product_category_canteen_meals" model="product.category">
+        <field name="name">Meals</field>
+        <field name="parent_id" ref="product_category_canteen"/>
+    </record>
+    <record id="product_category_canteen_desserts" model="product.category">
+        <field name="name">Desserts</field>
+        <field name="parent_id" ref="product_category_canteen"/>
+    </record>
+</odoo>

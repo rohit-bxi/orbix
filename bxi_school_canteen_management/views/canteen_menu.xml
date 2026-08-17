@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <menuitem id="menu_canteen_root" name="Canteen" sequence="70" web_icon="bxi_school_canteen_management,static/description/icon.png"/>
+    <menuitem id="menu_canteen_order" name="Kitchen Display" parent="menu_canteen_root" action="action_canteen_order" sequence="10"/>
+    <menuitem id="menu_canteen_wallet" name="Wallets" parent="menu_canteen_root" action="action_canteen_wallet" sequence="20"/>
+    <menuitem id="menu_canteen_topup_wizard" name="Top Up Wallet" parent="menu_canteen_root" action="action_canteen_wallet_topup_wizard" sequence="25"/>
+    <menuitem id="menu_canteen_item_menu" name="Menu" parent="menu_canteen_root" action="action_canteen_menu" sequence="30"/>
+
+    <menuitem id="menu_canteen_reports" name="Reports" parent="menu_canteen_root" sequence="40"/>
+    <menuitem id="menu_canteen_sales_report" name="Daily Sales Report" parent="menu_canteen_reports" action="action_canteen_sales_report_wizard" sequence="10"/>
+    <menuitem id="menu_canteen_statement_report" name="Wallet Statement Report" parent="menu_canteen_reports" action="action_canteen_wallet_statement_wizard" sequence="20"/>
+    <menuitem id="menu_canteen_wallet_transaction" name="Transaction Ledger" parent="menu_canteen_reports" action="action_canteen_wallet_transaction" sequence="30"/>
+
+    <menuitem id="menu_canteen_config" name="Configuration" parent="menu_canteen_root" sequence="90" groups="group_canteen_manager"/>
+    <menuitem id="menu_canteen_product_category" name="Product Categories" parent="menu_canteen_config" action="product.product_category_action_form" sequence="10"/>
+</odoo>

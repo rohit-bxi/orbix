@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="action_report_canteen_sales" model="ir.actions.report">
+        <field name="name">Daily Sales Report</field>
+        <field name="model">bxi.canteen.sales.report.wizard</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">bxi_school_canteen_management.canteen_sales_report_pdf_template</field>
+        <field name="report_file">bxi_school_canteen_management.canteen_sales_report_pdf_template</field>
+        <field name="print_report_name">'canteen-daily-sales-report'</field>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="canteen_sales_report_pdf_template">
+        <t t-call="web.basic_layout">
+            <div class="page">
+                <h1 style="text-align:center;text-decoration:underline;">Canteen Daily Sales Report</h1>
+                <span>From date: <t t-out="from_date"/></span>&#160;&#160;<span>To Date: <t t-out="to_date"/></span>
+                <br/>
+                <br/>
+                <table class="table table-bordered" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>Order</th>
+                            <th>Date</th>
+                            <th>Patron</th>
+                            <th>Type</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <t t-foreach="all_data" t-as="data">
+                            <tr>
+                                <td t-out="data['name']"/>
+                                <td t-out="data['order_datetime']"/>
+                                <td t-out="data['patron_name']"/>
+                                <td t-out="data['patron_type']"/>
+                                <td t-out="data['total_amount']"/>
+                                <td t-out="data['state']"/>
+                            </tr>
+                        </t>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <th colspan="4">Grand Total</th>
+                            <th t-out="grand_total"/>
+                            <th/>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </t>
+    </template>
+</odoo>

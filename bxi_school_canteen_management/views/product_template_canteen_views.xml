@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_product_template_form_canteen" model="ir.ui.view">
+        <field name="name">product.template.form.canteen</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='general_information']" position="after">
+                <page string="Canteen" name="canteen_info">
+                    <group>
+                        <field name="is_canteen_item"/>
+                        <group invisible="not is_canteen_item">
+                            <field name="available_today"/>
+                            <field name="veg_type"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_product_template_search_canteen" model="ir.ui.view">
+        <field name="name">product.template.search.canteen</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_search_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//search" position="inside">
+                <filter string="Veg" name="canteen_veg" domain="[('veg_type', '=', 'veg')]"/>
+                <filter string="Non-Veg" name="canteen_non_veg" domain="[('veg_type', '=', 'non_veg')]"/>
+                <filter string="Available Today" name="canteen_available" domain="[('available_today', '=', True)]"/>
+                <filter string="Sold Out" name="canteen_sold_out" domain="[('available_today', '=', False)]"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_canteen_menu" model="ir.actions.act_window">
+        <field name="name">Menu</field>
+        <field name="res_model">product.template</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="domain">[('is_canteen_item', '=', True)]</field>
+        <field name="context">{'default_is_canteen_item': True, 'default_sale_ok': True, 'search_default_canteen_available': 1}</field>
+    </record>
+</odoo>
