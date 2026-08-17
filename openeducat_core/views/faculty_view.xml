@@ -302,6 +302,10 @@
                     <field name="blood_group"/>
                     <field name="main_department_id"/>
                     <field name="allowed_department_ids"/>
+                    <field name="email"/>
+                    <field name="phone"/>
+                    <field name="faculty_subject_ids"/>
+                    <field name="category_id"/>
                     <newline/>
                     <group>
                         <filter name="blood_group" string="Blood Group" domain="[]"
@@ -309,6 +313,10 @@
                         <filter name="nationality" string="Nationality" domain="[]"
                                 context="{'group_by':'nationality'}"/>
                         <filter name="language" string="Language" domain="[]" context="{'group_by':'lang'}"/>
+                        <filter name="gender" string="Gender" domain="[]"
+                                context="{'group_by':'gender'}"/>
+                        <filter name="department" string="Department" domain="[]"
+                                context="{'group_by':'main_department_id'}"/>
                         <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
                     </group>
                 </search>

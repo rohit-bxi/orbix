@@ -1,4 +1,4 @@
-##############################################################################
+###############################################################################
 #
 #    OpenEduCat Inc
 #    Copyright (C) 2009-TODAY OpenEduCat Inc(<https://www.openeducat.org>).
@@ -16,7 +16,24 @@
 #    You should have received a copy of the GNU Lesser General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-##############################################################################
+###############################################################################
 
-from . import models
-from . import wizard
+from odoo import fields, models
+
+
+class WizardOpParent(models.TransientModel):
+    _name = 'wizard.op.parent'
+    _description = "Create User for selected Parent(s)"
+
+    def _get_parents(self):
+        if self.env.context and self.env.context.get('active_ids'):
+            return self.env.context.get('active_ids')
+        return []
+
+    parent_ids = fields.Many2many(
+        'op.parent', default=_get_parents, string='Parents')
+
+    def create_user(self):
+        active_ids = self.env.context.get('active_ids', []) or []
+        records = self.env['op.parent'].browse(active_ids)
+        records.create_parent_user()
