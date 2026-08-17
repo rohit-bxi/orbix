@@ -72,10 +72,15 @@ export const homeMenuService = {
 
         env.bus.addEventListener("HOME-MENU:TOGGLED", () => {
             document.body.classList.toggle("o_home_menu_background", state.hasHomeMenu);
+            // Enterprise's home_menu.scss makes .o_main_navbar transparent on the
+            // home screen unless this class is also present (its own escape hatch
+            // for a "custom background" home menu). home_theme always renders its
+            // own dashboard background, so keep the navbar solid, never transparent.
+            document.body.classList.toggle("o_home_menu_background_custom", state.hasHomeMenu);
         });
 
         return state;
     },
 };
 
-registry.category("services").add("home_menu", homeMenuService);
+registry.category("services").add("home_menu", homeMenuService, { force: true });

@@ -9,7 +9,7 @@ $theme_color_warning: #FFAC00;
 $theme_color_danger: #DC3545;
 
 // Navbar Colors — Aurora's original navy chrome (navbar / sidebar / app rail).
-$theme_color_navbar_bg: #243742;
+$theme_color_navbar_bg: #000000;
 $theme_color_navbar_text: #FFFFFF;
 
 // Home Screen Colors
@@ -34,6 +34,13 @@ $o-navbar-background: $theme_color_navbar_bg;
 $o-navbar-entry-color: $theme_color_navbar_text;
 $o-navbar-entry-color--hover: $theme_color_navbar_text;
 $o-navbar-brand-color: $theme_color_navbar_text;
+
+// web_enterprise's navbar.variables.scss defaults these to light grays
+// (#e7e9ed / #edeffd) meant for its own light navbar. On our dark navbar
+// chrome those show up as a jarring white hover/active box, so replace
+// them with a subtle light-on-dark overlay instead.
+$o-navbar-entry-bg--hover: rgba(255, 255, 255, 0.08);
+$o-navbar-entry-bg--active: rgba(255, 255, 255, 0.14);
 
 $o-theme-text-colors: (
     "primary": $theme_color_brand,

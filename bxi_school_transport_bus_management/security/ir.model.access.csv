@@ -1,0 +1,11 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_transport_driver_manager,transport.driver.manager,model_bxi_transport_driver,group_transport_manager,1,1,1,1
+access_transport_driver_staff,transport.driver.staff,model_bxi_transport_driver,group_transport_staff,1,0,0,0
+access_transport_route_manager,transport.route.manager,model_bxi_transport_route,group_transport_manager,1,1,1,1
+access_transport_route_staff,transport.route.staff,model_bxi_transport_route,group_transport_staff,1,0,0,0
+access_transport_route_stop_manager,transport.route.stop.manager,model_bxi_transport_route_stop,group_transport_manager,1,1,1,1
+access_transport_route_stop_staff,transport.route.stop.staff,model_bxi_transport_route_stop,group_transport_staff,1,0,0,0
+access_transport_registration_manager,transport.registration.manager,model_bxi_transport_registration,group_transport_manager,1,1,1,1
+access_transport_registration_staff,transport.registration.staff,model_bxi_transport_registration,group_transport_staff,1,1,1,0
+access_transport_registration_self,transport.registration.self,model_bxi_transport_registration,base.group_user,1,0,0,0
+access_transport_bulk_registration_wizard,transport.bulk.registration.wizard,model_bxi_transport_bulk_registration_wizard,group_transport_staff,1,1,1,1
