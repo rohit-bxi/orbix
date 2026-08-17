@@ -35,6 +35,7 @@
         'data/parent_user_data.xml',
         'views/parent_view.xml',
         'views/parent_relationship_view.xml',
+        'wizard/parent_create_user_wizard_view.xml',
         'menus/op_menu.xml',
         'report/report_student_bonafide_inherit.xml',
     ],

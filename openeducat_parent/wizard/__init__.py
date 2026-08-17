@@ -18,5 +18,4 @@
 #
 ##############################################################################
 
-from . import models
-from . import wizard
+from . import parent_create_user_wizard

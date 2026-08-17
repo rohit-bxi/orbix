@@ -282,6 +282,10 @@
                 <search string="Student">
                     <field name="name"/>
                     <field name="blood_group"/>
+                    <field name="email"/>
+                    <field name="phone"/>
+                    <field name="gr_no"/>
+                    <field name="category_id"/>
                     <newline/>
                     <group>
                         <filter name="blood_group" string="Blood Group"
@@ -290,6 +294,10 @@
                                 domain="[]" context="{'group_by':'nationality'}"/>
                         <filter name="language" string="Language"
                                 domain="[]" context="{'group_by':'lang'}"/>
+                        <filter name="gender" string="Gender"
+                                domain="[]" context="{'group_by':'gender'}"/>
+                        <filter name="category" string="Category"
+                                domain="[]" context="{'group_by':'category_id'}"/>
                         <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
                     </group>
                 </search>
