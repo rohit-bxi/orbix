@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <!-- List View -->
+    <record id="visitor_tree_view" model="ir.ui.view">
+        <field name="name">visitor.list.view</field>
+        <field name="model">visitor.data</field>
+        <field name="arch" type="xml">
+            <list string="Visitors">
+                <field name="visitor_seq"/>
+                <field name="v_name"/>
+                <field name="v_phn" widget="phone"/>
+                <field name="I_AM"/>
+                <field name="v_gender" optional="hide"/>
+                <field name="v_company"/>
+                <field name="v_email" widget="email" optional="hide"/>
+                <field name="v_address" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="visitor_search_view" model="ir.ui.view">
+        <field name="name">visitor.search.view</field>
+        <field name="model">visitor.data</field>
+        <field name="arch" type="xml">
+            <search string="Visitors">
+                <field name="v_name"/>
+                <field name="visitor_seq"/>
+                <field name="v_phn"/>
+                <field name="v_company"/>
+                <field name="v_email"/>
+                <separator/>
+                <filter string="Male" name="male" domain="[('v_gender', '=', 'male')]"/>
+                <filter string="Female" name="female" domain="[('v_gender', '=', 'female')]"/>
+                <separator/>
+                <filter string="Buyer" name="buyer" domain="[('I_AM', '=', 'buyer')]"/>
+                <filter string="Guest" name="guest" domain="[('I_AM', '=', 'guest')]"/>
+                <filter string="Supplier" name="supplier" domain="[('I_AM', '=', 'supplier')]"/>
+                <filter string="Delivery" name="delivery" domain="[('I_AM', '=', 'delivery')]"/>
+                <group name="group_by">
+                    <filter string="Visitor Type" name="group_i_am" context="{'group_by': 'I_AM'}"/>
+                    <filter string="Company" name="group_company" context="{'group_by': 'v_company'}"/>
+                    <filter string="Gender" name="group_gender" context="{'group_by': 'v_gender'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="visitor_form_view" model="ir.ui.view">
+        <field name="name">visitor.form.view</field>
+        <field name="model">visitor.data</field>
+        <field name="arch" type="xml">
+            <form string="Visitor">
+                <sheet>
+                    <field name="v_image" widget="image" class="oe_avatar" options="{'preview_image': 'v_image'}"/>
+                    <div class="oe_title">
+                        <label for="v_name" string="Visitor Name"/>
+                        <h1>
+                            <field name="v_name" placeholder="e.g. John Doe"/>
+                        </h1>
+                        <label for="visitor_seq" string="Reference"/>
+                        <h3>
+                            <field name="visitor_seq" readonly="1"/>
+                        </h3>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="I_AM"/>
+                            <field name="v_phn" widget="phone"/>
+                            <field name="v_gender"/>
+                        </group>
+                        <group>
+                            <field name="v_company"/>
+                            <field name="v_email" widget="email"/>
+                            <field name="v_address"/>
+                        </group>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_visitor_data" model="ir.actions.act_window">
+        <field name="name">Create Visitor</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">visitor.data</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="visitor_search_view"/>
+    </record>
+    <menuitem id="visitor_menu_id" name="Create Visitor" parent="visitor_management.visitor_root" action="action_visitor_data" sequence="4"/>
+</odoo>

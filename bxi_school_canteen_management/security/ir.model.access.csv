@@ -1,0 +1,16 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_canteen_wallet_manager,canteen.wallet.manager,model_bxi_canteen_wallet,group_canteen_manager,1,1,1,1
+access_canteen_wallet_staff,canteen.wallet.staff,model_bxi_canteen_wallet,group_canteen_staff,1,1,1,0
+access_canteen_wallet_self,canteen.wallet.self,model_bxi_canteen_wallet,base.group_user,1,0,0,0
+access_canteen_wallet_txn_manager,canteen.wallet.txn.manager,model_bxi_canteen_wallet_transaction,group_canteen_manager,1,1,1,1
+access_canteen_wallet_txn_staff,canteen.wallet.txn.staff,model_bxi_canteen_wallet_transaction,group_canteen_staff,1,0,1,0
+access_canteen_wallet_txn_self,canteen.wallet.txn.self,model_bxi_canteen_wallet_transaction,base.group_user,1,0,0,0
+access_canteen_order_manager,canteen.order.manager,model_bxi_canteen_order,group_canteen_manager,1,1,1,1
+access_canteen_order_staff,canteen.order.staff,model_bxi_canteen_order,group_canteen_staff,1,1,1,0
+access_canteen_order_self,canteen.order.self,model_bxi_canteen_order,base.group_user,1,0,0,0
+access_canteen_order_line_manager,canteen.order.line.manager,model_bxi_canteen_order_line,group_canteen_manager,1,1,1,1
+access_canteen_order_line_staff,canteen.order.line.staff,model_bxi_canteen_order_line,group_canteen_staff,1,1,1,1
+access_canteen_order_line_self,canteen.order.line.self,model_bxi_canteen_order_line,base.group_user,1,0,0,0
+access_canteen_topup_wizard_staff,canteen.wallet.topup.wizard.staff,model_bxi_canteen_wallet_topup_wizard,group_canteen_staff,1,1,1,1
+access_canteen_sales_wizard_staff,canteen.sales.report.wizard.staff,model_bxi_canteen_sales_report_wizard,group_canteen_staff,1,1,1,1
+access_canteen_statement_wizard_staff,canteen.wallet.statement.wizard.staff,model_bxi_canteen_wallet_statement_wizard,group_canteen_staff,1,1,1,1

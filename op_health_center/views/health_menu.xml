@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <menuitem id="menu_health_root" name="Health Center" sequence="65" web_icon="op_health_center,static/description/icon.png"/>
+
+    <menuitem id="menu_health_clinic" name="Clinic" parent="menu_health_root" sequence="10"/>
+    <menuitem id="menu_health_visit" name="Visits" parent="menu_health_clinic" action="action_health_visit" sequence="10"/>
+
+    <menuitem id="menu_health_wellness" name="Wellness" parent="menu_health_root" sequence="20"/>
+    <menuitem id="menu_health_vaccination" name="Vaccinations" parent="menu_health_wellness" action="action_health_vaccination" sequence="10"/>
+    <menuitem id="menu_health_checkup" name="Checkups" parent="menu_health_wellness" action="action_health_checkup" sequence="20"/>
+
+    <menuitem id="menu_health_reports" name="Reports" parent="menu_health_root" sequence="30"/>
+    <menuitem id="menu_health_dashboard" name="Dashboard" parent="menu_health_reports" action="action_health_dashboard" sequence="10"/>
+    <menuitem id="menu_health_visit_report" name="Visit Analysis" parent="menu_health_reports" action="action_health_visit_report" sequence="20"/>
+    <menuitem id="menu_health_vaccination_report" name="Vaccination Report" parent="menu_health_reports" action="action_health_vaccination_report" sequence="30"/>
+    <menuitem id="menu_health_checkup_report" name="Checkup Report" parent="menu_health_reports" action="action_health_checkup_report" sequence="40"/>
+    <menuitem id="menu_health_certificate_wizard" name="Print Medical Certificate" parent="menu_health_reports" action="action_health_certificate_wizard" sequence="50"/>
+    <menuitem id="menu_health_visit_report_wizard" name="Visit History Report" parent="menu_health_reports" action="action_health_visit_report_wizard" sequence="60"/>
+
+    <menuitem id="menu_health_config" name="Configuration" parent="menu_health_root" sequence="90" groups="group_health_manager"/>
+    <menuitem id="menu_health_vaccine_type" name="Vaccine Types" parent="menu_health_config" action="action_health_vaccine_type" sequence="10"/>
+</odoo>

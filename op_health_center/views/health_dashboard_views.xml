@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <!-- Drill-down report actions -->
+    <record id="action_health_visit_report" model="ir.actions.act_window">
+        <field name="name">Visit Analysis</field>
+        <field name="res_model">op.health.visit</field>
+        <field name="view_mode">graph,pivot,list</field>
+        <field name="context">{'search_default_this_month': 1, 'group_by': ['state']}</field>
+    </record>
+
+    <record id="action_health_vaccination_report" model="ir.actions.act_window">
+        <field name="name">Vaccination Report</field>
+        <field name="res_model">op.health.vaccination</field>
+        <field name="view_mode">graph,pivot,list</field>
+        <field name="context">{'group_by': ['state']}</field>
+    </record>
+
+    <record id="action_health_checkup_report" model="ir.actions.act_window">
+        <field name="name">Checkup Report</field>
+        <field name="res_model">op.health.checkup</field>
+        <field name="view_mode">graph,pivot,list</field>
+        <field name="context">{'group_by': ['fitness_status']}</field>
+    </record>
+
+    <!-- Dashboard -->
+    <record id="view_health_dashboard_form" model="ir.ui.view">
+        <field name="name">op.health.dashboard.form</field>
+        <field name="model">op.health.dashboard</field>
+        <field name="arch" type="xml">
+            <form string="Health Center Dashboard" create="false" delete="false">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>Health Center Dashboard</h1>
+                    </div>
+                    <div class="o_horizontal_separator"/>
+                    <div class="row">
+                        <div class="col-3">
+                            <button type="object" name="action_view_visit_report" class="oe_stat_button" icon="fa-stethoscope">
+                                <field name="visit_count_month" widget="statinfo" string="Visits This Month"/>
+                            </button>
+                        </div>
+                        <div class="col-3">
+                            <button type="object" name="action_view_vaccination_report" class="oe_stat_button" icon="fa-medkit">
+                                <field name="upcoming_vaccination_count" widget="statinfo" string="Vaccinations Due (30d)"/>
+                            </button>
+                        </div>
+                        <div class="col-3">
+                            <button type="object" name="action_view_visit_report" class="oe_stat_button" icon="fa-exclamation-triangle">
+                                <field name="active_alert_count" widget="statinfo" string="Active Medical Alerts"/>
+                            </button>
+                        </div>
+                        <div class="col-3">
+                            <button type="object" name="action_view_checkup_report" class="oe_stat_button" icon="fa-heartbeat">
+                                <field name="checkup_compliance_rate" widget="statinfo" string="Checkup Compliance %"/>
+                            </button>
+                        </div>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_health_dashboard" model="ir.actions.act_window">
+        <field name="name">Dashboard</field>
+        <field name="res_model">op.health.dashboard</field>
+        <field name="view_mode">form</field>
+        <field name="target">current</field>
+    </record>
+</odoo>

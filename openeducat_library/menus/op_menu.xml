@@ -2,7 +2,7 @@
 <odoo>
 
         <menuitem id="menu_op_library_root"
-                  name="Library"
+                  name="Digital Library"
                   sequence="390"
                   web_icon="openeducat_library,static/description/icon.png"
                   groups="group_op_library,group_op_library_user"/>

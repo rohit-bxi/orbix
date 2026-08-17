@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_canteen_wallet_list" model="ir.ui.view">
+        <field name="name">bxi.canteen.wallet.list</field>
+        <field name="model">bxi.canteen.wallet</field>
+        <field name="arch" type="xml">
+            <list string="Canteen Wallets" decoration-danger="is_low_balance">
+                <field name="patron_name"/>
+                <field name="patron_type"/>
+                <field name="balance"/>
+                <field name="low_balance_threshold" optional="hide"/>
+                <field name="currency_id" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_canteen_wallet_form" model="ir.ui.view">
+        <field name="name">bxi.canteen.wallet.form</field>
+        <field name="model">bxi.canteen.wallet</field>
+        <field name="arch" type="xml">
+            <form string="Canteen Wallet">
+                <sheet>
+                    <div name="button_box" class="oe_button_box">
+                        <button class="oe_stat_button" type="object" name="action_view_transactions" icon="fa-list-alt">
+                            <field string="Transactions" name="transaction_count" widget="statinfo"/>
+                        </button>
+                        <button class="oe_stat_button" type="object" name="action_open_topup_wizard" icon="fa-plus-circle">
+                            <div class="o_stat_info">
+                                <span class="o_stat_text">Top Up</span>
+                            </div>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="patron_name" readonly="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="student_id"/>
+                            <field name="faculty_id"/>
+                        </group>
+                        <group>
+                            <field name="balance" readonly="1"/>
+                            <field name="low_balance_threshold"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Transaction History" name="transaction_history">
+                            <field name="transaction_ids" nolabel="1" readonly="1">
+                                <list create="false" delete="false">
+                                    <field name="date"/>
+                                    <field name="transaction_type"/>
+                                    <field name="amount"/>
+                                    <field name="payment_method" optional="hide"/>
+                                    <field name="state" widget="badge"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_canteen_wallet_search" model="ir.ui.view">
+        <field name="name">bxi.canteen.wallet.search</field>
+        <field name="model">bxi.canteen.wallet</field>
+        <field name="arch" type="xml">
+            <search string="Canteen Wallets">
+                <field name="patron_name"/>
+                <field name="student_id"/>
+                <field name="faculty_id"/>
+                <filter string="Low Balance" name="low_balance" domain="[('is_low_balance', '=', True)]"/>
+                <group name="group_by">
+                    <filter string="Patron Type" name="group_patron_type" context="{'group_by': 'patron_type'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_canteen_wallet" model="ir.actions.act_window">
+        <field name="name">Wallets</field>
+        <field name="res_model">bxi.canteen.wallet</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_canteen_wallet_search"/>
+    </record>
+</odoo>

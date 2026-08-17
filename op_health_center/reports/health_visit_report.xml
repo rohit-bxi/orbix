@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="action_report_health_visit" model="ir.actions.report">
+        <field name="name">Health Visit History Report</field>
+        <field name="model">op.health.visit.report.wizard</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">op_health_center.health_visit_report_pdf_template</field>
+        <field name="report_file">op_health_center.health_visit_report_pdf_template</field>
+        <field name="print_report_name">'health-visit-history-report'</field>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="health_visit_report_pdf_template">
+        <t t-call="web.basic_layout">
+            <div class="page">
+                <h1 style="text-align:center;text-decoration:underline;">Health Visit History Report</h1>
+                <span>From date: <t t-out="from_date"/></span>&#160;&#160;<span>To Date: <t t-out="to_date"/></span>
+                <br/>
+                <br/>
+                <table class="table table-bordered" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>Patient</th>
+                            <th>Type</th>
+                            <th>Visit Date</th>
+                            <th>Visit Type</th>
+                            <th>Attended By</th>
+                            <th>Diagnosis</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <t t-foreach="all_data" t-as="data">
+                            <tr>
+                                <td t-out="data['patient_name']"/>
+                                <td t-out="data['patient_type']"/>
+                                <td t-out="data['visit_datetime']"/>
+                                <td t-out="data['visit_type']"/>
+                                <td t-out="data['attended_by']"/>
+                                <td t-out="data['diagnosis']"/>
+                                <td t-out="data['state']"/>
+                            </tr>
+                        </t>
+                    </tbody>
+                </table>
+            </div>
+        </t>
+    </template>
+</odoo>

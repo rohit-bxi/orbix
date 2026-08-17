@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_canteen_order_kanban" model="ir.ui.view">
+        <field name="name">bxi.canteen.order.kanban</field>
+        <field name="model">bxi.canteen.order</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state" class="o_kanban_small_column">
+                <field name="state"/>
+                <templates>
+                    <t t-name="card">
+                        <div t-attf-class="oe_kanban_card #{record.state.raw_value == 'cancelled' ? 'border-danger' : record.state.raw_value == 'served' ? 'border-success' : record.state.raw_value == 'ready' ? 'border-primary' : record.state.raw_value == 'preparing' ? 'border-warning' : ''}">
+                            <div class="fw-bold">
+                                <field name="patron_name"/>
+                            </div>
+                            <div>
+                                <field name="order_datetime"/>
+                            </div>
+                            <div>
+                                Total: <field name="total_amount"/>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="view_canteen_order_list" model="ir.ui.view">
+        <field name="name">bxi.canteen.order.list</field>
+        <field name="model">bxi.canteen.order</field>
+        <field name="arch" type="xml">
+            <list string="Canteen Orders" decoration-danger="state == 'cancelled'" decoration-success="state == 'served'">
+                <field name="name"/>
+                <field name="order_datetime"/>
+                <field name="patron_type"/>
+                <field name="patron_name"/>
+                <field name="total_amount"/>
+                <field name="state" widget="badge"
+                       decoration-info="state in ('draft', 'confirmed')"
+                       decoration-warning="state == 'preparing'"
+                       decoration-primary="state == 'ready'"
+                       decoration-success="state == 'served'"
+                       decoration-danger="state == 'cancelled'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_canteen_order_form" model="ir.ui.view">
+        <field name="name">bxi.canteen.order.form</field>
+        <field name="model">bxi.canteen.order</field>
+        <field name="arch" type="xml">
+            <form string="Canteen Order">
+                <header>
+                    <button name="action_confirm" type="object" string="Confirm" class="oe_highlight" invisible="state != 'draft'"/>
+                    <button name="action_force_confirm" type="object" string="Force Confirm" invisible="state != 'draft'" groups="bxi_school_canteen_management.group_canteen_manager"/>
+                    <button name="action_preparing" type="object" string="Preparing" class="oe_highlight" invisible="state != 'confirmed'"/>
+                    <button name="action_ready" type="object" string="Ready" class="oe_highlight" invisible="state != 'preparing'"/>
+                    <button name="action_served" type="object" string="Served" class="oe_highlight" invisible="state != 'ready'"/>
+                    <button name="action_cancel" type="object" string="Cancel" invisible="state in ('served', 'cancelled')"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,confirmed,preparing,ready,served"/>
+                </header>
+                <sheet>
+                    <div name="button_box" class="oe_button_box">
+                        <button class="oe_stat_button" type="action" name="%(action_canteen_wallet)d" icon="fa-credit-card" context="{'default_student_id': student_id, 'default_faculty_id': faculty_id}">
+                            <field string="Wallet Balance" name="wallet_balance" widget="statinfo"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <label for="name" string="Reference"/>
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="student_id"/>
+                            <field name="faculty_id"/>
+                            <field name="order_datetime"/>
+                        </group>
+                        <group>
+                            <field name="served_by"/>
+                            <field name="cancel_reason" invisible="state != 'cancelled'"/>
+                        </group>
+                    </group>
+                    <field name="order_line_ids">
+                        <list editable="bottom">
+                            <field name="product_id"/>
+                            <field name="quantity"/>
+                            <field name="price_unit"/>
+                            <field name="price_subtotal"/>
+                            <field name="currency_id" column_invisible="1"/>
+                        </list>
+                    </field>
+                    <group class="oe_subtotal_footer">
+                        <field name="total_amount"/>
+                        <field name="currency_id" invisible="1"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_canteen_order_search" model="ir.ui.view">
+        <field name="name">bxi.canteen.order.search</field>
+        <field name="model">bxi.canteen.order</field>
+        <field name="arch" type="xml">
+            <search string="Canteen Orders">
+                <field name="name"/>
+                <field name="patron_name"/>
+                <filter string="Today" name="today" domain="[('order_datetime', '&gt;=', context_today().strftime('%Y-%m-%d'))]"/>
+                <filter string="Students Only" name="students_only" domain="[('patron_type', '=', 'student')]"/>
+                <filter string="Teachers Only" name="teachers_only" domain="[('patron_type', '=', 'faculty')]"/>
+                <group name="group_by">
+                    <filter string="Status" name="group_state" context="{'group_by': 'state'}"/>
+                    <filter string="Patron Type" name="group_patron_type" context="{'group_by': 'patron_type'}"/>
+                    <filter string="Order Date" name="group_date" context="{'group_by': 'order_datetime:day'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_canteen_order" model="ir.actions.act_window">
+        <field name="name">Kitchen Display</field>
+        <field name="res_model">bxi.canteen.order</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="search_view_id" ref="view_canteen_order_search"/>
+    </record>
+</odoo>

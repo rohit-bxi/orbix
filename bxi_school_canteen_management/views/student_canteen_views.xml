@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_op_student_form_canteen" model="ir.ui.view">
+        <field name="name">op.student.form.canteen</field>
+        <field name="model">op.student</field>
+        <field name="inherit_id" ref="openeducat_core.view_op_student_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button class="oe_stat_button" type="object" name="action_view_canteen_wallet" icon="fa-credit-card"
+                        groups="bxi_school_canteen_management.group_canteen_staff,bxi_school_canteen_management.group_canteen_manager">
+                    <field string="Wallet Balance" name="canteen_balance" widget="statinfo"/>
+                </button>
+                <button class="oe_stat_button" type="object" name="action_view_canteen_orders" icon="fa-cutlery"
+                        groups="bxi_school_canteen_management.group_canteen_staff,bxi_school_canteen_management.group_canteen_manager">
+                    <field string="Orders" name="order_count" widget="statinfo"/>
+                </button>
+            </xpath>
+            <xpath expr="//widget[@name='web_ribbon']" position="after">
+                <widget name="web_ribbon" title="Low Balance" bg_color="text-bg-warning" invisible="not canteen_is_low_balance"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
