@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_visitor_data,access.visitor.data,model_visitor_data,,1,1,1,0
+access_visit_data,access.visit.data,model_visit_data,,1,1,1,0
+access_visitor_report_wizard,access.visitor.report.wizard,model_visitor_report_wizard,,1,1,1,1

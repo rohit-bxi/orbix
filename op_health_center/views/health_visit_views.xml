@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_health_visit_list" model="ir.ui.view">
+        <field name="name">op.health.visit.list</field>
+        <field name="model">op.health.visit</field>
+        <field name="arch" type="xml">
+            <list string="Health Visits" decoration-danger="state == 'cancelled'" decoration-success="state == 'resolved'">
+                <field name="name"/>
+                <field name="visit_datetime"/>
+                <field name="patient_type"/>
+                <field name="patient_name"/>
+                <field name="visit_type"/>
+                <field name="attended_by"/>
+                <field name="follow_up_required" optional="hide"/>
+                <field name="referred_to_hospital" optional="hide"/>
+                <field name="state" widget="badge"
+                       decoration-info="state in ('draft', 'confirmed')"
+                       decoration-warning="state == 'under_treatment'"
+                       decoration-success="state == 'resolved'"
+                       decoration-primary="state == 'referred'"
+                       decoration-danger="state == 'cancelled'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_health_visit_kanban" model="ir.ui.view">
+        <field name="name">op.health.visit.kanban</field>
+        <field name="model">op.health.visit</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state" class="o_kanban_small_column">
+                <field name="state"/>
+                <templates>
+                    <t t-name="card">
+                        <div t-attf-class="oe_kanban_card #{record.state.raw_value == 'cancelled' ? 'border-danger' : record.state.raw_value == 'resolved' ? 'border-success' : record.state.raw_value == 'under_treatment' ? 'border-warning' : ''}">
+                            <div class="fw-bold">
+                                <field name="patient_name"/>
+                            </div>
+                            <div>
+                                <field name="visit_type"/> -
+                                <field name="visit_datetime"/>
+                            </div>
+                            <div>
+                                <field name="attended_by"/>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="view_health_visit_form" model="ir.ui.view">
+        <field name="name">op.health.visit.form</field>
+        <field name="model">op.health.visit</field>
+        <field name="arch" type="xml">
+            <form string="Health Visit">
+                <header>
+                    <button name="action_confirm" type="object" string="Confirm" class="oe_highlight" invisible="state != 'draft'"/>
+                    <button name="action_start_treatment" type="object" string="Start Treatment" class="oe_highlight" invisible="state != 'confirmed'"/>
+                    <button name="action_resolve" type="object" string="Resolve" class="oe_highlight" invisible="state != 'under_treatment'"/>
+                    <button name="action_refer" type="object" string="Refer to Hospital" invisible="state not in ('confirmed', 'under_treatment')"/>
+                    <button name="action_cancel" type="object" string="Cancel" invisible="state in ('resolved', 'referred', 'cancelled')"/>
+                    <button name="action_reset_draft" type="object" string="Reset to Draft" invisible="state == 'draft'" groups="op_health_center.group_health_manager"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,confirmed,under_treatment,resolved"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" string="Reference"/>
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Patient">
+                            <field name="student_id"/>
+                            <field name="faculty_id"/>
+                            <field name="visit_datetime"/>
+                            <field name="visit_type"/>
+                            <field name="reported_by"/>
+                        </group>
+                        <group string="Follow-up">
+                            <field name="referred_to_hospital"/>
+                            <field name="hospital_name" invisible="not referred_to_hospital"/>
+                            <field name="follow_up_required"/>
+                            <field name="follow_up_date" invisible="not follow_up_required"/>
+                            <field name="parent_or_guardian_notified"/>
+                            <field name="notified_on" invisible="not parent_or_guardian_notified"/>
+                        </group>
+                    </group>
+                    <group string="Clinical Details" groups="op_health_center.group_health_staff,op_health_center.group_health_manager">
+                        <field name="attended_by"/>
+                        <field name="symptoms"/>
+                        <field name="diagnosis"/>
+                        <field name="treatment_given"/>
+                        <field name="attachment_ids" widget="many2many_binary"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_health_visit_search" model="ir.ui.view">
+        <field name="name">op.health.visit.search</field>
+        <field name="model">op.health.visit</field>
+        <field name="arch" type="xml">
+            <search string="Health Visits">
+                <field name="patient_name"/>
+                <field name="student_id"/>
+                <field name="faculty_id"/>
+                <field name="attended_by"/>
+                <separator/>
+                <filter string="My Visits" name="my_visits" domain="[('attended_by.user_id', '=', uid)]"/>
+                <filter string="This Month" name="this_month" domain="[('visit_datetime', '&gt;=', context_today().strftime('%Y-%m-01'))]"/>
+                <filter string="Referred" name="referred" domain="[('referred_to_hospital', '=', True)]"/>
+                <filter string="Follow-up Required" name="follow_up" domain="[('follow_up_required', '=', True)]"/>
+                <group name="group_by">
+                    <filter string="Status" name="group_state" context="{'group_by': 'state'}"/>
+                    <filter string="Visit Type" name="group_visit_type" context="{'group_by': 'visit_type'}"/>
+                    <filter string="Patient Type" name="group_patient_type" context="{'group_by': 'patient_type'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_health_visit" model="ir.actions.act_window">
+        <field name="name">Health Visits</field>
+        <field name="res_model">op.health.visit</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="search_view_id" ref="view_health_visit_search"/>
+    </record>
+</odoo>

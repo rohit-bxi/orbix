@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_op_faculty_form_health" model="ir.ui.view">
+        <field name="name">op.faculty.form.health</field>
+        <field name="model">op.faculty</field>
+        <field name="inherit_id" ref="openeducat_core.view_op_faculty_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button class="oe_stat_button" type="object" name="action_view_health_visits" icon="fa-stethoscope"
+                        groups="op_health_center.group_health_staff,op_health_center.group_health_manager,openeducat_core.group_op_back_office_admin">
+                    <field string="Visits" name="visit_count" widget="statinfo"/>
+                </button>
+                <button class="oe_stat_button" type="object" name="action_view_vaccinations" icon="fa-medkit"
+                        groups="op_health_center.group_health_staff,op_health_center.group_health_manager,openeducat_core.group_op_back_office_admin">
+                    <field string="Vaccinations" name="vaccination_count" widget="statinfo"/>
+                </button>
+                <button class="oe_stat_button" type="object" name="action_view_checkups" icon="fa-heartbeat"
+                        groups="op_health_center.group_health_staff,op_health_center.group_health_manager,openeducat_core.group_op_back_office_admin">
+                    <field string="Checkups" name="checkup_count" widget="statinfo"/>
+                </button>
+            </xpath>
+            <xpath expr="//widget[@name='web_ribbon']" position="after">
+                <widget name="web_ribbon" title="Medical Alert" bg_color="text-bg-danger" invisible="not medical_alert"/>
+            </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page string="Health Profile" name="health_profile"
+                      groups="op_health_center.group_health_staff,op_health_center.group_health_manager,openeducat_core.group_op_back_office_admin">
+                    <group>
+                        <group string="Medical Profile">
+                            <field name="is_allergy"/>
+                            <field name="allergy" invisible="not is_allergy"/>
+                            <field name="chronic_conditions"/>
+                            <field name="disabilities"/>
+                            <field name="dietary_restrictions"/>
+                        </group>
+                        <group string="Care Contacts">
+                            <field name="primary_physician"/>
+                            <field name="physician_contact"/>
+                            <field name="insurance_provider"/>
+                            <field name="insurance_policy_no"/>
+                            <field name="last_checkup_date" readonly="1"/>
+                        </group>
+                    </group>
+                    <group string="Medical Notes">
+                        <field name="medical_notes" nolabel="1"/>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

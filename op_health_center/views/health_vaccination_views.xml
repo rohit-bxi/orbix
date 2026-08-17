@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_health_vaccination_list" model="ir.ui.view">
+        <field name="name">op.health.vaccination.list</field>
+        <field name="model">op.health.vaccination</field>
+        <field name="arch" type="xml">
+            <list string="Vaccinations" decoration-danger="state in ('missed', 'cancelled')" decoration-success="state == 'completed'">
+                <field name="name"/>
+                <field name="patient_type"/>
+                <field name="patient_name"/>
+                <field name="vaccine_id"/>
+                <field name="dose_number"/>
+                <field name="scheduled_date" optional="hide"/>
+                <field name="date_administered"/>
+                <field name="next_due_date"/>
+                <field name="administered_by" optional="hide"/>
+                <field name="state" widget="badge"
+                       decoration-info="state == 'scheduled'"
+                       decoration-success="state == 'completed'"
+                       decoration-danger="state in ('missed', 'cancelled')"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_health_vaccination_form" model="ir.ui.view">
+        <field name="name">op.health.vaccination.form</field>
+        <field name="model">op.health.vaccination</field>
+        <field name="arch" type="xml">
+            <form string="Vaccination">
+                <header>
+                    <button name="action_complete" type="object" string="Mark Completed" class="oe_highlight" invisible="state != 'scheduled'"/>
+                    <button name="action_miss" type="object" string="Mark Missed" invisible="state != 'scheduled'"/>
+                    <button name="action_cancel" type="object" string="Cancel" invisible="state in ('completed', 'cancelled')"/>
+                    <button name="action_reset" type="object" string="Reset to Scheduled" invisible="state == 'scheduled'" groups="op_health_center.group_health_manager"/>
+                    <field name="state" widget="statusbar" statusbar_visible="scheduled,completed"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" string="Reference"/>
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Patient">
+                            <field name="student_id"/>
+                            <field name="faculty_id"/>
+                            <field name="vaccine_id"/>
+                            <field name="dose_number"/>
+                        </group>
+                        <group string="Schedule">
+                            <field name="scheduled_date"/>
+                            <field name="date_administered"/>
+                            <field name="next_due_date"/>
+                            <field name="administered_by"/>
+                            <field name="batch_no"/>
+                        </group>
+                    </group>
+                    <group string="Certificates">
+                        <field name="certificate_ids" widget="many2many_binary" nolabel="1"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_health_vaccination_search" model="ir.ui.view">
+        <field name="name">op.health.vaccination.search</field>
+        <field name="model">op.health.vaccination</field>
+        <field name="arch" type="xml">
+            <search string="Vaccinations">
+                <field name="patient_name"/>
+                <field name="student_id"/>
+                <field name="faculty_id"/>
+                <field name="vaccine_id"/>
+                <separator/>
+                <filter string="Due This Month" name="due_this_month"
+                        domain="[('next_due_date', '&gt;=', context_today().strftime('%Y-%m-%d')), ('next_due_date', '&lt;=', (context_today() + relativedelta(days=30)).strftime('%Y-%m-%d'))]"/>
+                <filter string="Missed" name="missed" domain="[('state', '=', 'missed')]"/>
+                <group name="group_by">
+                    <filter string="Status" name="group_state" context="{'group_by': 'state'}"/>
+                    <filter string="Vaccine" name="group_vaccine" context="{'group_by': 'vaccine_id'}"/>
+                    <filter string="Patient Type" name="group_patient_type" context="{'group_by': 'patient_type'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_health_vaccination" model="ir.actions.act_window">
+        <field name="name">Vaccinations</field>
+        <field name="res_model">op.health.vaccination</field>
+        <field name="view_mode">list,form,graph,pivot</field>
+        <field name="search_view_id" ref="view_health_vaccination_search"/>
+    </record>
+</odoo>

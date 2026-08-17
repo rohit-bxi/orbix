@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <template id="visitor_report_pdf_template">
+        <t t-call="web.basic_layout">
+            <div class="page">
+                <h1 style="text-align:center;text-decoration:underline;">Visitor Report</h1>
+                <span>From date: <t t-out="from_date"/></span>  <p>To Date: <t t-out="to_date"/></p>
+                <br/>
+                <table class="table table-bordered" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th class="text-start">Name</th>
+                            <th>Mobile</th>
+                            <th class="text-start">Entry Date</th>
+                            <th>Refer Person</th>
+                            <th>Reason</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <t t-foreach="all_data" t-as="data">
+                            <t t-if="data">
+                                <tr>
+                                    <td class="text-end">
+                                        <t  t-out="data['name']"/>
+                                    </td>
+                                    <td class="text-center">
+                                        <t t-out="data['mobile']"/>
+                                    </td>
+                                    <td class="text-center">
+                                        <t t-out="data['entry_date']"/>
+                                    </td>
+                                    <td class="text-center">
+                                        <t t-out="data['refer_person']"/>
+                                    </td>
+                                    <td class="text-center">
+                                        <t t-out="data['reason']"/>
+                                    </td>
+                                </tr>
+                            </t>
+                        </t>
+                    </tbody>
+                </table>
+            </div>
+        </t>
+    </template>
+
+</odoo>

@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <data noupdate="1">
+    <record model="ir.module.category" id="visitor_category">
+        <field name="name">Visitor Management System  </field>
+        <field name="description"> Visitor Management</field>
+        <field name="sequence">11</field>
+    </record>
+
+    <!-- Odoo 19: res.groups no longer has category_id directly; groups are
+         attached to an ir.module.category via an intermediate res.groups.privilege record -->
+    <record model="res.groups.privilege" id="visitor_privilege">
+        <field name="name">Visitor Management System</field>
+        <field name="category_id" ref="visitor_category"/>
+    </record>
+
+    <record id="group_visitor_officer" model="res.groups">
+        <field name="name">Receptionist </field>
+          <field name="privilege_id" ref="visitor_privilege"/>
+    </record>
+
+     <record id="officer_visitor_access" model="ir.rule">
+            <field name="name">Receptionist Role</field>
+            <field name="model_id" ref="model_visitor_data"/>
+            <field name="groups" eval="[(4, ref('group_visitor_officer'))]"/>
+            <field name="perm_read" eval="1"/>
+            <field name="perm_write" eval="1"/>
+            <field name="perm_create" eval="1"/>
+            <field name="perm_unlink" eval="0"/>
+<!--            <field name="domain_force">[('user_id','=',user.id)]</field>-->
+     </record>
+
+     <record id="officer_visit_access" model="ir.rule">
+            <field name="name">Receptionist Role for Visit</field>
+            <field name="model_id" ref="model_visit_data"/>
+            <field name="groups" eval="[(4, ref('group_visitor_officer'))]"/>
+            <field name="perm_read" eval="1"/>
+            <field name="perm_write" eval="1"/>
+            <field name="perm_create" eval="1"/>
+            <field name="perm_unlink" eval="0"/>
+<!--            <field name="domain_force">[('user_id','=',user.id)]</field>-->
+     </record>
+
+
+    <record id="group_visitor_management" model="res.groups">
+       <field name="name">Visitor Management</field>
+       <field name="privilege_id" ref="visitor_privilege"/>
+    </record>
+
+     <record id="management_visitor_access" model="ir.rule">
+            <field name="name">Management Role</field>
+            <field name="model_id" ref="model_visitor_data"/>
+            <field name="groups" eval="[(4, ref('group_visitor_management'))]"/>
+            <field name="perm_read" eval="1"/>
+            <field name="perm_write" eval="1"/>
+            <field name="perm_create" eval="1"/>
+            <field name="perm_unlink" eval="1"/>
+<!--            <field name="domain_force">[]</field>-->
+     </record>
+
+
+     <record id="management_visit_access" model="ir.rule">
+            <field name="name">Management Role</field>
+            <field name="model_id" ref="model_visit_data"/>
+            <field name="groups" eval="[(4, ref('group_visitor_management'))]"/>
+            <field name="perm_read" eval="1"/>
+            <field name="perm_write" eval="1"/>
+            <field name="perm_create" eval="1"/>
+            <field name="perm_unlink" eval="1"/>
+<!--            <field name="domain_force">[]</field>-->
+     </record>
+<!--('id','=','user.id')-->
+</data>
+</odoo>

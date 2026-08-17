@@ -5,7 +5,7 @@ from odoo.http import request
 
 
 class HrAttendance(http.Controller):
-    @http.route('/employee/images', type="json", auth="public")
+    @http.route('/employee/images', type="jsonrpc", auth="public")
     def get_employee_images(self, employee_id=None):
         if employee_id:
             employees = request.env['hr.employee'].sudo().search([('id', '=', employee_id)])

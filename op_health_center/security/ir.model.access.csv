@@ -1,0 +1,16 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_health_vaccine_type_manager,health.vaccine.type.manager,model_op_health_vaccine_type,group_health_manager,1,1,1,1
+access_health_vaccine_type_staff,health.vaccine.type.staff,model_op_health_vaccine_type,group_health_staff,1,0,1,0
+access_health_visit_manager,health.visit.manager,model_op_health_visit,group_health_manager,1,1,1,1
+access_health_visit_staff,health.visit.staff,model_op_health_visit,group_health_staff,1,1,1,0
+access_health_visit_faculty,health.visit.faculty,model_op_health_visit,openeducat_core.group_op_faculty,1,0,1,0
+access_health_visit_back_office,health.visit.back_office,model_op_health_visit,openeducat_core.group_op_back_office_admin,1,0,0,0
+access_health_vaccination_manager,health.vaccination.manager,model_op_health_vaccination,group_health_manager,1,1,1,1
+access_health_vaccination_staff,health.vaccination.staff,model_op_health_vaccination,group_health_staff,1,1,1,0
+access_health_vaccination_back_office,health.vaccination.back_office,model_op_health_vaccination,openeducat_core.group_op_back_office_admin,1,0,0,0
+access_health_checkup_manager,health.checkup.manager,model_op_health_checkup,group_health_manager,1,1,1,1
+access_health_checkup_staff,health.checkup.staff,model_op_health_checkup,group_health_staff,1,1,1,0
+access_health_checkup_back_office,health.checkup.back_office,model_op_health_checkup,openeducat_core.group_op_back_office_admin,1,0,0,0
+access_health_dashboard_staff,health.dashboard.staff,model_op_health_dashboard,group_health_staff,1,1,1,1
+access_health_certificate_wizard_staff,health.certificate.wizard.staff,model_op_health_certificate_wizard,group_health_staff,1,1,1,1
+access_health_visit_report_wizard_staff,health.visit.report.wizard.staff,model_op_health_visit_report_wizard,group_health_staff,1,1,1,1

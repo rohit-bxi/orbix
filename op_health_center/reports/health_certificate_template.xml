@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <template id="health_certificate_pdf_template">
+        <t t-call="web.basic_layout">
+            <div class="page">
+                <h1 style="text-align:center;text-decoration:underline;">
+                    <t t-out="certificate_type"/>
+                </h1>
+                <p>Certificate No.: <t t-out="certificate_no"/></p>
+                <p>Date: <t t-out="certificate_date"/></p>
+                <br/>
+                <p>This is to certify that <strong><t t-out="patient_name"/></strong>
+                    (Blood Group: <t t-out="blood_group or 'N/A'"/>) has been examined at the school health center.
+                </p>
+
+                <t t-if="latest_checkup">
+                    <h3>Latest Checkup</h3>
+                    <table class="table table-bordered" style="width:100%">
+                        <tbody>
+                            <tr>
+                                <td>Checkup Date</td>
+                                <td t-out="latest_checkup['checkup_date']"/>
+                            </tr>
+                            <tr>
+                                <td>Height (cm)</td>
+                                <td t-out="latest_checkup['height_cm']"/>
+                            </tr>
+                            <tr>
+                                <td>Weight (kg)</td>
+                                <td t-out="latest_checkup['weight_kg']"/>
+                            </tr>
+                            <tr>
+                                <td>BMI</td>
+                                <td t-out="latest_checkup['bmi']"/>
+                            </tr>
+                            <tr>
+                                <td>Fitness Status</td>
+                                <td t-out="latest_checkup['fitness_status']"/>
+                            </tr>
+                            <tr>
+                                <td>Remarks</td>
+                                <td t-out="latest_checkup['general_remarks'] or ''"/>
+                            </tr>
+                        </tbody>
+                    </table>
+                </t>
+
+                <t t-if="vaccinations">
+                    <h3>Vaccination History</h3>
+                    <table class="table table-bordered" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>Vaccine</th>
+                                <th>Dose</th>
+                                <th>Date Administered</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-foreach="vaccinations" t-as="vac">
+                                <tr>
+                                    <td t-out="vac['vaccine_name']"/>
+                                    <td t-out="vac['dose_number']"/>
+                                    <td t-out="vac['date_administered']"/>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+                </t>
+
+                <br/>
+                <br/>
+                <div style="text-align:right;">
+                    <p>_______________________</p>
+                    <p>Signature (Health Staff)</p>
+                </div>
+            </div>
+        </t>
+    </template>
+</odoo>

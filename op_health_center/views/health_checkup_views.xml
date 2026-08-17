@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_health_checkup_list" model="ir.ui.view">
+        <field name="name">op.health.checkup.list</field>
+        <field name="model">op.health.checkup</field>
+        <field name="arch" type="xml">
+            <list string="Checkups" decoration-danger="fitness_status == 'unfit'" decoration-warning="fitness_status == 'needs_attention'">
+                <field name="name"/>
+                <field name="patient_type"/>
+                <field name="patient_name"/>
+                <field name="checkup_date"/>
+                <field name="checkup_type"/>
+                <field name="bmi" optional="hide"/>
+                <field name="bmi_category" optional="hide"/>
+                <field name="fitness_status"/>
+                <field name="conducted_by" optional="hide"/>
+                <field name="state" widget="badge"
+                       decoration-info="state == 'scheduled'"
+                       decoration-success="state == 'completed'"
+                       decoration-danger="state == 'cancelled'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_health_checkup_form" model="ir.ui.view">
+        <field name="name">op.health.checkup.form</field>
+        <field name="model">op.health.checkup</field>
+        <field name="arch" type="xml">
+            <form string="Checkup">
+                <header>
+                    <button name="action_complete" type="object" string="Mark Completed" class="oe_highlight" invisible="state != 'scheduled'"/>
+                    <button name="action_cancel" type="object" string="Cancel" invisible="state in ('completed', 'cancelled')"/>
+                    <button name="action_reset" type="object" string="Reset to Scheduled" invisible="state == 'scheduled'" groups="op_health_center.group_health_manager"/>
+                    <field name="state" widget="statusbar" statusbar_visible="scheduled,completed"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" string="Reference"/>
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Patient">
+                            <field name="student_id"/>
+                            <field name="faculty_id"/>
+                            <field name="checkup_date"/>
+                            <field name="checkup_type"/>
+                            <field name="conducted_by"/>
+                        </group>
+                        <group string="Measurements">
+                            <field name="height_cm"/>
+                            <field name="weight_kg"/>
+                            <field name="bmi" readonly="1"/>
+                            <field name="bmi_category" readonly="1"/>
+                            <field name="blood_pressure"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Screening">
+                            <field name="vision_left"/>
+                            <field name="vision_right"/>
+                            <field name="dental_status"/>
+                        </group>
+                        <group string="Outcome">
+                            <field name="fitness_status"/>
+                        </group>
+                    </group>
+                    <group string="Remarks">
+                        <field name="general_remarks" nolabel="1"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_health_checkup_search" model="ir.ui.view">
+        <field name="name">op.health.checkup.search</field>
+        <field name="model">op.health.checkup</field>
+        <field name="arch" type="xml">
+            <search string="Checkups">
+                <field name="patient_name"/>
+                <field name="student_id"/>
+                <field name="faculty_id"/>
+                <separator/>
+                <filter string="Unfit" name="unfit" domain="[('fitness_status', '=', 'unfit')]"/>
+                <filter string="Needs Attention" name="needs_attention" domain="[('fitness_status', '=', 'needs_attention')]"/>
+                <group name="group_by">
+                    <filter string="Status" name="group_state" context="{'group_by': 'state'}"/>
+                    <filter string="Checkup Type" name="group_checkup_type" context="{'group_by': 'checkup_type'}"/>
+                    <filter string="Fitness Status" name="group_fitness_status" context="{'group_by': 'fitness_status'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_health_checkup" model="ir.actions.act_window">
+        <field name="name">Checkups</field>
+        <field name="res_model">op.health.checkup</field>
+        <field name="view_mode">list,form,graph,pivot</field>
+        <field name="search_view_id" ref="view_health_checkup_search"/>
+    </record>
+</odoo>

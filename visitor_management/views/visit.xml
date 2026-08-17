@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <!-- List View -->
+    <record id="visit_tree_view" model="ir.ui.view">
+        <field name="name">visit.list.view</field>
+        <field name="model">visit.data</field>
+        <field name="arch" type="xml">
+            <list decoration-muted="state == 'checkout'" string="Visits">
+                <field name="v_name"/>
+                <field name="v_phn" widget="phone"/>
+                <field name="I_AM"/>
+                <field name="v_gender" optional="hide"/>
+                <field name="v_company"/>
+                <field name="v_email" widget="email" optional="hide"/>
+                <field name="v_address" optional="hide"/>
+                <field name="v_purpose" optional="hide"/>
+                <field name="employee_id"/>
+                <field name="work_phone" widget="phone" optional="hide"/>
+                <field name="dept" optional="show"/>
+                <field name="job_title" optional="hide"/>
+                <field name="check_in_date"/>
+                <field name="check_out_date" optional="show"/>
+                <field name="state" widget="badge"
+                       decoration-info="state == 'draft'"
+                       decoration-warning="state == 'checkin'"
+                       decoration-success="state == 'checkout'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="visit_search_view" model="ir.ui.view">
+        <field name="name">visit.search.view</field>
+        <field name="model">visit.data</field>
+        <field name="arch" type="xml">
+            <search string="Visits">
+                <field name="v_name"/>
+                <field name="v_phn"/>
+                <field name="v_company"/>
+                <field name="employee_id"/>
+                <field name="dept"/>
+                <filter string="Today" name="today" domain="[('check_in_date', '&gt;=', context_today().strftime('%Y-%m-%d'))]"/>
+                <separator/>
+                <filter string="Draft" name="draft" domain="[('state', '=', 'draft')]"/>
+                <filter string="Checked In" name="checkin" domain="[('state', '=', 'checkin')]"/>
+                <filter string="Checked Out" name="checkout" domain="[('state', '=', 'checkout')]"/>
+                <separator/>
+                <filter string="Male" name="male" domain="[('v_gender', '=', 'male')]"/>
+                <filter string="Female" name="female" domain="[('v_gender', '=', 'female')]"/>
+                <group name="group_by">
+                    <filter string="Status" name="group_state" context="{'group_by': 'state'}"/>
+                    <filter string="Employee" name="group_employee" context="{'group_by': 'employee_id'}"/>
+                    <filter string="Department" name="group_dept" context="{'group_by': 'dept'}"/>
+                    <filter string="Check-In Date" name="group_checkin_date" context="{'group_by': 'check_in_date:day'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="visit_form_view" model="ir.ui.view">
+        <field name="name">visit.form.view</field>
+        <field name="model">visit.data</field>
+        <field name="arch" type="xml">
+            <form string="Visit">
+                <header>
+                    <button name="check_in_action" type="object" class="oe_highlight" invisible="state != 'draft'" string="Check-In"/>
+                    <button name="check_out_action" type="object" class="oe_highlight" string="Check-Out"
+                            invisible="check_out_date == False or state == 'checkout'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,checkin,checkout"/>
+                </header>
+                <sheet>
+                    <div name="button_box" class="oe_button_box">
+                        <button class="oe_stat_button" type="object" name="visitor_entry_count" icon="fa-users" string="All Entry">
+                            <field string="Total Visit" name="entry_count" readonly="1"/>
+                        </button>
+                    </div>
+                    <field name="v_image" widget="image" class="oe_avatar" options="{'preview_image': 'v_image'}"/>
+                    <div class="oe_title">
+                        <label for="v_name" string="Visitor"/>
+                        <h1>
+                            <field name="v_name"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Visitor Details">
+                            <field name="I_AM"/>
+                            <field name="v_phn" widget="phone"/>
+                            <field name="v_gender"/>
+                            <field name="v_company"/>
+                            <field name="v_email" widget="email"/>
+                            <field name="v_address"/>
+                            <field name="v_purpose"/>
+                        </group>
+                        <group string="Host Details">
+                            <field name="employee_id"/>
+                            <field name="image_1920" widget="image" class="oe_avatar" options="{'preview_image': 'image_1920'}"/>
+                            <field name="work_phone" widget="phone"/>
+                            <field name="work_email" widget="email"/>
+                            <field name="dept"/>
+                            <field name="job_title"/>
+                        </group>
+                    </group>
+                    <group string="Check-In and Check-Out Details">
+                        <group>
+                            <field name="check_in_date"/>
+                        </group>
+                        <group>
+                            <field name="check_out_date" widget="datetime"/>
+                        </group>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- Kanban View -->
+    <record id="visit_kanban" model="ir.ui.view">
+        <field name="name">visit.kanban.view</field>
+        <field name="model">visit.data</field>
+        <field name="arch" type="xml">
+            <kanban>
+                <templates>
+                    <t t-name="card">
+                        <div class="o_kanban_image">
+                            <img height="80" width="80"
+                                 t-att-src="kanban_image('visit.data', 'v_image', record.id.value)"
+                                 alt="image"/>
+                        </div>
+                        <div class="oe_kanban_details">
+                            <strong>
+                                <ul>
+                                    <li>Name :
+                                        <field name="v_name"/>
+                                    </li>
+                                    <li>Phone:
+                                        <field name="v_phn"/>
+                                    </li>
+                                    <li>Gender:
+                                        <field name="v_gender"/>
+                                    </li>
+                                    <li>Address:
+                                        <field name="v_address"/>
+                                    </li>
+                                </ul>
+                            </strong>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Window Actions -->
+    <record id="action_visit" model="ir.actions.act_window">
+        <field name="name">Visit</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">visit.data</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="search_view_id" ref="visit_search_view"/>
+    </record>
+    <record id="action_visit_checkout" model="ir.actions.act_window">
+        <field name="name">Check-Out</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">visit.data</field>
+        <field name="domain">[('state','=','checkin')]</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="search_view_id" ref="visit_search_view"/>
+    </record>
+    <!-- Menu Sections -->
+    <menuitem id="visitor_root" name="Visitor Management" sequence="1" web_icon="visitor_management,static/description/icon.png"/>
+    <menuitem id="visit" name="Check-In Visitor" parent="visitor_management.visitor_root" action="action_visit" sequence="2"/>
+    <menuitem id="checkout" name="Check-Out" parent="visitor_management.visitor_root" action="action_visit_checkout" sequence="3"/>
+</odoo>

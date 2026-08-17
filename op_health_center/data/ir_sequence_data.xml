@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="seq_health_visit" model="ir.sequence">
+        <field name="name">Health Visit</field>
+        <field name="code">op.health.visit</field>
+        <field name="prefix">VHC/%(year)s/</field>
+        <field name="padding">4</field>
+        <field name="company_id" eval="False"/>
+    </record>
+
+    <record id="seq_health_vaccination" model="ir.sequence">
+        <field name="name">Health Vaccination</field>
+        <field name="code">op.health.vaccination</field>
+        <field name="prefix">VAC/%(year)s/</field>
+        <field name="padding">4</field>
+        <field name="company_id" eval="False"/>
+    </record>
+
+    <record id="seq_health_checkup" model="ir.sequence">
+        <field name="name">Health Checkup</field>
+        <field name="code">op.health.checkup</field>
+        <field name="prefix">CHK/%(year)s/</field>
+        <field name="padding">4</field>
+        <field name="company_id" eval="False"/>
+    </record>
+
+    <record id="seq_health_certificate" model="ir.sequence">
+        <field name="name">Health Certificate</field>
+        <field name="code">op.health.certificate</field>
+        <field name="prefix">CERT/%(year)s/</field>
+        <field name="padding">4</field>
+        <field name="company_id" eval="False"/>
+    </record>
+</odoo>

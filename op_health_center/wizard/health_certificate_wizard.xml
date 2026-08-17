@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_health_certificate_wizard_form" model="ir.ui.view">
+        <field name="name">op.health.certificate.wizard.form</field>
+        <field name="model">op.health.certificate.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Print Medical Certificate">
+                <group>
+                    <field name="patient_type"/>
+                    <field name="student_id" invisible="patient_type != 'student'" required="patient_type == 'student'"/>
+                    <field name="faculty_id" invisible="patient_type != 'faculty'" required="patient_type == 'faculty'"/>
+                    <field name="certificate_type"/>
+                    <field name="date_from"/>
+                    <field name="date_to"/>
+                </group>
+                <footer>
+                    <button string="Print" class="btn btn-primary" type="object" name="print_certificate" icon="fa-print"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_health_certificate_wizard" model="ir.actions.act_window">
+        <field name="name">Print Medical Certificate</field>
+        <field name="res_model">op.health.certificate.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

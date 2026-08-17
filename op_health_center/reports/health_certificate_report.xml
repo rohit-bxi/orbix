@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="action_report_health_certificate" model="ir.actions.report">
+        <field name="name">Medical Certificate</field>
+        <field name="model">op.health.certificate.wizard</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">op_health_center.health_certificate_pdf_template</field>
+        <field name="report_file">op_health_center.health_certificate_pdf_template</field>
+        <field name="print_report_name">'medical-certificate'</field>
+        <field name="binding_type">report</field>
+    </record>
+</odoo>
