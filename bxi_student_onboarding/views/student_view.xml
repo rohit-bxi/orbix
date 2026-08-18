@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_op_student_form_enrollment_status" model="ir.ui.view">
+        <field name="name">op.student.form.enrollment.status</field>
+        <field name="model">op.student</field>
+        <field name="inherit_id" ref="openeducat_core.view_op_student_form"/>
+        <field name="arch" type="xml">
+            <field name="admission_date" position="after">
+                <field name="enrollment_status"/>
+            </field>
+        </field>
+    </record>
+</odoo>
