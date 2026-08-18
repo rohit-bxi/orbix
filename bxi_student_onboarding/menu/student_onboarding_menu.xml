@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_bxi_student_onboarding"
+              name="Student Onboarding"
+              parent="openeducat_core.menu_op_school_root"
+              action="action_bxi_student_onboarding"
+              sequence="5"
+              groups="openeducat_core.group_op_back_office_admin,openeducat_core.group_op_faculty"/>
+</odoo>

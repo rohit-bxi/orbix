@@ -235,3 +235,14 @@ class OpStudent(models.Model):
                     'tz': self.env.context.get('tz'),
                 })
                 record.user_id = user_id
+
+    def action_view_user(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('User'),
+            'res_model': 'res.users',
+            'view_mode': 'form',
+            'res_id': self.user_id.id,
+            'target': 'current',
+        }

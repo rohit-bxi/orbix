@@ -171,6 +171,17 @@ class OpParent(models.Model):
                 record.user_id = user_id
                 record.name.user_id = user_id
 
+    def action_view_user(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('User'),
+            'res_model': 'res.users',
+            'view_mode': 'form',
+            'res_id': self.user_id.id,
+            'target': 'current',
+        }
+
     @api.model
     def get_import_templates(self):
         return [{

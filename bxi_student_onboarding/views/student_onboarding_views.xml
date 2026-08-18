@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_bxi_student_onboarding_list" model="ir.ui.view">
+        <field name="name">bxi.student.onboarding.list</field>
+        <field name="model">bxi.student.onboarding</field>
+        <field name="arch" type="xml">
+            <list string="Student Onboarding" decoration-success="state == 'done'">
+                <field name="admission_number"/>
+                <field name="full_name"/>
+                <field name="course_id"/>
+                <field name="batch_id"/>
+                <field name="enrollment_status"/>
+                <field name="state"/>
+                <field name="create_date"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_bxi_student_onboarding_form" model="ir.ui.view">
+        <field name="name">bxi.student.onboarding.form</field>
+        <field name="model">bxi.student.onboarding</field>
+        <field name="arch" type="xml">
+            <form string="Student Onboarding">
+                <header>
+                    <button name="action_back" type="object" string="Back"
+                            invisible="state in ('basic_info', 'done')"/>
+                    <button name="action_next" type="object" string="Save &amp; Continue"
+                            class="btn-primary"
+                            invisible="state in ('documents', 'done')"/>
+                    <button name="action_complete_onboarding" type="object"
+                            string="Complete Onboarding" class="btn-primary"
+                            invisible="state != 'documents'"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="basic_info,academic_info,documents,done"/>
+                </header>
+                <sheet>
+                    <widget name="web_ribbon" title="Completed"
+                            invisible="not student_id"/>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_student" type="object"
+                                class="oe_stat_button" icon="fa-user"
+                                invisible="not student_id">
+                            <div class="o_field_widget o_stat_info">
+                                <span class="o_stat_text">View Student</span>
+                            </div>
+                        </button>
+                    </div>
+
+                    <!-- Step 1: Basic Information -->
+                    <div invisible="state != 'basic_info'">
+                        <h2>Personal Details</h2>
+                        <div class="row">
+                            <div class="col-auto">
+                                <field name="image_1920" widget="image"
+                                       class="oe_avatar"
+                                       options="{'size': [128, 128]}"/>
+                                <button name="open_image_capture" type="object"
+                                        string="Face Scan &amp; Upload"
+                                        class="oe_highlight d-block mt-2"/>
+                            </div>
+                            <div class="col">
+                                <group>
+                                    <group>
+                                        <field name="full_name" placeholder="Enter student's full name"/>
+                                        <field name="gender"/>
+                                        <field name="birth_date"/>
+                                    </group>
+                                    <group>
+                                        <field name="email" widget="email"/>
+                                        <field name="phone" widget="phone"/>
+                                        <field name="blood_group"/>
+                                        <field name="nationality"/>
+                                    </group>
+                                </group>
+                                <group string="Address">
+                                    <field name="street" placeholder="Street..."/>
+                                    <field name="street2" placeholder="Street2"/>
+                                    <field name="city" placeholder="City"/>
+                                    <field name="state_id" placeholder="State"
+                                           options="{'no_open': True}"/>
+                                    <field name="zip" placeholder="ZIP"/>
+                                    <field name="country_id" placeholder="Country"
+                                           options="{'no_open': True}"/>
+                                </group>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Academic Details -->
+                    <div invisible="state != 'academic_info'">
+                        <h2>Academic Information</h2>
+                        <group>
+                            <group>
+                                <field name="admission_number"/>
+                                <field name="course_id"/>
+                                <field name="roll_number"/>
+                            </group>
+                            <group>
+                                <field name="admission_date"/>
+                                <field name="batch_id"/>
+                                <field name="enrollment_status"/>
+                            </group>
+                        </group>
+                        <group string="Parent/Guardian Information">
+                            <field name="parent_id"
+                                   placeholder="Search an existing parent, or use &quot;Create and edit...&quot; to add one"/>
+                        </group>
+                    </div>
+
+                    <!-- Step 3: Upload Documents -->
+                    <div invisible="state not in ('documents', 'done')">
+                        <h2>Upload Documents</h2>
+                        <group>
+                            <field name="medical_record_ids" widget="many2many_binary"/>
+                            <field name="birth_certificate_ids" widget="many2many_binary"/>
+                            <field name="transfer_certificate_ids" widget="many2many_binary"/>
+                            <field name="previous_school_certificate_ids" widget="many2many_binary"/>
+                        </group>
+                    </div>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_bxi_student_onboarding_search" model="ir.ui.view">
+        <field name="name">bxi.student.onboarding.search</field>
+        <field name="model">bxi.student.onboarding</field>
+        <field name="arch" type="xml">
+            <search string="Student Onboarding">
+                <field name="full_name"/>
+                <field name="admission_number"/>
+                <field name="course_id"/>
+                <field name="batch_id"/>
+                <group>
+                    <filter name="group_state" string="Step" domain="[]" context="{'group_by': 'state'}"/>
+                    <filter name="group_course" string="Class" domain="[]" context="{'group_by': 'course_id'}"/>
+                    <filter name="group_enrollment_status" string="Status" domain="[]" context="{'group_by': 'enrollment_status'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_bxi_student_onboarding" model="ir.actions.act_window">
+        <field name="name">Student Onboarding</field>
+        <field name="res_model">bxi.student.onboarding</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_bxi_student_onboarding_search"/>
+        <field name="context">{'default_state': 'basic_info'}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smart_action">
+                Start onboarding a new student
+            </p>
+        </field>
+    </record>
+
+</odoo>
