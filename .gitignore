@@ -11,6 +11,8 @@ __pycache__/
 build/
 develop-eggs/
 dist/
+!sttl_face_attendance/static/face-api/dist/
+!sttl_face_attendance/static/face-api/dist/**
 downloads/
 eggs/
 .eggs/
