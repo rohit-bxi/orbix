@@ -90,4 +90,11 @@
     margin-top: 10px;
 } */
 
+/* Kiosk screen: nudge the "Scan your badge" card up slightly so its rounded
+   bottom corners no longer overlap the New Set-up / Face check In-Out button
+   row directly below it. */
+.o_hr_kiosk_mode_main .o_mobile_barcode {
+    margin-top: -1rem;
+}
+
 

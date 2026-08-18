@@ -11,7 +11,9 @@ class CaptureEmployeeImage extends Component {
 
     setup() {
         super.setup();
-        this.employee_id = this.props.action.params.employee_id || this.props.action.params.active_id;
+        const params = this.props.action.params;
+        this.resModel = params.res_model || "hr.employee";
+        this.resId = params.res_id || params.employee_id || params.active_id;
         this.orm = useService("orm");
         this.action = useService("action");
         try {
@@ -71,7 +73,7 @@ class CaptureEmployeeImage extends Component {
 
             var imageData = canvas.toDataURL('image/png');
 
-            this.orm.call('hr.employee', 'register_face',[this.employee_id, imageData])
+            this.orm.call(this.resModel, 'register_face', [this.resId, imageData])
             .then(function (result) {
                 self._on_close();
             });

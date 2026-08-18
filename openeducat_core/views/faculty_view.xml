@@ -80,6 +80,16 @@
                     </header>
                     <sheet>
                         <div name="button_box" class="oe_button_box">
+                            <button name="action_view_user" class="btn oe_stat_button" icon="fa-user-circle" type="object" invisible="not user_id">
+                                <div class="o_field_widget o_stat_info">
+                                    <span class="o_stat_text">User</span>
+                                </div>
+                            </button>
+                            <button name="action_view_employee" class="btn oe_stat_button" icon="fa-id-badge" type="object" invisible="not emp_id">
+                                <div class="o_field_widget o_stat_info">
+                                    <span class="o_stat_text">Employee</span>
+                                </div>
+                            </button>
                         </div>
 
                         <field name="active" invisible="True"/>

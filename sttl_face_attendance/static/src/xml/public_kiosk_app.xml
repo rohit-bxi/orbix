@@ -2,6 +2,12 @@
 <template xml:space="preserve">
 
     <t t-name="sttl_face_attendance.public_kiosk_app_custom" t-inherit="hr_attendance.public_kiosk_app" t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('o_hr_kiosk_mode_main') and hasclass('mt-5')]" position="attributes">
+            <attribute name="class" add="d-flex flex-column flex-sm-row gap-3 align-items-center justify-content-center" separator=" "/>
+        </xpath>
+        <xpath expr="//button[hasclass('rounded-3') and hasclass('mt-5')]" position="attributes">
+            <attribute name="class" remove="mt-5" separator=" "/>
+        </xpath>
         <xpath expr="//button[hasclass('btn btn-light btn-lg rounded-3')]" position="after">
             <t t-if="this.props.kioskMode !== 'barcode' and this.state.active_display === 'main'">
                 <button t-on-click="() => this.initiateFaceAttendance(event)"  class="btn btn-light btn-lg rounded-3">

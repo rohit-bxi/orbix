@@ -62,6 +62,7 @@ class OpFaculty(models.Model):
     faculty_subject_ids = fields.Many2many('op.subject', string='Subject(s)',
                                            tracking=True)
     emp_id = fields.Many2one('hr.employee', 'HR Employee')
+    user_id = fields.Many2one('res.users', 'User', ondelete="cascade")
     main_department_id = fields.Many2one(
         'op.department', 'Main Department',
         default=lambda self:
@@ -212,6 +213,8 @@ class OpFaculty(models.Model):
                 'country_id': record.nationality.id,
                 'sex': record.gender,
             }
+            if record.image_1920:
+                vals['image_1920'] = record.image_1920
             if existing_user:
                 vals['user_id'] = existing_user.id
                 # `work_contact_id` is hr.employee's canonical partner
@@ -223,6 +226,28 @@ class OpFaculty(models.Model):
             emp_id = self.env['hr.employee'].create(vals)
             record.write({'emp_id': emp_id.id})
             record.partner_id.write({'partner_share': True, 'employee': True})
+
+    def action_view_user(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('User'),
+            'res_model': 'res.users',
+            'view_mode': 'form',
+            'res_id': self.user_id.id,
+            'target': 'current',
+        }
+
+    def action_view_employee(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Employee'),
+            'res_model': 'hr.employee',
+            'view_mode': 'form',
+            'res_id': self.emp_id.id,
+            'target': 'current',
+        }
 
     @api.model
     def get_import_templates(self):

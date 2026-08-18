@@ -1,0 +1,12 @@
+<odoo>
+    <record id="faculty_face_capture" model="ir.ui.view">
+        <field name="name">op.faculty.face.capture</field>
+        <field name="model">op.faculty</field>
+        <field name="inherit_id" ref="openeducat_core.view_op_faculty_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[hasclass('o_employee_avatar')]/field[@name='image_1920']" position="after">
+                <button name="open_image_capture" type="object" id="faculty_image_capture_button" class="oe_highlight" string="CLICK IMAGE"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
