@@ -124,9 +124,7 @@
                 <templates>
                     <t t-name="card">
                         <div class="o_kanban_image">
-                            <img height="80" width="80"
-                                 t-att-src="kanban_image('visit.data', 'v_image', record.id.value)"
-                                 alt="image"/>
+                            <field name="v_image" widget="image" class="o_kanban_image_fill_left" options="{'img_class': 'o_kanban_image'}"/>
                         </div>
                         <div class="oe_kanban_details">
                             <strong>
