@@ -7,7 +7,7 @@
         <field name="arch" type="xml">
             <list decoration-muted="state == 'checkout'" string="Visits">
                 <field name="v_name"/>
-                <field name="v_phn" widget="phone"/>
+                <field name="v_phn"/>
                 <field name="I_AM"/>
                 <field name="v_gender" optional="hide"/>
                 <field name="v_company"/>
@@ -85,7 +85,7 @@
                     <group>
                         <group string="Visitor Details">
                             <field name="I_AM"/>
-                            <field name="v_phn" widget="phone"/>
+                            <field name="v_phn"/>
                             <field name="v_gender"/>
                             <field name="v_company"/>
                             <field name="v_email" widget="email"/>

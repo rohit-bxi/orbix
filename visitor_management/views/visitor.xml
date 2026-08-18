@@ -8,7 +8,7 @@
             <list string="Visitors">
                 <field name="visitor_seq"/>
                 <field name="v_name"/>
-                <field name="v_phn" widget="phone"/>
+                <field name="v_phn"/>
                 <field name="I_AM"/>
                 <field name="v_gender" optional="hide"/>
                 <field name="v_company"/>
@@ -67,7 +67,7 @@
                     <group>
                         <group>
                             <field name="I_AM"/>
-                            <field name="v_phn" widget="phone"/>
+                            <field name="v_phn"/>
                             <field name="v_gender"/>
                         </group>
                         <group>
