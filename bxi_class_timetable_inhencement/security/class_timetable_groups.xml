@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <record id="module_category_class_timetable" model="ir.module.category">
-        <field name="name">Class &amp; Timetable</field>
+        <field name="name">Class and Timetable</field>
         <field name="sequence">29</field>
     </record>
 
     <record id="privilege_class_timetable" model="res.groups.privilege">
-        <field name="name">Class &amp; Timetable</field>
+        <field name="name">Class and Timetable</field>
         <field name="sequence">10</field>
         <field name="category_id" ref="module_category_class_timetable"/>
     </record>

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <menuitem id="menu_class_timetable_root" name="Class &amp; Timetable"
+    <menuitem id="menu_class_timetable_root" name="Class and Timetable"
               parent="openeducat_core.menu_op_school_root"
               sequence="7"
               groups="group_class_timetable_coordinator,group_class_timetable_manager"/>
