@@ -19,15 +19,16 @@
               action="action_curriculum"
               sequence="10"/>
 
-    <menuitem id="menu_smart_book"
-              name="Smart Book"
-              parent="menu_academic_management_root"
-              action="action_smart_book"
-              sequence="20"/>
-
     <menuitem id="menu_subject_mapping"
               name="Subject Mapping"
               parent="menu_academic_management_root"
               action="action_subject_mapping"
-              sequence="30"/>
+              sequence="20"/>
+
+    <!-- Unify the standard Library "Media/Books" entry into the single Smart Book
+         screen instead of keeping two separate menus/UIs for op.media records. -->
+    <record id="openeducat_library.menu_op_sub_media_library" model="ir.ui.menu">
+        <field name="name">Smart Book</field>
+        <field name="action" ref="action_smart_book"/>
+    </record>
 </odoo>
