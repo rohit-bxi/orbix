@@ -120,7 +120,7 @@
                                     ('start_datetime', '&gt;=', (datetime.date.today()-relativedelta(day=1)).strftime('%Y-%m-%d'))]"/>
                     <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
                     <group>
-                        <filter string="Faculty" name="group_by_session_faculty_id"
+                        <filter string="Teacher" name="group_by_session_faculty_id"
                                 domain="[]" context="{'group_by':'faculty_id'}"/>
                         <filter string="Course" name="group_by_session_course_id"
                                 domain="[]" context="{'group_by':'course_id'}"/>
@@ -276,7 +276,7 @@
                                     </div>
                                     <div t-if="record.faculty_id.raw_value"
                                          class="d-flex align-items-center small text-muted text-truncate">
-                                        <i class="fa fa-user me-2 flex-shrink-0" style="width:14px;" title="Faculty"/>
+                                        <i class="fa fa-user me-2 flex-shrink-0" style="width:14px;" title="Teacher"/>
                                         <span class="text-truncate"><field name="faculty_id"/></span>
                                     </div>
                                     <div t-if="record.classroom_id.raw_value"

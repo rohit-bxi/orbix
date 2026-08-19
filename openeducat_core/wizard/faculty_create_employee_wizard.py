@@ -23,7 +23,7 @@ from odoo import fields, models
 
 class WizardOpFacultyEmployee(models.TransientModel):
     _name = 'wizard.op.faculty.employee'
-    _description = "Create Employee and User of Faculty"
+    _description = "Create Employee and User of Teacher"
 
     user_boolean = fields.Boolean("Want to create user too ?", default=True)
 

@@ -1,0 +1,9 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_bxi_timetable_coordinator,bxi.timetable.coordinator,model_bxi_timetable,group_class_timetable_coordinator,1,1,1,0
+access_bxi_timetable_manager,bxi.timetable.manager,model_bxi_timetable,group_class_timetable_manager,1,1,1,1
+access_bxi_timetable_line_coordinator,bxi.timetable.line.coordinator,model_bxi_timetable_line,group_class_timetable_coordinator,1,1,1,1
+access_bxi_timetable_line_manager,bxi.timetable.line.manager,model_bxi_timetable_line,group_class_timetable_manager,1,1,1,1
+access_bxi_add_period_wizard,bxi.add.period.wizard,model_bxi_add_period_wizard,group_class_timetable_coordinator,1,1,1,1
+access_bxi_remove_period_wizard,bxi.remove.period.wizard,model_bxi_remove_period_wizard,group_class_timetable_coordinator,1,1,1,1
+access_bxi_transfer_period_wizard,bxi.transfer.period.wizard,model_bxi_transfer_period_wizard,group_class_timetable_coordinator,1,1,1,1
+access_bxi_reassign_class_wizard,bxi.reassign.class.wizard,model_bxi_reassign_class_wizard,group_class_timetable_coordinator,1,1,1,1

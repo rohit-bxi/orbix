@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_op_timing_form_class_timetable_inherit" model="ir.ui.view">
+        <field name="name">op.timing.form.class.timetable.inherit</field>
+        <field name="model">op.timing</field>
+        <field name="inherit_id" ref="openeducat_timetable.view_op_timing_form"/>
+        <field name="arch" type="xml">
+            <field name="am_pm" position="after">
+                <field name="start_time" widget="float_time"/>
+                <field name="end_time" widget="float_time"/>
+                <field name="is_break"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="view_op_timing_tree_class_timetable_inherit" model="ir.ui.view">
+        <field name="name">op.timing.list.class.timetable.inherit</field>
+        <field name="model">op.timing</field>
+        <field name="inherit_id" ref="openeducat_timetable.view_op_timing_tree"/>
+        <field name="arch" type="xml">
+            <field name="sequence" position="before">
+                <field name="start_time" widget="float_time" optional="hide"/>
+                <field name="end_time" widget="float_time" optional="hide"/>
+                <field name="is_break" optional="hide"/>
+            </field>
+        </field>
+    </record>
+</odoo>

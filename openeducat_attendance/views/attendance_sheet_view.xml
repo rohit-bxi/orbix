@@ -29,7 +29,7 @@
                                 class="oe_highlight"/>
                         <button type="object" name="attendance_cancel"
                                 invisible="state not in ('draft','start')" string="Cancel"/>
-                        <button type="object" name="attendance_draft" string="Draft" invisible="state not in ['done','cancel']" class="oe_highlight"/>
+                        <button type="object" name="attendance_draft" string="Reset to Draft" invisible="state not in ['done','cancel']" class="oe_highlight"/>
                         <field name="state" widget="statusbar"
                                statusbar_visible="draft,start,done"/>
                     </header>

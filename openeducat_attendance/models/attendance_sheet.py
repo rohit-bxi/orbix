@@ -43,7 +43,7 @@ class OpAttendanceSheet(models.Model):
         tracking=True)
     attendance_line = fields.One2many(
         'op.attendance.line', 'attendance_id', 'Attendance Line')
-    faculty_id = fields.Many2one('op.faculty', 'Faculty')
+    faculty_id = fields.Many2one('op.faculty', 'Teacher')
     active = fields.Boolean(default=True)
 
     state = fields.Selection(

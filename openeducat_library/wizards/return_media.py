@@ -36,8 +36,6 @@ class ReturnMedia(models.TransientModel):
     review = fields.Text(string="Review Provided By Student")
 
     def do_return(self):
-        active_id = self.env.context.get('active_id')
-        active_model = self.env.context.get('active_model')
         for media in self:
             if media.media_unit_id.state and \
                     media.media_unit_id.state == 'issue':
@@ -47,8 +45,7 @@ class ReturnMedia(models.TransientModel):
                 if not media_move_search:
                     raise UserError(_("Can't return media."))
                 media_move_search.return_media(media.actual_return_date)
-                record = self.env[active_model].browse(active_id)
-                record.write({'review': media.review})
+                media.media_unit_id.write({'review': media.review})
             else:
                 raise UserError(_("Media Unit can not be returned because it's already: %s") % (dict( # noqa
                     media.media_unit_id._fields['state'].selection).get(

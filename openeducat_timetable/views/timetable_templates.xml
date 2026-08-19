@@ -49,7 +49,7 @@
                                                     <td valign="top" style="font-size: 13px;">
                                                         <ul class="o_mail_thread_message_tracking">
                                                             <li>
-                                                                Faculty:
+                                                                Teacher:
                                                                 <span>
                                                                     <t t-out="object.faculty_id.name"/>
                                                                 </span>
