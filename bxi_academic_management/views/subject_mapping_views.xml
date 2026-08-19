@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_subject_mapping_list" model="ir.ui.view">
+        <field name="name">bxi.subject.mapping.list</field>
+        <field name="model">bxi.subject.mapping</field>
+        <field name="arch" type="xml">
+            <list string="Subject Mapping">
+                <field name="subject_id" options="{'no_create': True, 'no_create_edit': True}"/>
+                <field name="class_id" options="{'no_create': True, 'no_create_edit': True}"/>
+                <field name="teacher_id" options="{'no_create': True, 'no_create_edit': True}"/>
+                <field name="curriculum_id" options="{'no_create': True, 'no_create_edit': True}"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_subject_mapping_form" model="ir.ui.view">
+        <field name="name">bxi.subject.mapping.form</field>
+        <field name="model">bxi.subject.mapping</field>
+        <field name="arch" type="xml">
+            <form string="Subject Mapping">
+                <sheet>
+                    <group>
+                        <field name="subject_id" placeholder="e.g., Mathematics"
+                               options="{'no_create': True, 'no_create_edit': True}"/>
+                        <field name="class_id" placeholder="e.g., Class 9"
+                               options="{'no_create': True, 'no_create_edit': True}"/>
+                        <field name="teacher_id" placeholder="e.g., Dr. Sarah Johnson"
+                               options="{'no_create': True, 'no_create_edit': True}"/>
+                        <field name="curriculum_id" placeholder="Select curriculum"
+                               options="{'no_create': True, 'no_create_edit': True}"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_subject_mapping_search" model="ir.ui.view">
+        <field name="name">bxi.subject.mapping.search</field>
+        <field name="model">bxi.subject.mapping</field>
+        <field name="arch" type="xml">
+            <search string="Subject Mapping">
+                <field name="subject_id" options="{'no_create': True, 'no_create_edit': True}"/>
+                <field name="class_id" options="{'no_create': True, 'no_create_edit': True}"/>
+                <field name="teacher_id" options="{'no_create': True, 'no_create_edit': True}"/>
+                <field name="curriculum_id" options="{'no_create': True, 'no_create_edit': True}"/>
+                <group name="group_by">
+                    <filter string="Curriculum" name="group_curriculum" context="{'group_by': 'curriculum_id'}"/>
+                    <filter string="Class" name="group_class" context="{'group_by': 'class_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_subject_mapping" model="ir.actions.act_window">
+        <field name="name">Subject Mapping</field>
+        <field name="res_model">bxi.subject.mapping</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

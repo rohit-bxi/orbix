@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <!-- Surface curriculum_id on the standard Library media views too -->
+    <record id="view_op_media_tree_curriculum_inherit" model="ir.ui.view">
+        <field name="name">op.media.list.curriculum.inherit</field>
+        <field name="model">op.media</field>
+        <field name="inherit_id" ref="openeducat_library.view_op_media_tree"/>
+        <field name="arch" type="xml">
+            <field name="subject_ids" position="after">
+                <field name="curriculum_id" optional="hide"
+                       options="{'no_create': True, 'no_create_edit': True}"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="view_op_media_form_curriculum_inherit" model="ir.ui.view">
+        <field name="name">op.media.form.curriculum.inherit</field>
+        <field name="model">op.media</field>
+        <field name="inherit_id" ref="openeducat_library.view_op_media_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='education_details']//field[@name='subject_ids']" position="after">
+                <separator string="Curriculum"/>
+                <field name="curriculum_id" nolabel="1"
+                       options="{'no_create': True, 'no_create_edit': True}"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Trimmed "Smart Book" list/form scoped to the fields the
+         Academic Management screens need: Title, Subject, Class, Curriculum -->
+    <record id="view_op_media_smart_book_list" model="ir.ui.view">
+        <field name="name">op.media.smart.book.list</field>
+        <field name="model">op.media</field>
+        <field name="arch" type="xml">
+            <list string="Smart Books">
+                <field name="name" string="Book Title"/>
+                <field name="subject_ids" widget="many2many_tags"/>
+                <field name="course_ids" widget="many2many_tags" string="Class"/>
+                <field name="curriculum_id" options="{'no_create': True, 'no_create_edit': True}"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_op_media_smart_book_form" model="ir.ui.view">
+        <field name="name">op.media.smart.book.form</field>
+        <field name="model">op.media</field>
+        <field name="arch" type="xml">
+            <form string="Smart Book">
+                <sheet>
+                    <group>
+                        <field name="name" string="Book Title" placeholder="e.g., Mathematics Grade 9"/>
+                        <field name="subject_ids" widget="many2many_tags" string="Subject"
+                               placeholder="e.g., Mathematics, Science, English"/>
+                        <field name="course_ids" widget="many2many_tags" string="Class"
+                               placeholder="e.g., Class 9, Class 10"/>
+                        <field name="curriculum_id" placeholder="Select curriculum"
+                               options="{'no_create': True, 'no_create_edit': True}"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_op_media_smart_book_search" model="ir.ui.view">
+        <field name="name">op.media.smart.book.search</field>
+        <field name="model">op.media</field>
+        <field name="arch" type="xml">
+            <search string="Smart Books">
+                <field name="name"/>
+                <field name="subject_ids"/>
+                <field name="course_ids"/>
+                <field name="curriculum_id" options="{'no_create': True, 'no_create_edit': True}"/>
+                <group name="group_by">
+                    <filter string="Curriculum" name="group_curriculum" context="{'group_by': 'curriculum_id'}"/>
+                    <filter string="Class" name="group_class" context="{'group_by': 'course_ids'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_smart_book" model="ir.actions.act_window">
+        <field name="name">Smart Book</field>
+        <field name="res_model">op.media</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_op_media_smart_book_search"/>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_op_media_smart_book_list')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('view_op_media_smart_book_form')})]"/>
+    </record>
+</odoo>
