@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Configuration > Board, placed right after "Academic Term" -->
+    <menuitem id="menu_board" name="Board"
+              sequence="3"
+              parent="openeducat_core.menu_op_school_config"
+              action="action_board"
+              groups="openeducat_core.group_op_back_office_admin"/>
+
+    <menuitem id="menu_academic_management_root"
+              name="Academic Management"
+              parent="openeducat_core.menu_op_school_root"
+              sequence="6"
+              groups="group_academic_coordinator,group_academic_manager"/>
+
+    <menuitem id="menu_curriculum"
+              name="Curriculum"
+              parent="menu_academic_management_root"
+              action="action_curriculum"
+              sequence="10"/>
+
+    <menuitem id="menu_smart_book"
+              name="Smart Book"
+              parent="menu_academic_management_root"
+              action="action_smart_book"
+              sequence="20"/>
+
+    <menuitem id="menu_subject_mapping"
+              name="Subject Mapping"
+              parent="menu_academic_management_root"
+              action="action_subject_mapping"
+              sequence="30"/>
+</odoo>

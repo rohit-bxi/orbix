@@ -1,0 +1,11 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_bxi_board_back_office_admin,bxi.board.back.office.admin,model_bxi_board,openeducat_core.group_op_back_office_admin,1,1,1,1
+access_bxi_board_faculty,bxi.board.faculty,model_bxi_board,openeducat_core.group_op_faculty,1,0,0,0
+access_bxi_board_academic_coordinator,bxi.board.academic.coordinator,model_bxi_board,group_academic_coordinator,1,0,0,0
+access_bxi_board_academic_manager,bxi.board.academic.manager,model_bxi_board,group_academic_manager,1,1,1,1
+access_bxi_curriculum_coordinator,bxi.curriculum.coordinator,model_bxi_curriculum,group_academic_coordinator,1,1,1,0
+access_bxi_curriculum_manager,bxi.curriculum.manager,model_bxi_curriculum,group_academic_manager,1,1,1,1
+access_bxi_subject_mapping_coordinator,bxi.subject.mapping.coordinator,model_bxi_subject_mapping,group_academic_coordinator,1,1,1,0
+access_bxi_subject_mapping_manager,bxi.subject.mapping.manager,model_bxi_subject_mapping,group_academic_manager,1,1,1,1
+access_op_media_academic_coordinator,op.media.academic.coordinator,openeducat_library.model_op_media,group_academic_coordinator,1,1,1,0
+access_op_media_academic_manager,op.media.academic.manager,openeducat_library.model_op_media,group_academic_manager,1,1,1,1
