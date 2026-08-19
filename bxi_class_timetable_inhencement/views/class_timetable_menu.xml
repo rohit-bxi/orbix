@@ -14,4 +14,14 @@
               parent="menu_class_timetable_root"
               action="action_timetable"
               sequence="20"/>
+
+    <!-- openeducat_timetable ships a full list/form/search/action for op.timing
+         ("Period") but never wires it into any menu - surface it here since
+         this module is the one that extends op.timing with start/end time. -->
+    <menuitem id="menu_op_timing_class_timetable"
+              name="Timings"
+              parent="openeducat_timetable.menu_op_timetable_configuration"
+              action="openeducat_timetable.act_open_op_timing_view"
+              groups="openeducat_timetable.group_op_timetable_user,openeducat_timetable.group_op_timetable_manager"
+              sequence="10"/>
 </odoo>
