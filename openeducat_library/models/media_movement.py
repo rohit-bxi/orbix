@@ -42,10 +42,10 @@ class OpMediaMovement(models.Model):
         'op.media.unit', 'Media Unit', required=True,
         tracking=True, domain=[('state', '=', 'available')])
     type = fields.Selection(
-        [('student', 'Student'), ('faculty', 'Faculty')],
-        'Student/Faculty', required=True)
+        [('student', 'Student'), ('faculty', 'Teacher')],
+        'Student/Teacher', required=True)
     student_id = fields.Many2one('op.student', 'Student')
-    faculty_id = fields.Many2one('op.faculty', 'Faculty')
+    faculty_id = fields.Many2one('op.faculty', 'Teacher')
     library_card_id = fields.Many2one(
         'op.library.card', 'Library Card', required=True,
         tracking=True)

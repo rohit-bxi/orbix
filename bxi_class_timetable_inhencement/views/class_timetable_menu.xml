@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_class_timetable_root" name="Class &amp; Timetable"
+              parent="openeducat_core.menu_op_school_root"
+              sequence="7"
+              groups="group_class_timetable_coordinator,group_class_timetable_manager"/>
+
+    <menuitem id="menu_class_manager" name="Class Manager"
+              parent="menu_class_timetable_root"
+              action="action_batch_class_manager"
+              sequence="10"/>
+
+    <menuitem id="menu_timetable" name="Timetables"
+              parent="menu_class_timetable_root"
+              action="action_timetable"
+              sequence="20"/>
+</odoo>

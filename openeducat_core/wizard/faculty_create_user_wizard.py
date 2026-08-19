@@ -23,7 +23,7 @@ from odoo import fields, models
 
 class WizardOpFaculty(models.TransientModel):
     _name = "wizard.op.faculty"
-    _description = "Create User for selected Faculty(s)"
+    _description = "Create User for selected Teacher(s)"
 
     def _get_faculties(self):
         if self.env.context and self.env.context.get('active_ids'):

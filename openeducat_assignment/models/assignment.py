@@ -33,7 +33,7 @@ class GradingAssigment(models.Model):
     assignment_type = fields.Many2one('grading.assignment.type',
                                       string='Assignment Type', required=True)
     faculty_id = fields.Many2one(
-        'op.faculty', 'Faculty', default=lambda self: self.env[
+        'op.faculty', 'Teacher', default=lambda self: self.env[
             'op.faculty'].search([('user_id', '=', self.env.uid)]),
         required=True)
     point = fields.Float('Points')

@@ -22,14 +22,14 @@
                                     <h2>
                                         <b>
                                             <span t-field='res_company.name'/>
-                                            <span class="ml-2">Faculty TimeTable</span>
+                                            <span class="ml-2">Teacher TimeTable</span>
                                         </b>
                                     </h2>
                                 </div>
                                 <br></br>
                                 <div class="row mt24">
                                     <div style="width:50%; margin-left:15px;">
-                                        <b>Faculty Name:</b>
+                                        <b>Teacher Name:</b>
                                         <span t-esc="get_full_name(data)"/>
                                     </div>
                                     <div style="width:50%; margin-left:15px;">

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_op_faculty_form_workload_inherit" model="ir.ui.view">
+        <field name="name">op.faculty.form.workload.inherit</field>
+        <field name="model">op.faculty</field>
+        <field name="inherit_id" ref="openeducat_core.view_op_faculty_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page name="workload" string="Workload"
+                      groups="bxi_class_timetable_inhencement.group_class_timetable_coordinator,bxi_class_timetable_inhencement.group_class_timetable_manager">
+                    <group>
+                        <group string="Weekly Load">
+                            <field name="max_weekly_periods"/>
+                            <field name="weekly_period_count" readonly="1"/>
+                            <field name="workload_status" readonly="1" widget="badge"
+                                   decoration-warning="workload_status == 'near_limit'"
+                                   decoration-danger="workload_status == 'over_limit'"
+                                   decoration-success="workload_status == 'normal'"/>
+                        </group>
+                        <group string="Availability">
+                            <field name="available_monday"/>
+                            <field name="available_tuesday"/>
+                            <field name="available_wednesday"/>
+                            <field name="available_thursday"/>
+                            <field name="available_friday"/>
+                            <field name="available_saturday"/>
+                        </group>
+                    </group>
+                    <div class="oe_button_box mt-3">
+                        <button name="%(action_add_period_wizard)d" type="action"
+                                string="Add Period" class="btn-primary"
+                                context="{'default_teacher_id': id}"/>
+                        <button name="%(action_transfer_period_wizard)d" type="action"
+                                string="Transfer Period" class="btn-secondary"
+                                context="{'default_from_teacher_id': id}"/>
+                        <button name="%(action_reassign_class_wizard)d" type="action"
+                                string="Reassign Class" class="btn-secondary"
+                                context="{'default_teacher_id': id}"/>
+                    </div>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

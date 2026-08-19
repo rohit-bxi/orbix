@@ -140,7 +140,7 @@ class GenerateSessionLine(models.TransientModel):
 
     gen_time_table = fields.Many2one(
         'generate.time.table', 'Time Table', required=True)
-    faculty_id = fields.Many2one('op.faculty', 'Faculty', required=True)
+    faculty_id = fields.Many2one('op.faculty', 'Teacher', required=True)
     subject_id = fields.Many2one('op.subject', 'Subject', required=True)
     timing_id = fields.Many2one('op.timing', 'Timing')
     session_start_time = fields.Float("Start Time")

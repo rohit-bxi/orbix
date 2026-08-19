@@ -35,10 +35,10 @@ class IssueMedia(models.TransientModel):
     media_unit_id = fields.Many2one('op.media.unit', 'Media Unit',
                                     required=True)
     type = fields.Selection(
-        [('student', 'Student'), ('faculty', 'Faculty')],
+        [('student', 'Student'), ('faculty', 'Teacher')],
         'Type', default='student', required=True)
     student_id = fields.Many2one('op.student', 'Student')
-    faculty_id = fields.Many2one('op.faculty', 'Faculty')
+    faculty_id = fields.Many2one('op.faculty', 'Teacher')
     library_card_id = fields.Many2one(
         'op.library.card', 'Library Card', required=True)
     issued_date = fields.Date(

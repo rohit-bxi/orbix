@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_timetable_list" model="ir.ui.view">
+        <field name="name">bxi.timetable.list</field>
+        <field name="model">bxi.timetable</field>
+        <field name="arch" type="xml">
+            <list string="Timetables">
+                <field name="course_id"/>
+                <field name="batch_id"/>
+                <field name="locked" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_timetable_form" model="ir.ui.view">
+        <field name="name">bxi.timetable.form</field>
+        <field name="model">bxi.timetable</field>
+        <field name="arch" type="xml">
+            <form string="Timetable">
+                <header>
+                    <button name="action_lock" type="object" string="Lock Timetable"
+                            class="btn-primary" invisible="locked"
+                            confirm="Locking the timetable will prevent further edits. Are you sure you want to continue?"/>
+                    <button name="action_unlock" type="object" string="Unlock Timetable"
+                            class="btn-secondary" invisible="not locked"/>
+                </header>
+                <sheet>
+                    <field name="locked" invisible="1"/>
+                    <div class="alert alert-warning" role="alert" invisible="not locked">
+                        This timetable is locked. Unlock it to make changes.
+                    </div>
+                    <group>
+                        <field name="course_id" string="Class" readonly="locked or line_ids"
+                               options="{'no_create': True, 'no_create_edit': True}"/>
+                        <field name="batch_id" string="Section" readonly="locked or line_ids"
+                               options="{'no_create': True, 'no_create_edit': True}"/>
+                    </group>
+                    <field name="line_ids" readonly="locked">
+                        <list editable="bottom">
+                            <field name="day"/>
+                            <field name="timing_id" options="{'no_create': True, 'no_create_edit': True}"/>
+                            <field name="subject_id" options="{'no_create': True, 'no_create_edit': True}"/>
+                            <field name="teacher_id" options="{'no_create': True, 'no_create_edit': True}"/>
+                            <button name="action_open_remove_wizard" type="object"
+                                    string="Remove" icon="fa-trash"/>
+                        </list>
+                    </field>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_timetable" model="ir.actions.act_window">
+        <field name="name">Timetables</field>
+        <field name="res_model">bxi.timetable</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

@@ -180,7 +180,7 @@
                                 context="{'group_by':'batch_id'}"/>
                         <filter string="Subject" domain="[]" name="group_by_assignment_subject"
                                 context="{'group_by':'subject_id'}"/>
-                        <filter string="Faculty" domain="[]" name="group_by_assignment_faculty"
+                        <filter string="Teacher" domain="[]" name="group_by_assignment_faculty"
                                 context="{'group_by':'faculty_id'}"/>
                         <filter string="Marks" domain="[]" name="group_by_assignment_marks"
                                 context="{'group_by':'marks'}"/>

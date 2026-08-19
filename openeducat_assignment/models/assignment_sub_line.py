@@ -57,7 +57,7 @@ class OpAssignmentSubLine(models.Model):
         'res.users', related='student_id.user_id', string='User')
     faculty_user_id = fields.Many2one(
         'res.users', related='assignment_id.faculty_id.user_id',
-        string='Faculty User')
+        string='Teacher User')
     user_boolean = fields.Boolean(string='Check user',
                                   compute='_compute_get_user_group')
     active = fields.Boolean(default=True)

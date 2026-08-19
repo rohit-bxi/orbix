@@ -51,7 +51,7 @@
                             <label for="is_faculty_constraint"/>
                             <span class="fa fa-info-circle" title="Openeducat Enterprise Module"/>
                             <div class="text-muted">
-                                Selecting this option will prevent session creation with the same faculty on the same date and time.
+                                Selecting this option will prevent session creation with the same teacher on the same date and time.
                             </div>
                         </div>
                     </div>
