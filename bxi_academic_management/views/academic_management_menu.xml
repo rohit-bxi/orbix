@@ -25,6 +25,17 @@
               action="action_subject_mapping"
               sequence="20"/>
 
+    <menuitem id="menu_event_root"
+              name="Event"
+              parent="menu_academic_management_root"
+              sequence="30"/>
+
+    <menuitem id="menu_ptm_meeting"
+              name="Parent-Teacher Meetings"
+              parent="menu_event_root"
+              action="action_ptm_meeting"
+              sequence="10"/>
+
     <!-- Unify the standard Library "Media/Books" entry into the single Smart Book
          screen instead of keeping two separate menus/UIs for op.media records. -->
     <record id="openeducat_library.menu_op_sub_media_library" model="ir.ui.menu">

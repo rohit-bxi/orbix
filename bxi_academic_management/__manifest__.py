@@ -11,6 +11,7 @@
         - Curriculum: define curriculum boards (e.g. CBSE, ICSE, State Board) and assign Classes to them
         - Smart Book: curriculum-linked books, built on the existing Library media model
         - Subject Mapping: map Subject + Class + Curriculum to a Teacher
+        - Event: schedule Parent-Teacher Meetings for one or more Classes
     """,
     'author': 'Vijay Shanker Dubey',
     'depends': [
@@ -26,6 +27,7 @@
         'views/curriculum_views.xml',
         'views/media_curriculum_views.xml',
         'views/subject_mapping_views.xml',
+        'views/ptm_meeting_views.xml',
         'views/academic_management_menu.xml',
     ],
     'installable': True,

@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_ptm_meeting_kanban" model="ir.ui.view">
+        <field name="name">bxi.ptm.meeting.kanban</field>
+        <field name="model">bxi.ptm.meeting</field>
+        <field name="arch" type="xml">
+            <kanban class="o_kanban_small_column">
+                <templates>
+                    <t t-name="menu">
+                        <t t-if="widget.editable">
+                            <a role="menuitem" type="edit" class="dropdown-item">Edit</a>
+                        </t>
+                        <t t-if="widget.deletable">
+                            <a role="menuitem" type="delete" class="dropdown-item">Delete</a>
+                        </t>
+                    </t>
+                    <t t-name="card">
+                        <div class="fw-bold fs-5">
+                            <field name="name"/>
+                        </div>
+                        <div class="d-flex justify-content-between text-muted">
+                            <field name="date" widget="date"/>
+                            <field name="time" widget="float_time"/>
+                        </div>
+                        <div>
+                            <field name="venue"/>
+                        </div>
+                        <div class="mt-1">
+                            <field name="class_ids" widget="many2many_tags"/>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="view_ptm_meeting_list" model="ir.ui.view">
+        <field name="name">bxi.ptm.meeting.list</field>
+        <field name="model">bxi.ptm.meeting</field>
+        <field name="arch" type="xml">
+            <list string="Parent-Teacher Meetings">
+                <field name="name"/>
+                <field name="date"/>
+                <field name="time" widget="float_time"/>
+                <field name="venue"/>
+                <field name="class_ids" widget="many2many_tags"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_ptm_meeting_form" model="ir.ui.view">
+        <field name="name">bxi.ptm.meeting.form</field>
+        <field name="model">bxi.ptm.meeting</field>
+        <field name="arch" type="xml">
+            <form string="Schedule PTM">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" string="PTM Name"/>
+                        <h1>
+                            <field name="name" placeholder="e.g., First Term PTM"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="date"/>
+                            <field name="time" widget="float_time"/>
+                        </group>
+                        <group>
+                            <field name="venue" placeholder="e.g., Main Auditorium"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="class_ids" widget="many2many_tags"
+                               placeholder="Add class"
+                               options="{'no_create': True, 'no_create_edit': True}"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_ptm_meeting_search" model="ir.ui.view">
+        <field name="name">bxi.ptm.meeting.search</field>
+        <field name="model">bxi.ptm.meeting</field>
+        <field name="arch" type="xml">
+            <search string="Parent-Teacher Meetings">
+                <field name="name" string="PTM Name"/>
+                <field name="venue"/>
+                <field name="class_ids"/>
+                <filter string="Today" name="today"
+                        domain="[('date', '=', context_today().strftime('%Y-%m-%d'))]"/>
+                <filter string="Upcoming" name="upcoming"
+                        domain="[('date', '&gt;=', context_today().strftime('%Y-%m-%d'))]"/>
+                <filter string="Past" name="past"
+                        domain="[('date', '&lt;', context_today().strftime('%Y-%m-%d'))]"/>
+                <separator/>
+                <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
+                <group name="group_by">
+                    <filter string="Date" name="group_date" context="{'group_by': 'date'}"/>
+                    <filter string="Month" name="group_month" context="{'group_by': 'date:month'}"/>
+                    <filter string="Venue" name="group_venue" context="{'group_by': 'venue'}"/>
+                    <filter string="Class" name="group_class" context="{'group_by': 'class_ids'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_ptm_meeting" model="ir.actions.act_window">
+        <field name="name">Parent-Teacher Meetings</field>
+        <field name="res_model">bxi.ptm.meeting</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="search_view_id" ref="view_ptm_meeting_search"/>
+    </record>
+</odoo>
