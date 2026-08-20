@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_lesson_plan_approve_wizard_form" model="ir.ui.view">
+        <field name="name">bxi.lesson.plan.review.wizard.approve.form</field>
+        <field name="model">bxi.lesson.plan.review.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Approve Lesson Plan">
+                <field name="lesson_plan_id" invisible="1"/>
+                <field name="decision" invisible="1"/>
+                <group>
+                    <field name="feedback" placeholder="Add your feedback here" nolabel="1"/>
+                </group>
+                <footer>
+                    <button string="Approve" class="btn-primary" type="object" name="action_confirm"/>
+                    <button string="Cancel" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_lesson_plan_approve_wizard" model="ir.actions.act_window">
+        <field name="name">Approve Lesson Plan</field>
+        <field name="res_model">bxi.lesson.plan.review.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_lesson_plan_approve_wizard_form"/>
+        <field name="target">new</field>
+        <field name="context">{'default_lesson_plan_id': active_id, 'default_decision': 'approved'}</field>
+    </record>
+
+    <record id="view_lesson_plan_reject_wizard_form" model="ir.ui.view">
+        <field name="name">bxi.lesson.plan.review.wizard.reject.form</field>
+        <field name="model">bxi.lesson.plan.review.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Request Lesson Plan Revision">
+                <field name="lesson_plan_id" invisible="1"/>
+                <field name="decision" invisible="1"/>
+                <group>
+                    <field name="feedback" placeholder="Explain what needs to change" nolabel="1"/>
+                </group>
+                <footer>
+                    <button string="Request Revise" class="btn-primary" type="object" name="action_confirm"/>
+                    <button string="Cancel" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_lesson_plan_reject_wizard" model="ir.actions.act_window">
+        <field name="name">Request Lesson Plan Revision</field>
+        <field name="res_model">bxi.lesson.plan.review.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_lesson_plan_reject_wizard_form"/>
+        <field name="target">new</field>
+        <field name="context">{'default_lesson_plan_id': active_id, 'default_decision': 'rejected'}</field>
+    </record>
+</odoo>

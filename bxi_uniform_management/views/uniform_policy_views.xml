@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_uniform_policy_list" model="ir.ui.view">
+        <field name="name">bxi.uniform.policy.list</field>
+        <field name="model">bxi.uniform.policy</field>
+        <field name="arch" type="xml">
+            <list string="Uniform Policies">
+                <field name="course_id"/>
+                <field name="gender"/>
+                <field name="season"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_uniform_policy_form" model="ir.ui.view">
+        <field name="name">bxi.uniform.policy.form</field>
+        <field name="model">bxi.uniform.policy</field>
+        <field name="arch" type="xml">
+            <form string="Uniform Policy">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="course_id"/>
+                            <field name="gender"/>
+                            <field name="season"/>
+                        </group>
+                    </group>
+                    <field name="line_ids">
+                        <list editable="bottom">
+                            <field name="product_tmpl_id"/>
+                            <field name="quantity"/>
+                            <field name="is_mandatory"/>
+                        </list>
+                    </field>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_uniform_policy_search" model="ir.ui.view">
+        <field name="name">bxi.uniform.policy.search</field>
+        <field name="model">bxi.uniform.policy</field>
+        <field name="arch" type="xml">
+            <search string="Uniform Policies">
+                <field name="course_id"/>
+                <group name="group_by">
+                    <filter string="Course" name="group_course" context="{'group_by': 'course_id'}"/>
+                    <filter string="Season" name="group_season" context="{'group_by': 'season'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_uniform_policy" model="ir.actions.act_window">
+        <field name="name">Uniform Policies</field>
+        <field name="res_model">bxi.uniform.policy</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

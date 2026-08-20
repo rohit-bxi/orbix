@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_uniform_order_list" model="ir.ui.view">
+        <field name="name">bxi.uniform.order.list</field>
+        <field name="model">bxi.uniform.order</field>
+        <field name="arch" type="xml">
+            <list string="Uniform Orders" decoration-danger="state == 'cancelled'" decoration-success="state == 'issued'">
+                <field name="name"/>
+                <field name="order_date"/>
+                <field name="patron_type"/>
+                <field name="patron_name"/>
+                <field name="total_amount"/>
+                <field name="invoice_payment_state" widget="badge"/>
+                <field name="state" widget="badge"
+                       decoration-info="state in ('draft', 'confirmed')"
+                       decoration-success="state == 'issued'"
+                       decoration-danger="state == 'cancelled'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_uniform_order_form" model="ir.ui.view">
+        <field name="name">bxi.uniform.order.form</field>
+        <field name="model">bxi.uniform.order</field>
+        <field name="arch" type="xml">
+            <form string="Uniform Order">
+                <header>
+                    <button name="action_load_from_policy" type="object" string="Load from Policy" invisible="state != 'draft'"/>
+                    <button name="action_confirm" type="object" string="Confirm" class="oe_highlight" invisible="state != 'draft'"/>
+                    <button name="action_mark_issued" type="object" string="Mark Issued" class="oe_highlight" invisible="state != 'confirmed'"/>
+                    <button name="action_force_issue" type="object" string="Force Issue" invisible="state != 'confirmed'" groups="bxi_uniform_management.group_uniform_manager"/>
+                    <button name="action_cancel" type="object" string="Cancel" invisible="state in ('cancelled',)"/>
+                    <button name="action_set_draft" type="object" string="Reset to Draft" invisible="state != 'cancelled'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,confirmed,issued"/>
+                </header>
+                <sheet>
+                    <div name="button_box" class="oe_button_box">
+                        <button class="oe_stat_button" type="object" name="action_view_invoice" icon="fa-file-text-o" invisible="not invoice_id">
+                            <field string="Invoice" name="invoice_payment_state" widget="statinfo"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <label for="name" string="Reference"/>
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="student_id"/>
+                            <field name="faculty_id"/>
+                            <field name="order_date"/>
+                        </group>
+                        <group>
+                            <field name="issued_by" readonly="1" invisible="not issued_by"/>
+                            <field name="cancel_reason" invisible="state != 'cancelled'"/>
+                        </group>
+                    </group>
+                    <field name="order_line_ids" readonly="state not in ('draft',)">
+                        <list editable="bottom">
+                            <field name="product_id"/>
+                            <field name="quantity"/>
+                            <field name="price_unit"/>
+                            <field name="price_subtotal"/>
+                            <field name="currency_id" column_invisible="1"/>
+                        </list>
+                    </field>
+                    <group class="oe_subtotal_footer">
+                        <field name="total_amount"/>
+                        <field name="currency_id" invisible="1"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_uniform_order_search" model="ir.ui.view">
+        <field name="name">bxi.uniform.order.search</field>
+        <field name="model">bxi.uniform.order</field>
+        <field name="arch" type="xml">
+            <search string="Uniform Orders">
+                <field name="name"/>
+                <field name="patron_name"/>
+                <filter string="Students Only" name="students_only" domain="[('patron_type', '=', 'student')]"/>
+                <filter string="Teachers Only" name="teachers_only" domain="[('patron_type', '=', 'faculty')]"/>
+                <filter string="Pending Issue" name="pending_issue" domain="[('state', '=', 'confirmed')]"/>
+                <group name="group_by">
+                    <filter string="Status" name="group_state" context="{'group_by': 'state'}"/>
+                    <filter string="Patron Type" name="group_patron_type" context="{'group_by': 'patron_type'}"/>
+                    <filter string="Order Date" name="group_date" context="{'group_by': 'order_date'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_uniform_order" model="ir.actions.act_window">
+        <field name="name">Orders</field>
+        <field name="res_model">bxi.uniform.order</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_uniform_order_search"/>
+    </record>
+</odoo>

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Teachers author their own Lesson Plans but aren't Academic Coordinators/Managers,
+         so the shared Academic Management root (scoped to those two groups) needs to also
+         admit Teachers. Model-level access (ir.model.access.csv) still keeps Board,
+         Curriculum, Subject Mapping and PTM hidden from them - only Lesson Plans becomes
+         reachable through this widened folder. -->
+    <record id="bxi_academic_management.menu_academic_management_root" model="ir.ui.menu">
+        <field name="group_ids" eval="[(4, ref('openeducat_core.group_op_faculty'))]"/>
+    </record>
+
+    <menuitem id="menu_lesson_plan"
+              name="Lesson Plans"
+              parent="bxi_academic_management.menu_academic_management_root"
+              action="action_lesson_plan"
+              sequence="40"/>
+</odoo>

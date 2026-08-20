@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- These rules only ever widen visibility to STUDENT rows
+         (student_id set). They never grant access to staff clock-in
+         records — those stay governed entirely by hr_attendance's own
+         groups/rules, which none of these groups belong to. -->
+
+    <record id="student_attendance_rule_teacher" model="ir.rule">
+        <field name="name">Student Attendance: Teacher sees own periods</field>
+        <field name="model_id" ref="hr_attendance.model_hr_attendance"/>
+        <field name="domain_force">[('student_id', '!=', False), ('session_id.faculty_id.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('openeducat_core.group_op_faculty'))]"/>
+    </record>
+
+    <record id="student_attendance_rule_coordinator" model="ir.rule">
+        <field name="name">Student Attendance: Coordinator sees all</field>
+        <field name="model_id" ref="hr_attendance.model_hr_attendance"/>
+        <field name="domain_force">[('student_id', '!=', False)]</field>
+        <field name="groups" eval="[(4, ref('bxi_academic_management.group_academic_coordinator'))]"/>
+    </record>
+
+    <record id="student_attendance_rule_manager" model="ir.rule">
+        <field name="name">Student Attendance: Manager sees all</field>
+        <field name="model_id" ref="hr_attendance.model_hr_attendance"/>
+        <field name="domain_force">[('student_id', '!=', False)]</field>
+        <field name="groups" eval="[(4, ref('bxi_academic_management.group_academic_manager'))]"/>
+    </record>
+</odoo>

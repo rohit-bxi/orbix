@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_uniform_stock_list" model="ir.ui.view">
+        <field name="name">bxi.uniform.stock.list</field>
+        <field name="model">bxi.uniform.stock</field>
+        <field name="arch" type="xml">
+            <list string="Uniform Stock" decoration-danger="is_low_stock">
+                <field name="product_id"/>
+                <field name="product_tmpl_id" column_invisible="1"/>
+                <field name="quantity_on_hand"/>
+                <field name="reorder_level"/>
+                <field name="is_low_stock" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_uniform_stock_form" model="ir.ui.view">
+        <field name="name">bxi.uniform.stock.form</field>
+        <field name="model">bxi.uniform.stock</field>
+        <field name="arch" type="xml">
+            <form string="Uniform Stock">
+                <sheet>
+                    <widget name="web_ribbon" title="Low Stock" bg_color="text-bg-danger" invisible="not is_low_stock"/>
+                    <div name="button_box" class="oe_button_box">
+                        <button class="oe_stat_button" type="object" name="action_view_moves" icon="fa-exchange">
+                            <field string="Moves" name="move_count" widget="statinfo"/>
+                        </button>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="product_id"/>
+                            <field name="quantity_on_hand"/>
+                        </group>
+                        <group>
+                            <field name="reorder_level"/>
+                            <field name="is_low_stock" readonly="1"/>
+                        </group>
+                    </group>
+                    <field name="move_ids" readonly="1">
+                        <list>
+                            <field name="name"/>
+                            <field name="date"/>
+                            <field name="move_type"/>
+                            <field name="quantity"/>
+                            <field name="order_id"/>
+                            <field name="processed_by"/>
+                            <field name="state"/>
+                        </list>
+                    </field>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_uniform_stock_search" model="ir.ui.view">
+        <field name="name">bxi.uniform.stock.search</field>
+        <field name="model">bxi.uniform.stock</field>
+        <field name="arch" type="xml">
+            <search string="Uniform Stock">
+                <field name="product_id"/>
+                <filter string="Low Stock" name="low_stock" domain="[('is_low_stock', '=', True)]"/>
+                <group name="group_by">
+                    <filter string="Item" name="group_product" context="{'group_by': 'product_tmpl_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_uniform_stock" model="ir.actions.act_window">
+        <field name="name">Stock</field>
+        <field name="res_model">bxi.uniform.stock</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_uniform_stock_search"/>
+    </record>
+
+    <record id="view_uniform_stock_move_list" model="ir.ui.view">
+        <field name="name">bxi.uniform.stock.move.list</field>
+        <field name="model">bxi.uniform.stock.move</field>
+        <field name="arch" type="xml">
+            <list string="Uniform Stock Moves" decoration-success="quantity &gt; 0" decoration-danger="quantity &lt; 0">
+                <field name="name"/>
+                <field name="date"/>
+                <field name="product_id"/>
+                <field name="move_type"/>
+                <field name="quantity"/>
+                <field name="order_id"/>
+                <field name="processed_by"/>
+                <field name="state"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_uniform_stock_move_form" model="ir.ui.view">
+        <field name="name">bxi.uniform.stock.move.form</field>
+        <field name="model">bxi.uniform.stock.move</field>
+        <field name="arch" type="xml">
+            <form string="Uniform Stock Move">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" string="Reference"/>
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="stock_id"/>
+                            <field name="move_type"/>
+                            <field name="quantity"/>
+                        </group>
+                        <group>
+                            <field name="date"/>
+                            <field name="order_id"/>
+                            <field name="processed_by"/>
+                            <field name="state"/>
+                        </group>
+                    </group>
+                    <field name="note"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_uniform_stock_move_search" model="ir.ui.view">
+        <field name="name">bxi.uniform.stock.move.search</field>
+        <field name="model">bxi.uniform.stock.move</field>
+        <field name="arch" type="xml">
+            <search string="Uniform Stock Moves">
+                <field name="product_id"/>
+                <field name="order_id"/>
+                <filter string="Receipts" name="receipts" domain="[('move_type', '=', 'receipt')]"/>
+                <filter string="Issued" name="issued" domain="[('move_type', '=', 'issue')]"/>
+                <filter string="Returned" name="returned" domain="[('move_type', '=', 'return')]"/>
+                <group name="group_by">
+                    <filter string="Item" name="group_product" context="{'group_by': 'product_id'}"/>
+                    <filter string="Type" name="group_type" context="{'group_by': 'move_type'}"/>
+                    <filter string="Date" name="group_date" context="{'group_by': 'date:day'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_uniform_stock_move" model="ir.actions.act_window">
+        <field name="name">Stock Ledger</field>
+        <field name="res_model">bxi.uniform.stock.move</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_uniform_stock_move_search"/>
+    </record>
+</odoo>
