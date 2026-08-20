@@ -1,0 +1,10 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_scholarship_program_manager,scholarship.program.manager,model_bxi_scholarship_program,group_scholarship_manager,1,1,1,1
+access_scholarship_program_staff,scholarship.program.staff,model_bxi_scholarship_program,group_scholarship_staff,1,0,0,0
+access_student_scholarship_manager,student.scholarship.manager,model_bxi_student_scholarship,group_scholarship_manager,1,1,1,1
+access_student_scholarship_staff,student.scholarship.staff,model_bxi_student_scholarship,group_scholarship_staff,1,1,1,0
+access_student_scholarship_self,student.scholarship.self,model_bxi_student_scholarship,base.group_user,1,0,0,0
+access_student_scholarship_fee_line_manager,student.scholarship.fee.line.manager,model_bxi_student_scholarship_fee_line,group_scholarship_manager,1,1,1,1
+access_student_scholarship_fee_line_staff,student.scholarship.fee.line.staff,model_bxi_student_scholarship_fee_line,group_scholarship_staff,1,1,1,1
+access_student_scholarship_fee_line_self,student.scholarship.fee.line.self,model_bxi_student_scholarship_fee_line,base.group_user,1,0,0,0
+access_scholarship_remove_wizard_staff,scholarship.remove.wizard.staff,model_bxi_scholarship_remove_wizard,group_scholarship_staff,1,1,1,1

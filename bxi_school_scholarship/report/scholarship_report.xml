@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="action_report_scholarship" model="ir.actions.report">
+        <field name="name">Scholarship Report</field>
+        <field name="model">bxi.student.scholarship</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">bxi_school_scholarship.report_scholarship_document</field>
+        <field name="report_file">bxi_school_scholarship.report_scholarship_document</field>
+        <field name="binding_model_id" ref="model_bxi_student_scholarship"/>
+        <field name="binding_type">report</field>
+    </record>
+</odoo>

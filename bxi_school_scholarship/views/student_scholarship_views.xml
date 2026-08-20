@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_student_scholarship_list" model="ir.ui.view">
+        <field name="name">bxi.student.scholarship.list</field>
+        <field name="model">bxi.student.scholarship</field>
+        <field name="arch" type="xml">
+            <list string="Scholarship Student List" decoration-muted="approval_status == 'rejected'">
+                <field name="student_id"/>
+                <field name="scholarship_type"/>
+                <field name="class_id"/>
+                <field name="section_id"/>
+                <field name="coverage_percentage" string="Coverage" invisible="coverage_type != 'percentage'"/>
+                <field name="fixed_amount" string="Coverage" invisible="coverage_type == 'percentage'"/>
+                <field name="coverage_type" column_invisible="1"/>
+                <field name="approval_status" widget="badge"
+                       decoration-success="approval_status == 'approved'"
+                       decoration-warning="approval_status == 'pending'"
+                       decoration-danger="approval_status == 'rejected'"
+                       decoration-muted="approval_status == 'draft'"/>
+                <field name="net_payable_amount" string="Balance"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_student_scholarship_form" model="ir.ui.view">
+        <field name="name">bxi.student.scholarship.form</field>
+        <field name="model">bxi.student.scholarship</field>
+        <field name="arch" type="xml">
+            <form string="Student Scholarship">
+                <header>
+                    <button name="action_submit" type="object" string="Submit for Approval" invisible="approval_status != 'draft'"/>
+                    <button name="action_approve" type="object" string="Approve" class="oe_highlight" invisible="approval_status != 'pending'"/>
+                    <button name="action_reject" type="object" string="Reject" invisible="approval_status != 'pending'"/>
+                    <button name="action_reset_to_draft" type="object" string="Reset to Draft" invisible="approval_status not in ('approved', 'rejected')"/>
+                    <field name="approval_status" widget="statusbar" statusbar_visible="draft,pending,approved"/>
+                </header>
+                <sheet>
+                    <div name="button_box" class="oe_button_box">
+                        <button class="oe_stat_button" type="object" name="action_print_report" icon="fa-download">
+                            <div class="o_stat_info">
+                                <span class="o_stat_text">Download</span>
+                                <span class="o_stat_text">Report</span>
+                            </div>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <label for="name" string="Reference Code"/>
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="Student Information">
+                            <field name="student_id"/>
+                            <field name="class_id" readonly="1"/>
+                            <field name="section_id" readonly="1"/>
+                        </group>
+                        <group string="Coverage Snapshot">
+                            <field name="total_fee_amount"/>
+                            <field name="scholarship_amount"/>
+                            <field name="net_payable_amount"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Scholarship Details">
+                            <group>
+                                <group>
+                                    <field name="scholarship_type"/>
+                                    <field name="academic_year_id"/>
+                                    <field name="program_id"/>
+                                </group>
+                                <group>
+                                    <field name="priority_level"/>
+                                </group>
+                            </group>
+                            <group>
+                                <field name="reason"/>
+                            </group>
+                        </page>
+                        <page string="Coverage &amp; Benefits">
+                            <group>
+                                <group>
+                                    <field name="coverage_type"/>
+                                    <field name="coverage_percentage" invisible="coverage_type != 'percentage'"/>
+                                    <field name="fixed_amount" invisible="coverage_type != 'fixed_amount'"/>
+                                    <field name="max_amount_limit"/>
+                                </group>
+                                <group>
+                                    <field name="fee_category_scope"/>
+                                    <field name="applicable_fee_category_ids" widget="many2many_tags" invisible="fee_category_scope != 'specific'"/>
+                                </group>
+                            </group>
+                            <field name="fee_line_ids">
+                                <list editable="bottom">
+                                    <field name="fee_category_id"/>
+                                    <field name="total_amount"/>
+                                    <field name="discount_amount" readonly="1"/>
+                                    <field name="net_amount" readonly="1"/>
+                                    <field name="currency_id" column_invisible="1"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Period">
+                            <group>
+                                <field name="valid_from"/>
+                                <field name="valid_until"/>
+                                <field name="auto_renew"/>
+                            </group>
+                        </page>
+                        <page string="Approval">
+                            <group>
+                                <field name="approved_by"/>
+                                <field name="approval_date"/>
+                                <field name="next_review_date"/>
+                            </group>
+                        </page>
+                        <page string="Supporting Documents">
+                            <group>
+                                <field name="income_certificate_submitted"/>
+                                <field name="academic_marksheet_submitted"/>
+                                <field name="recommendation_letter_submitted"/>
+                                <field name="application_form_submitted"/>
+                            </group>
+                            <field name="document_ids" widget="many2many_binary"/>
+                        </page>
+                        <page string="Notifications &amp; Notes">
+                            <group>
+                                <field name="notify_student"/>
+                                <field name="notify_parent"/>
+                                <field name="notify_monthly_report"/>
+                            </group>
+                            <group>
+                                <field name="internal_notes"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_student_scholarship_search" model="ir.ui.view">
+        <field name="name">bxi.student.scholarship.search</field>
+        <field name="model">bxi.student.scholarship</field>
+        <field name="arch" type="xml">
+            <search string="Student Scholarships">
+                <field name="student_id"/>
+                <field name="class_id"/>
+                <field name="section_id"/>
+                <field name="program_id"/>
+                <filter string="Draft" name="filter_draft" domain="[('approval_status', '=', 'draft')]"/>
+                <filter string="Pending" name="filter_pending" domain="[('approval_status', '=', 'pending')]"/>
+                <filter string="Approved" name="filter_approved" domain="[('approval_status', '=', 'approved')]"/>
+                <separator/>
+                <filter string="Class" name="group_class" context="{'group_by': 'class_id'}"/>
+                <filter string="Section" name="group_section" context="{'group_by': 'section_id'}"/>
+                <filter string="Scholarship" name="group_program" context="{'group_by': 'program_id'}"/>
+                <filter string="Status" name="group_status" context="{'group_by': 'approval_status'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_student_scholarship" model="ir.actions.act_window">
+        <field name="name">Scholarships</field>
+        <field name="res_model">bxi.student.scholarship</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_student_scholarship_search"/>
+        <field name="context">{'search_default_group_status': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Assign a scholarship to a student</p>
+        </field>
+    </record>
+</odoo>

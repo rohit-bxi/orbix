@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="refund_rule_staff" model="ir.rule">
+        <field name="name">Refund Request: Staff/Manager see all</field>
+        <field name="model_id" ref="model_bxi_student_refund_request"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_refund_staff'))]"/>
+    </record>
+
+    <record id="refund_rule_self" model="ir.rule">
+        <field name="name">Refund Request: Self read-only</field>
+        <field name="model_id" ref="model_bxi_student_refund_request"/>
+        <field name="domain_force">[('student_id.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="perm_read">1</field>
+        <field name="perm_write">0</field>
+        <field name="perm_create">0</field>
+        <field name="perm_unlink">0</field>
+    </record>
+
+    <record id="refund_rule_company" model="ir.rule">
+        <field name="name">Refund Request: Multi-company</field>
+        <field name="model_id" ref="model_bxi_student_refund_request"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+</odoo>

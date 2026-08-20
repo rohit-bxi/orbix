@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <menuitem id="menu_refund_root" name="Refund Management" sequence="73" web_icon="bxi_student_refund_management,static/description/icon.png"/>
+    <menuitem id="menu_refund_request" name="Refund Requests" parent="menu_refund_root" action="action_refund_request" sequence="10"/>
+    <menuitem id="menu_refund_bulk" name="Bulk Refund Processing" parent="menu_refund_root" action="action_refund_bulk_wizard" sequence="20"/>
+</odoo>

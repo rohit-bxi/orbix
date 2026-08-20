@@ -1,0 +1,6 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_student_refund_request_manager,student.refund.request.manager,model_bxi_student_refund_request,group_refund_manager,1,1,1,1
+access_student_refund_request_staff,student.refund.request.staff,model_bxi_student_refund_request,group_refund_staff,1,1,1,0
+access_student_refund_request_self,student.refund.request.self,model_bxi_student_refund_request,base.group_user,1,0,0,0
+access_refund_delete_wizard_manager,refund.delete.wizard.manager,model_bxi_refund_delete_wizard,group_refund_manager,1,1,1,1
+access_refund_bulk_wizard_staff,refund.bulk.wizard.staff,model_bxi_refund_bulk_wizard,group_refund_staff,1,1,1,1

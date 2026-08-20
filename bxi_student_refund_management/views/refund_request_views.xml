@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_refund_request_list" model="ir.ui.view">
+        <field name="name">bxi.student.refund.request.list</field>
+        <field name="model">bxi.student.refund.request</field>
+        <field name="arch" type="xml">
+            <list string="Refund Requests" decoration-muted="status == 'rejected'">
+                <field name="student_id"/>
+                <field name="parent_id"/>
+                <field name="class_id"/>
+                <field name="refund_type"/>
+                <field name="refund_amount"/>
+                <field name="reason"/>
+                <field name="request_date"/>
+                <field name="status" widget="badge"
+                       decoration-success="status in ('approved', 'completed')"
+                       decoration-warning="status in ('pending_review', 'under_review', 'processing')"
+                       decoration-danger="status == 'rejected'"
+                       decoration-muted="status == 'draft'"/>
+                <field name="currency_id" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_refund_request_form" model="ir.ui.view">
+        <field name="name">bxi.student.refund.request.form</field>
+        <field name="model">bxi.student.refund.request</field>
+        <field name="arch" type="xml">
+            <form string="Refund Request">
+                <header>
+                    <button name="action_submit" type="object" string="Submit for Review" invisible="status != 'draft'"/>
+                    <button name="action_start_review" type="object" string="Start Review" invisible="status != 'pending_review'"/>
+                    <button name="action_approve_and_process" type="object" string="Approve &amp; Process" class="oe_highlight" invisible="status not in ('pending_review', 'under_review')"/>
+                    <button name="action_reject" type="object" string="Reject" invisible="status not in ('pending_review', 'under_review')"/>
+                    <button name="action_complete" type="object" string="Mark Completed" class="oe_highlight" invisible="status != 'processing'"/>
+                    <button name="action_reset_to_draft" type="object" string="Reset to Draft" invisible="status not in ('approved', 'processing', 'rejected')"/>
+                    <field name="status" widget="statusbar" statusbar_visible="draft,pending_review,under_review,approved,processing,completed"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" string="Refund ID"/>
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="Student Information">
+                            <field name="student_id"/>
+                            <field name="parent_id" domain="[('id', 'in', student_id.parent_ids)]"/>
+                            <field name="class_id" readonly="1"/>
+                            <field name="section_id" readonly="1"/>
+                            <field name="roll_number" readonly="1"/>
+                            <field name="admission_number" readonly="1"/>
+                            <field name="date_of_birth" readonly="1"/>
+                        </group>
+                        <group string="Payment Information">
+                            <field name="total_fee_amount"/>
+                            <field name="total_paid_amount"/>
+                            <field name="excess_amount"/>
+                            <field name="pending_amount"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Refund Request Details">
+                            <group>
+                                <group>
+                                    <field name="refund_type"/>
+                                    <field name="refund_amount"/>
+                                    <field name="original_payment_mode"/>
+                                    <field name="transaction_reference"/>
+                                    <field name="duplicate_transaction_reference" invisible="refund_type != 'fee_overpayment'"/>
+                                </group>
+                            </group>
+                            <group>
+                                <field name="reason"/>
+                                <field name="additional_notes"/>
+                            </group>
+                        </page>
+                        <page string="Refund Method">
+                            <group>
+                                <group>
+                                    <field name="preferred_refund_mode"/>
+                                    <field name="account_holder_name"/>
+                                    <field name="bank_account_number"/>
+                                </group>
+                                <group>
+                                    <field name="ifsc_code"/>
+                                    <field name="bank_name"/>
+                                    <field name="branch_name"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Approval &amp; Processing">
+                            <group>
+                                <group>
+                                    <field name="request_date"/>
+                                    <field name="priority"/>
+                                    <field name="assigned_to"/>
+                                    <field name="days_pending"/>
+                                </group>
+                                <group>
+                                    <field name="approved_by"/>
+                                    <field name="approval_date"/>
+                                    <field name="processed_date"/>
+                                </group>
+                            </group>
+                            <field name="processing_notes"/>
+                        </page>
+                        <page string="Payment Tracking">
+                            <group>
+                                <field name="refund_utr"/>
+                                <field name="refund_completion_date"/>
+                                <field name="refund_confirmation_notes"/>
+                            </group>
+                        </page>
+                        <page string="Supporting Documents">
+                            <group>
+                                <field name="original_fee_receipt_submitted"/>
+                                <field name="transfer_certificate_submitted"/>
+                                <field name="bank_account_proof_submitted"/>
+                                <field name="parent_request_letter_submitted"/>
+                            </group>
+                            <field name="document_ids" widget="many2many_binary"/>
+                        </page>
+                        <page string="Notifications &amp; Notes">
+                            <group>
+                                <field name="notify_parent"/>
+                                <field name="notify_sms"/>
+                                <field name="notify_email"/>
+                                <field name="notify_auto_update"/>
+                            </group>
+                            <group>
+                                <field name="internal_notes"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_refund_request_search" model="ir.ui.view">
+        <field name="name">bxi.student.refund.request.search</field>
+        <field name="model">bxi.student.refund.request</field>
+        <field name="arch" type="xml">
+            <search string="Refund Requests">
+                <field name="student_id"/>
+                <field name="parent_id"/>
+                <field name="class_id"/>
+                <field name="refund_type"/>
+                <filter string="Pending Review" name="filter_pending_review" domain="[('status', '=', 'pending_review')]"/>
+                <filter string="Under Review" name="filter_under_review" domain="[('status', '=', 'under_review')]"/>
+                <filter string="Approved" name="filter_approved" domain="[('status', '=', 'approved')]"/>
+                <filter string="Processing" name="filter_processing" domain="[('status', '=', 'processing')]"/>
+                <separator/>
+                <filter string="Class" name="group_class" context="{'group_by': 'class_id'}"/>
+                <filter string="Section" name="group_section" context="{'group_by': 'section_id'}"/>
+                <filter string="Refund Type" name="group_refund_type" context="{'group_by': 'refund_type'}"/>
+                <filter string="Status" name="group_status" context="{'group_by': 'status'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_refund_request" model="ir.actions.act_window">
+        <field name="name">Refund Requests</field>
+        <field name="res_model">bxi.student.refund.request</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_refund_request_search"/>
+        <field name="context">{'search_default_group_status': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Create a refund request</p>
+        </field>
+    </record>
+</odoo>
