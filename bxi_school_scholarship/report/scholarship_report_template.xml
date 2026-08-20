@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="report_scholarship_document">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2>Student Scholarship Details</h2>
+                        <p>Reference Code: <span t-field="o.name"/></p>
+
+                        <h4>Student Information</h4>
+                        <table class="table table-sm">
+                            <tr>
+                                <td><strong>Student Name</strong></td>
+                                <td><span t-field="o.student_id.name"/></td>
+                                <td><strong>Class</strong></td>
+                                <td><span t-field="o.class_id.name"/> <span t-field="o.section_id.name"/></td>
+                            </tr>
+                        </table>
+
+                        <h4>Scholarship Information</h4>
+                        <table class="table table-sm">
+                            <tr>
+                                <td><strong>Scholarship Type</strong></td>
+                                <td><span t-field="o.scholarship_type"/></td>
+                                <td><strong>Scholarship Name</strong></td>
+                                <td><span t-field="o.program_id.name"/></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Academic Year</strong></td>
+                                <td><span t-field="o.academic_year_id.name"/></td>
+                                <td><strong>Approval Status</strong></td>
+                                <td><span t-field="o.approval_status"/></td>
+                            </tr>
+                        </table>
+                        <p><strong>Reason for Scholarship:</strong> <span t-field="o.reason"/></p>
+
+                        <h4>Coverage &amp; Benefits</h4>
+                        <table class="table table-sm">
+                            <tr>
+                                <td><strong>Coverage Type</strong></td>
+                                <td><span t-field="o.coverage_type"/></td>
+                                <td><strong>Coverage Percentage</strong></td>
+                                <td><span t-field="o.coverage_percentage"/>%</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Total Fee Amount</strong></td>
+                                <td><span t-field="o.total_fee_amount"/></td>
+                                <td><strong>Scholarship Amount</strong></td>
+                                <td><span t-field="o.scholarship_amount"/></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Net Payable by Student</strong></td>
+                                <td><span t-field="o.net_payable_amount"/></td>
+                                <td/>
+                                <td/>
+                            </tr>
+                        </table>
+
+                        <h4>Fee Breakdown with Scholarship</h4>
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Fee Category</th>
+                                    <th class="text-right">Total Amount</th>
+                                    <th class="text-right">Scholarship Discount</th>
+                                    <th class="text-right">Net Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="o.fee_line_ids" t-as="line">
+                                    <td><span t-field="line.fee_category_id.name"/></td>
+                                    <td class="text-right"><span t-field="line.total_amount"/></td>
+                                    <td class="text-right"><span t-field="line.discount_amount"/></td>
+                                    <td class="text-right"><span t-field="line.net_amount"/></td>
+                                </tr>
+                                <tr>
+                                    <th>Total</th>
+                                    <th class="text-right"><span t-field="o.total_fee_amount"/></th>
+                                    <th class="text-right"><span t-field="o.scholarship_amount"/></th>
+                                    <th class="text-right"><span t-field="o.net_payable_amount"/></th>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>Scholarship Period</h4>
+                        <table class="table table-sm">
+                            <tr>
+                                <td><strong>Valid From</strong></td>
+                                <td><span t-field="o.valid_from"/></td>
+                                <td><strong>Valid Until</strong></td>
+                                <td><span t-field="o.valid_until"/></td>
+                            </tr>
+                        </table>
+
+                        <h4>Approval Details</h4>
+                        <table class="table table-sm">
+                            <tr>
+                                <td><strong>Approved By</strong></td>
+                                <td><span t-field="o.approved_by.name"/></td>
+                                <td><strong>Approval Date</strong></td>
+                                <td><span t-field="o.approval_date"/></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Next Review Date</strong></td>
+                                <td><span t-field="o.next_review_date"/></td>
+                                <td/>
+                                <td/>
+                            </tr>
+                        </table>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

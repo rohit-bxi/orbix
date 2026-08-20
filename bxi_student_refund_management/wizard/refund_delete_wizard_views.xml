@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_refund_delete_wizard_form" model="ir.ui.view">
+        <field name="name">bxi.refund.delete.wizard.form</field>
+        <field name="model">bxi.refund.delete.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Delete Refund Request">
+                <div class="alert alert-danger" role="alert">
+                    <strong>Warning: This Action Cannot Be Undone</strong><br/>
+                    Deleting this refund request will permanently remove associated records,
+                    documents, and transaction history. This action is irreversible.
+                </div>
+                <group string="Student Information">
+                    <field name="student_id" readonly="1"/>
+                    <field name="class_id" readonly="1"/>
+                </group>
+                <group string="Refund Request to be Deleted">
+                    <group>
+                        <field name="name" readonly="1"/>
+                        <field name="refund_type" readonly="1"/>
+                        <field name="request_date" readonly="1"/>
+                    </group>
+                    <group>
+                        <field name="refund_amount" readonly="1"/>
+                        <field name="status" readonly="1"/>
+                        <field name="original_payment_mode" readonly="1"/>
+                    </group>
+                </group>
+                <group string="Impact Analysis">
+                    <field name="document_count" readonly="1"/>
+                    <field name="timeline_event_count" readonly="1"/>
+                    <field name="currency_id" invisible="1"/>
+                </group>
+                <group string="Confirmation Required">
+                    <field name="understand_permanent"/>
+                    <field name="notify_parent_of_deletion"/>
+                    <field name="confirmation_text" placeholder="Type DELETE to confirm"/>
+                </group>
+                <footer>
+                    <button name="action_confirm_delete" type="object" string="Delete Refund Request" class="btn-danger"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_refund_delete_wizard" model="ir.actions.act_window">
+        <field name="name">Delete Refund Request</field>
+        <field name="res_model">bxi.refund.delete.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{'default_refund_request_id': active_id}</field>
+        <field name="binding_model_id" ref="model_bxi_student_refund_request"/>
+        <field name="binding_view_types">form,list</field>
+    </record>
+</odoo>
