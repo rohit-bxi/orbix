@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="lesson_plan_rule_coordinator" model="ir.rule">
+        <field name="name">Lesson Plan: Coordinator/Manager see all</field>
+        <field name="model_id" ref="model_bxi_lesson_plan"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('bxi_academic_management.group_academic_coordinator'))]"/>
+    </record>
+
+    <record id="lesson_plan_rule_own" model="ir.rule">
+        <field name="name">Lesson Plan: Teacher sees own</field>
+        <field name="model_id" ref="model_bxi_lesson_plan"/>
+        <field name="domain_force">[('teacher_id.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('openeducat_core.group_op_faculty'))]"/>
+    </record>
+
+    <record id="lesson_plan_line_rule_coordinator" model="ir.rule">
+        <field name="name">Lesson Plan Line: Coordinator/Manager see all</field>
+        <field name="model_id" ref="model_bxi_lesson_plan_line"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('bxi_academic_management.group_academic_coordinator'))]"/>
+    </record>
+
+    <record id="lesson_plan_line_rule_own" model="ir.rule">
+        <field name="name">Lesson Plan Line: Teacher sees own</field>
+        <field name="model_id" ref="model_bxi_lesson_plan_line"/>
+        <field name="domain_force">[('lesson_plan_id.teacher_id.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('openeducat_core.group_op_faculty'))]"/>
+    </record>
+</odoo>

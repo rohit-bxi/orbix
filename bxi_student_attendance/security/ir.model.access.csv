@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_hr_attendance_student_faculty,hr.attendance.student.faculty,hr_attendance.model_hr_attendance,openeducat_core.group_op_faculty,1,1,1,0
+access_hr_attendance_student_coordinator,hr.attendance.student.coordinator,hr_attendance.model_hr_attendance,bxi_academic_management.group_academic_coordinator,1,1,0,0
+access_hr_attendance_student_manager,hr.attendance.student.manager,hr_attendance.model_hr_attendance,bxi_academic_management.group_academic_manager,1,1,1,1

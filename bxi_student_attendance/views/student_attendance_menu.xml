@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_student_attendance_root" name="Student Attendance"
+              parent="openeducat_core.menu_op_school_root"
+              action="action_student_attendance"
+              sequence="8"
+              groups="openeducat_core.group_op_faculty,bxi_academic_management.group_academic_coordinator,bxi_academic_management.group_academic_manager"/>
+</odoo>

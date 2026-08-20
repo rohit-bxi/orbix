@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_op_student_form_uniform" model="ir.ui.view">
+        <field name="name">op.student.form.uniform</field>
+        <field name="model">op.student</field>
+        <field name="inherit_id" ref="openeducat_core.view_op_student_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button class="oe_stat_button" type="object" name="action_view_uniform_orders" icon="fa-shopping-basket"
+                        groups="bxi_uniform_management.group_uniform_staff,bxi_uniform_management.group_uniform_manager">
+                    <field string="Uniform Orders" name="uniform_order_count" widget="statinfo"/>
+                </button>
+            </xpath>
+        </field>
+    </record>
+</odoo>

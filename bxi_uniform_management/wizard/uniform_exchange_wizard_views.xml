@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_uniform_exchange_wizard_form" model="ir.ui.view">
+        <field name="name">bxi.uniform.exchange.wizard.form</field>
+        <field name="model">bxi.uniform.exchange.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Uniform Size Exchange">
+                <group>
+                    <field name="order_line_id"/>
+                    <field name="order_id" readonly="1"/>
+                    <field name="old_product_id" readonly="1"/>
+                    <field name="quantity" readonly="1"/>
+                    <field name="new_product_id"/>
+                    <field name="note"/>
+                </group>
+                <footer>
+                    <button name="action_exchange" type="object" string="Exchange" class="oe_highlight"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_uniform_exchange_wizard" model="ir.actions.act_window">
+        <field name="name">Size Exchange</field>
+        <field name="res_model">bxi.uniform.exchange.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

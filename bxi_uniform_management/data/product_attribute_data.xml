@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="product_attribute_uniform_size" model="product.attribute">
+        <field name="name">Size</field>
+        <field name="create_variant">always</field>
+    </record>
+    <record id="product_attribute_value_size_18" model="product.attribute.value">
+        <field name="name">18</field>
+        <field name="attribute_id" ref="product_attribute_uniform_size"/>
+        <field name="sequence">10</field>
+    </record>
+    <record id="product_attribute_value_size_20" model="product.attribute.value">
+        <field name="name">20</field>
+        <field name="attribute_id" ref="product_attribute_uniform_size"/>
+        <field name="sequence">20</field>
+    </record>
+    <record id="product_attribute_value_size_22" model="product.attribute.value">
+        <field name="name">22</field>
+        <field name="attribute_id" ref="product_attribute_uniform_size"/>
+        <field name="sequence">30</field>
+    </record>
+    <record id="product_attribute_value_size_24" model="product.attribute.value">
+        <field name="name">24</field>
+        <field name="attribute_id" ref="product_attribute_uniform_size"/>
+        <field name="sequence">40</field>
+    </record>
+    <record id="product_attribute_value_size_26" model="product.attribute.value">
+        <field name="name">26</field>
+        <field name="attribute_id" ref="product_attribute_uniform_size"/>
+        <field name="sequence">50</field>
+    </record>
+    <record id="product_attribute_value_size_28" model="product.attribute.value">
+        <field name="name">28</field>
+        <field name="attribute_id" ref="product_attribute_uniform_size"/>
+        <field name="sequence">60</field>
+    </record>
+    <record id="product_attribute_value_size_30" model="product.attribute.value">
+        <field name="name">30</field>
+        <field name="attribute_id" ref="product_attribute_uniform_size"/>
+        <field name="sequence">70</field>
+    </record>
+    <record id="product_attribute_value_size_32" model="product.attribute.value">
+        <field name="name">32</field>
+        <field name="attribute_id" ref="product_attribute_uniform_size"/>
+        <field name="sequence">80</field>
+    </record>
+    <record id="product_attribute_value_size_34" model="product.attribute.value">
+        <field name="name">34</field>
+        <field name="attribute_id" ref="product_attribute_uniform_size"/>
+        <field name="sequence">90</field>
+    </record>
+    <record id="product_attribute_value_size_36" model="product.attribute.value">
+        <field name="name">36</field>
+        <field name="attribute_id" ref="product_attribute_uniform_size"/>
+        <field name="sequence">100</field>
+    </record>
+    <record id="product_attribute_value_size_38" model="product.attribute.value">
+        <field name="name">38</field>
+        <field name="attribute_id" ref="product_attribute_uniform_size"/>
+        <field name="sequence">110</field>
+    </record>
+    <record id="product_attribute_value_size_40" model="product.attribute.value">
+        <field name="name">40</field>
+        <field name="attribute_id" ref="product_attribute_uniform_size"/>
+        <field name="sequence">120</field>
+    </record>
+
+    <record id="product_attribute_uniform_color" model="product.attribute">
+        <field name="name">Color</field>
+        <field name="create_variant">always</field>
+    </record>
+    <record id="product_attribute_value_color_white" model="product.attribute.value">
+        <field name="name">White</field>
+        <field name="attribute_id" ref="product_attribute_uniform_color"/>
+        <field name="sequence">10</field>
+    </record>
+    <record id="product_attribute_value_color_sky_blue" model="product.attribute.value">
+        <field name="name">Sky Blue</field>
+        <field name="attribute_id" ref="product_attribute_uniform_color"/>
+        <field name="sequence">20</field>
+    </record>
+    <record id="product_attribute_value_color_navy_blue" model="product.attribute.value">
+        <field name="name">Navy Blue</field>
+        <field name="attribute_id" ref="product_attribute_uniform_color"/>
+        <field name="sequence">30</field>
+    </record>
+    <record id="product_attribute_value_color_grey" model="product.attribute.value">
+        <field name="name">Grey</field>
+        <field name="attribute_id" ref="product_attribute_uniform_color"/>
+        <field name="sequence">40</field>
+    </record>
+    <record id="product_attribute_value_color_maroon" model="product.attribute.value">
+        <field name="name">Maroon</field>
+        <field name="attribute_id" ref="product_attribute_uniform_color"/>
+        <field name="sequence">50</field>
+    </record>
+    <record id="product_attribute_value_color_black" model="product.attribute.value">
+        <field name="name">Black</field>
+        <field name="attribute_id" ref="product_attribute_uniform_color"/>
+        <field name="sequence">60</field>
+    </record>
+</odoo>

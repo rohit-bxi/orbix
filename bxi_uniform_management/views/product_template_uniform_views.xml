@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_product_template_form_uniform" model="ir.ui.view">
+        <field name="name">product.template.form.uniform</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='general_information']" position="after">
+                <page string="Uniform" name="uniform_info">
+                    <group>
+                        <field name="is_uniform_item"/>
+                        <group invisible="not is_uniform_item">
+                            <field name="uniform_gender"/>
+                            <field name="uniform_season"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_product_template_search_uniform" model="ir.ui.view">
+        <field name="name">product.template.search.uniform</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_search_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//search" position="inside">
+                <filter string="Boy" name="uniform_boy" domain="[('uniform_gender', '=', 'boy')]"/>
+                <filter string="Girl" name="uniform_girl" domain="[('uniform_gender', '=', 'girl')]"/>
+                <filter string="Summer" name="uniform_summer" domain="[('uniform_season', '=', 'summer')]"/>
+                <filter string="Winter" name="uniform_winter" domain="[('uniform_season', '=', 'winter')]"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_uniform_catalog" model="ir.actions.act_window">
+        <field name="name">Uniform Catalog</field>
+        <field name="res_model">product.template</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('is_uniform_item', '=', True)]</field>
+        <field name="context">{'default_is_uniform_item': True, 'default_sale_ok': True}</field>
+    </record>
+</odoo>

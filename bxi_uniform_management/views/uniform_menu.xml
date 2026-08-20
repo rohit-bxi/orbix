@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <menuitem id="menu_uniform_root" name="Uniform" sequence="71" web_icon="bxi_uniform_management,static/description/icon.png"/>
+    <menuitem id="menu_uniform_order" name="Orders" parent="menu_uniform_root" action="action_uniform_order" sequence="10"/>
+    <menuitem id="menu_uniform_exchange_wizard" name="Size Exchange" parent="menu_uniform_root" action="action_uniform_exchange_wizard" sequence="20"/>
+    <menuitem id="menu_uniform_catalog" name="Catalog" parent="menu_uniform_root" action="action_uniform_catalog" sequence="30"/>
+
+    <menuitem id="menu_uniform_inventory" name="Inventory" parent="menu_uniform_root" sequence="40"/>
+    <menuitem id="menu_uniform_stock" name="Stock" parent="menu_uniform_inventory" action="action_uniform_stock" sequence="10"/>
+    <menuitem id="menu_uniform_stock_move" name="Stock Ledger" parent="menu_uniform_inventory" action="action_uniform_stock_move" sequence="20"/>
+
+    <menuitem id="menu_uniform_config" name="Configuration" parent="menu_uniform_root" sequence="90" groups="group_uniform_manager"/>
+    <menuitem id="menu_uniform_policy" name="Uniform Policies" parent="menu_uniform_config" action="action_uniform_policy" sequence="10"/>
+    <menuitem id="menu_uniform_product_category" name="Product Categories" parent="menu_uniform_config" action="product.product_category_action_form" sequence="20"/>
+    <menuitem id="menu_uniform_product_attribute" name="Attributes (Size/Color)" parent="menu_uniform_config" action="product.attribute_action" sequence="30"/>
+</odoo>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="product_category_uniform" model="product.category">
+        <field name="name">Uniform</field>
+        <field name="parent_id" ref="product.product_category_goods"/>
+    </record>
+    <record id="product_category_uniform_summer" model="product.category">
+        <field name="name">Summer Wear</field>
+        <field name="parent_id" ref="product_category_uniform"/>
+    </record>
+    <record id="product_category_uniform_winter" model="product.category">
+        <field name="name">Winter Wear</field>
+        <field name="parent_id" ref="product_category_uniform"/>
+    </record>
+    <record id="product_category_uniform_sports" model="product.category">
+        <field name="name">PE / Sports Kit</field>
+        <field name="parent_id" ref="product_category_uniform"/>
+    </record>
+    <record id="product_category_uniform_accessories" model="product.category">
+        <field name="name">Accessories &amp; Footwear</field>
+        <field name="parent_id" ref="product_category_uniform"/>
+    </record>
+</odoo>

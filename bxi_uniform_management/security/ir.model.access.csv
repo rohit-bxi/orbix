@@ -1,0 +1,16 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_uniform_stock_manager,uniform.stock.manager,model_bxi_uniform_stock,group_uniform_manager,1,1,1,1
+access_uniform_stock_staff,uniform.stock.staff,model_bxi_uniform_stock,group_uniform_staff,1,1,1,0
+access_uniform_stock_move_manager,uniform.stock.move.manager,model_bxi_uniform_stock_move,group_uniform_manager,1,1,1,1
+access_uniform_stock_move_staff,uniform.stock.move.staff,model_bxi_uniform_stock_move,group_uniform_staff,1,0,1,0
+access_uniform_policy_manager,uniform.policy.manager,model_bxi_uniform_policy,group_uniform_manager,1,1,1,1
+access_uniform_policy_staff,uniform.policy.staff,model_bxi_uniform_policy,group_uniform_staff,1,0,0,0
+access_uniform_policy_line_manager,uniform.policy.line.manager,model_bxi_uniform_policy_line,group_uniform_manager,1,1,1,1
+access_uniform_policy_line_staff,uniform.policy.line.staff,model_bxi_uniform_policy_line,group_uniform_staff,1,0,0,0
+access_uniform_order_manager,uniform.order.manager,model_bxi_uniform_order,group_uniform_manager,1,1,1,1
+access_uniform_order_staff,uniform.order.staff,model_bxi_uniform_order,group_uniform_staff,1,1,1,0
+access_uniform_order_self,uniform.order.self,model_bxi_uniform_order,base.group_user,1,0,0,0
+access_uniform_order_line_manager,uniform.order.line.manager,model_bxi_uniform_order_line,group_uniform_manager,1,1,1,1
+access_uniform_order_line_staff,uniform.order.line.staff,model_bxi_uniform_order_line,group_uniform_staff,1,1,1,1
+access_uniform_order_line_self,uniform.order.line.self,model_bxi_uniform_order_line,base.group_user,1,0,0,0
+access_uniform_exchange_wizard_staff,uniform.exchange.wizard.staff,model_bxi_uniform_exchange_wizard,group_uniform_staff,1,1,1,1

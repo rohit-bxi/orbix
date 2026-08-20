@@ -1,0 +1,9 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_bxi_lesson_plan_faculty,bxi.lesson.plan.faculty,model_bxi_lesson_plan,openeducat_core.group_op_faculty,1,1,1,0
+access_bxi_lesson_plan_coordinator,bxi.lesson.plan.coordinator,model_bxi_lesson_plan,bxi_academic_management.group_academic_coordinator,1,1,0,0
+access_bxi_lesson_plan_manager,bxi.lesson.plan.manager,model_bxi_lesson_plan,bxi_academic_management.group_academic_manager,1,1,1,1
+access_bxi_lesson_plan_line_faculty,bxi.lesson.plan.line.faculty,model_bxi_lesson_plan_line,openeducat_core.group_op_faculty,1,1,1,1
+access_bxi_lesson_plan_line_coordinator,bxi.lesson.plan.line.coordinator,model_bxi_lesson_plan_line,bxi_academic_management.group_academic_coordinator,1,0,0,0
+access_bxi_lesson_plan_line_manager,bxi.lesson.plan.line.manager,model_bxi_lesson_plan_line,bxi_academic_management.group_academic_manager,1,1,1,1
+access_bxi_lesson_plan_review_wizard_coordinator,bxi.lesson.plan.review.wizard.coordinator,model_bxi_lesson_plan_review_wizard,bxi_academic_management.group_academic_coordinator,1,1,1,1
+access_bxi_lesson_plan_review_wizard_manager,bxi.lesson.plan.review.wizard.manager,model_bxi_lesson_plan_review_wizard,bxi_academic_management.group_academic_manager,1,1,1,1

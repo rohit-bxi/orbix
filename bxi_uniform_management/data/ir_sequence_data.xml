@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="seq_uniform_order" model="ir.sequence">
+        <field name="name">Uniform Order</field>
+        <field name="code">bxi.uniform.order</field>
+        <field name="prefix">UNI/ORD/%(year)s/</field>
+        <field name="padding">4</field>
+        <field name="company_id" eval="False"/>
+    </record>
+
+    <record id="seq_uniform_stock_move" model="ir.sequence">
+        <field name="name">Uniform Stock Move</field>
+        <field name="code">bxi.uniform.stock.move</field>
+        <field name="prefix">UNI/STK/%(year)s/</field>
+        <field name="padding">4</field>
+        <field name="company_id" eval="False"/>
+    </record>
+</odoo>

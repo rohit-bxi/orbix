@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_lesson_plan_kanban" model="ir.ui.view">
+        <field name="name">bxi.lesson.plan.kanban</field>
+        <field name="model">bxi.lesson.plan</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state" class="o_kanban_small_column">
+                <field name="state"/>
+                <templates>
+                    <t t-name="menu">
+                        <t t-if="widget.editable">
+                            <a role="menuitem" type="edit" class="dropdown-item">Edit</a>
+                        </t>
+                        <t t-if="widget.deletable">
+                            <a role="menuitem" type="delete" class="dropdown-item">Delete</a>
+                        </t>
+                    </t>
+                    <t t-name="card">
+                        <div t-attf-class="oe_kanban_card #{record.state.raw_value == 'approved' ? 'border-success' : record.state.raw_value == 'rejected' ? 'border-danger' : 'border-warning'}">
+                            <div class="fw-bold">
+                                <field name="topic"/>
+                            </div>
+                            <div>
+                                <field name="class_id"/> - <field name="subject_id"/>
+                            </div>
+                            <div class="text-muted">
+                                <field name="teacher_id"/>
+                            </div>
+                            <div class="text-muted">
+                                <field name="start_date"/> - <field name="end_date"/>
+                            </div>
+                            <div class="text-muted">
+                                Duration: <field name="duration"/> day(s)
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="view_lesson_plan_list" model="ir.ui.view">
+        <field name="name">bxi.lesson.plan.list</field>
+        <field name="model">bxi.lesson.plan</field>
+        <field name="arch" type="xml">
+            <list string="Lesson Plans" decoration-success="state == 'approved'" decoration-danger="state == 'rejected'">
+                <field name="topic"/>
+                <field name="teacher_id"/>
+                <field name="class_id"/>
+                <field name="subject_id"/>
+                <field name="quarter_id"/>
+                <field name="start_date"/>
+                <field name="end_date"/>
+                <field name="duration"/>
+                <field name="state" widget="badge"
+                       decoration-warning="state == 'pending'"
+                       decoration-success="state == 'approved'"
+                       decoration-danger="state == 'rejected'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_lesson_plan_form" model="ir.ui.view">
+        <field name="name">bxi.lesson.plan.form</field>
+        <field name="model">bxi.lesson.plan</field>
+        <field name="arch" type="xml">
+            <form string="Lesson Plan">
+                <header>
+                    <button name="%(action_lesson_plan_approve_wizard)d" type="action"
+                            string="Approve Plan" class="oe_highlight"
+                            invisible="state != 'pending'"
+                            groups="bxi_academic_management.group_academic_coordinator"/>
+                    <button name="%(action_lesson_plan_reject_wizard)d" type="action"
+                            string="Request Revise"
+                            invisible="state != 'pending'"
+                            groups="bxi_academic_management.group_academic_coordinator"/>
+                    <button name="action_resubmit" type="object"
+                            string="Resubmit for Review" class="oe_highlight"
+                            invisible="state != 'rejected'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="pending,approved,rejected"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="topic" string="Topic"/>
+                        <h1>
+                            <field name="topic" placeholder="e.g., Linear Equations"/>
+                        </h1>
+                    </div>
+                    <group readonly="state == 'approved'">
+                        <group string="Lesson Overview">
+                            <field name="teacher_id" options="{'no_create': True, 'no_create_edit': True}"/>
+                            <field name="subject_id" options="{'no_create': True, 'no_create_edit': True}"/>
+                            <field name="class_id" options="{'no_create': True, 'no_create_edit': True}"/>
+                            <field name="quarter_id" options="{'no_create': True, 'no_create_edit': True}"/>
+                        </group>
+                        <group string="Schedule">
+                            <field name="start_date"/>
+                            <field name="end_date"/>
+                            <field name="duration" readonly="1"/>
+                            <field name="plan_date"/>
+                            <field name="plan_day" readonly="1"/>
+                        </group>
+                        <separator string="Learning Objective" colspan="2"/>
+                        <field name="objective" nolabel="1" colspan="2"
+                               placeholder="What students should understand and value after this lesson"/>
+                        <group string="Planned Activities" colspan="2">
+                            <field name="activities" placeholder="Explain problem solving using group work"/>
+                            <field name="resources" placeholder="Textbook, worksheets, chalk board"/>
+                            <field name="assessment_method" placeholder="Quiz and homework assignment"/>
+                        </group>
+                        <notebook colspan="2">
+                            <page string="Recall Questions">
+                                <field name="recall_question_ids" context="{'default_line_type': 'recall_question'}">
+                                    <list editable="bottom">
+                                        <field name="line_type" column_invisible="1"/>
+                                        <field name="name" string="Question"/>
+                                    </list>
+                                </field>
+                            </page>
+                            <page string="Class Work">
+                                <field name="class_work_ids" context="{'default_line_type': 'class_work'}">
+                                    <list editable="bottom">
+                                        <field name="line_type" column_invisible="1"/>
+                                        <field name="name" string="Description"/>
+                                    </list>
+                                </field>
+                            </page>
+                            <page string="Home Work">
+                                <field name="home_work_ids" context="{'default_line_type': 'home_work'}">
+                                    <list editable="bottom">
+                                        <field name="line_type" column_invisible="1"/>
+                                        <field name="name" string="Description"/>
+                                    </list>
+                                </field>
+                            </page>
+                            <page string="Teaching Aid">
+                                <field name="teaching_aid_ids" context="{'default_line_type': 'teaching_aid'}">
+                                    <list editable="bottom">
+                                        <field name="line_type" column_invisible="1"/>
+                                        <field name="name" string="Aid"/>
+                                    </list>
+                                </field>
+                            </page>
+                            <page string="Remarks">
+                                <field name="remark_ids" context="{'default_line_type': 'remark'}">
+                                    <list editable="bottom">
+                                        <field name="line_type" column_invisible="1"/>
+                                        <field name="name" string="Remark"/>
+                                    </list>
+                                </field>
+                            </page>
+                        </notebook>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_lesson_plan_search" model="ir.ui.view">
+        <field name="name">bxi.lesson.plan.search</field>
+        <field name="model">bxi.lesson.plan</field>
+        <field name="arch" type="xml">
+            <search string="Lesson Plans">
+                <field name="topic"/>
+                <field name="teacher_id"/>
+                <field name="class_id"/>
+                <field name="subject_id"/>
+                <field name="quarter_id"/>
+                <filter string="Pending" name="pending" domain="[('state', '=', 'pending')]"/>
+                <filter string="Approved" name="approved" domain="[('state', '=', 'approved')]"/>
+                <filter string="Rejected" name="rejected" domain="[('state', '=', 'rejected')]"/>
+                <separator/>
+                <filter string="My Lesson Plans" name="my_lesson_plans" domain="[('teacher_id.user_id', '=', uid)]"/>
+                <group name="group_by">
+                    <filter string="Status" name="group_state" context="{'group_by': 'state'}"/>
+                    <filter string="Teacher" name="group_teacher" context="{'group_by': 'teacher_id'}"/>
+                    <filter string="Class" name="group_class" context="{'group_by': 'class_id'}"/>
+                    <filter string="Subject" name="group_subject" context="{'group_by': 'subject_id'}"/>
+                    <filter string="Quarter" name="group_quarter" context="{'group_by': 'quarter_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_lesson_plan" model="ir.actions.act_window">
+        <field name="name">Lesson Plans</field>
+        <field name="res_model">bxi.lesson.plan</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="search_view_id" ref="view_lesson_plan_search"/>
+    </record>
+</odoo>
