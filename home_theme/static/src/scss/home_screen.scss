@@ -26,6 +26,16 @@
     }
 }
 
+// Enterprise hardcodes the menu-entry hover/focus pill to $o-gray-200, a
+// light gray meant for a light navbar. Our navbar chrome is always dark
+// navy/black with white text, so that light pill made hovered top-menu
+// labels (e.g. Check-In Visitor) unreadable — white text on a near-white
+// background. Use a translucent white overlay that reads on dark chrome.
+.o_main_navbar {
+    --NavBar-entry-backgroundColor--hover: #{rgba(255, 255, 255, 0.12)};
+    --NavBar-entry-backgroundColor--focus: #{rgba(255, 255, 255, 0.12)};
+}
+
 :root {
     // Surfaces
     --ht-bg: linear-gradient(160deg, #{$o-gray-100} 0%, #{$o-gray-200} 100%);

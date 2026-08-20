@@ -160,6 +160,15 @@
     background-color: $o-gray-300 !important;
 }
 
+// web_enterprise's navbar.dark.scss loads after this and re-hardcodes the
+// menu-entry hover/focus pill to $o-gray-300, undoing the light-mode fix in
+// home_screen.scss. Our navbar stays dark chrome with white text in dark
+// mode too, so reassert the translucent overlay here.
+.o_main_navbar {
+    --NavBar-entry-backgroundColor--hover: #{rgba(255, 255, 255, 0.12)};
+    --NavBar-entry-backgroundColor--focus: #{rgba(255, 255, 255, 0.12)};
+}
+
 // --- Mobile menus (app menu sidebar + burger/user menu) ---
 //     These full-screen panels render light by default; in dark mode their
 //     (already light) text became invisible on white. Force them dark.
