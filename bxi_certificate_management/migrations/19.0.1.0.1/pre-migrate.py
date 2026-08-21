@@ -1,5 +1,3 @@
-from odoo import api, SUPERUSER_ID
-
 CODE_BY_XML_ID = {
     'certificate_type_transfer': 'TC',
     'certificate_type_completion': 'CC',
@@ -10,18 +8,20 @@ CODE_BY_XML_ID = {
 
 
 def migrate(cr, version):
-    env = api.Environment(cr, SUPERUSER_ID, {})
-    data_model = env['ir.model.data']
-    type_model = env['op.certificate.type']
-
+    # Runs before this module's own models are registered, so query the
+    # tables directly instead of going through the ORM.
     for xml_id, code in CODE_BY_XML_ID.items():
-        if data_model.search_count([('module', '=', 'bxi_certificate_management'), ('name', '=', xml_id)]):
+        cr.execute(
+            "SELECT 1 FROM ir_model_data WHERE module = %s AND name = %s",
+            ('bxi_certificate_management', xml_id),
+        )
+        if cr.fetchone():
             continue
-        existing = type_model.search([('code', '=', code)], limit=1)
-        if existing:
-            data_model.create({
-                'module': 'bxi_certificate_management',
-                'name': xml_id,
-                'model': 'op.certificate.type',
-                'res_id': existing.id,
-            })
+        cr.execute("SELECT id FROM op_certificate_type WHERE code = %s LIMIT 1", (code,))
+        row = cr.fetchone()
+        if row:
+            cr.execute(
+                "INSERT INTO ir_model_data (name, module, model, res_id, noupdate) "
+                "VALUES (%s, %s, %s, %s, %s)",
+                (xml_id, 'bxi_certificate_management', 'op.certificate.type', row[0], False),
+            )
