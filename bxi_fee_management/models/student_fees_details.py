@@ -133,6 +133,23 @@ class OpStudentFeesDetails(models.Model):
                 detail.invoice_id._compute_tax_totals()
         return res
 
+    def action_view_fee_invoice(self):
+        """OpenEduCat's own action_get_invoice() hardcodes the legacy 'tree'
+        view type in its views tuple, which Odoo 19 renamed to 'list' - it
+        raises a client-side error there. This opens the same invoice with a
+        plain, single-view action instead of going through that method.
+        """
+        self.ensure_one()
+        if not self.invoice_id:
+            return {'type': 'ir.actions.act_window_close'}
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Invoice',
+            'res_model': 'account.move',
+            'view_mode': 'form',
+            'res_id': self.invoice_id.id,
+        }
+
 
 class OpStudent(models.Model):
     _inherit = 'op.student'

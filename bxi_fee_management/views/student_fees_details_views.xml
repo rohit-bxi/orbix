@@ -60,7 +60,7 @@
             <form string="Fee Collection Details">
                 <sheet>
                     <div name="button_box" class="oe_button_box">
-                        <button class="oe_stat_button" type="object" name="action_get_invoice" icon="fa-file-text-o"
+                        <button class="oe_stat_button" type="object" name="action_view_fee_invoice" icon="fa-file-text-o"
                                 invisible="not invoice_id">
                             <div class="o_stat_info">
                                 <span class="o_stat_text">View Invoice</span>
