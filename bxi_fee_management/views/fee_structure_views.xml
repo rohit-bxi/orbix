@@ -1,0 +1,246 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Fee Structure Setup: flat, cross-structure overview of every fee
+         category line (the "Fee Type / Amount / Frequency / Applicable
+         Classes / Status" table). Read-only; edit a category from its
+         owning Fee Structure. -->
+    <record id="view_fee_structure_category_overview_list" model="ir.ui.view">
+        <field name="name">bxi.fee.structure.category.line.overview.list</field>
+        <field name="model">bxi.fee.structure.category.line</field>
+        <field name="arch" type="xml">
+            <list string="Fee Categories" create="false" edit="false" delete="false"
+                  decoration-muted="structure_state == 'inactive'">
+                <field name="category_id" string="Fee Type"/>
+                <field name="amount"/>
+                <field name="frequency"/>
+                <field name="structure_course_ids" widget="many2many_tags" string="Applicable Classes"/>
+                <field name="structure_state" widget="badge" string="Status"
+                       decoration-success="structure_state == 'active'"
+                       decoration-muted="structure_state == 'inactive'"
+                       decoration-info="structure_state == 'draft'"/>
+                <field name="structure_id" string="Fee Structure"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_fee_structure_category_overview_search" model="ir.ui.view">
+        <field name="name">bxi.fee.structure.category.line.overview.search</field>
+        <field name="model">bxi.fee.structure.category.line</field>
+        <field name="arch" type="xml">
+            <search string="Fee Categories">
+                <field name="category_id"/>
+                <field name="structure_id"/>
+                <field name="structure_course_ids"/>
+                <filter string="Active Structures" name="filter_active" domain="[('structure_state', '=', 'active')]"/>
+                <separator/>
+                <filter string="Fee Structure" name="group_structure" context="{'group_by': 'structure_id'}"/>
+                <filter string="Status" name="group_status" context="{'group_by': 'structure_state'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_fee_structure_category_overview" model="ir.actions.act_window">
+        <field name="name">Fee Structure Setup</field>
+        <field name="res_model">bxi.fee.structure.category.line</field>
+        <field name="view_mode">list</field>
+        <field name="search_view_id" ref="view_fee_structure_category_overview_search"/>
+        <field name="context">{'search_default_filter_active': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No fee categories configured yet. Create a Fee Structure to add fee categories, a payment schedule, late fees and discounts.
+            </p>
+        </field>
+    </record>
+
+    <!-- Fee Structure form/list (op.fees.terms, extended) -->
+    <record id="view_fee_structure_list" model="ir.ui.view">
+        <field name="name">op.fees.terms.bxi.list</field>
+        <field name="model">op.fees.terms</field>
+        <field name="arch" type="xml">
+            <list string="Fee Structures" decoration-muted="state == 'inactive'">
+                <field name="name"/>
+                <field name="academic_year_id"/>
+                <field name="course_ids" widget="many2many_tags" string="Applicable Classes"/>
+                <field name="total_amount"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'active'"
+                       decoration-muted="state == 'inactive'"
+                       decoration-info="state == 'draft'"/>
+                <button name="action_duplicate" type="object" string="Duplicate" icon="fa-clone"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_fee_structure_form" model="ir.ui.view">
+        <field name="name">op.fees.terms.bxi.form</field>
+        <field name="model">op.fees.terms</field>
+        <field name="arch" type="xml">
+            <form string="Fee Structure">
+                <header>
+                    <button name="action_activate" type="object" string="Activate" class="oe_highlight" invisible="state != 'draft'"/>
+                    <button name="action_deactivate" type="object" string="Deactivate Structure" invisible="state != 'active'"/>
+                    <button name="action_set_draft" type="object" string="Reset to Draft" invisible="state == 'draft'"/>
+                    <button name="action_duplicate" type="object" string="Duplicate"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,active,inactive"/>
+                </header>
+                <sheet>
+                    <div name="button_box" class="oe_button_box">
+                        <button class="oe_stat_button" type="object" name="action_view_assigned_students" icon="fa-users">
+                            <field name="assigned_student_count" widget="statinfo" string="Students Assigned"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <label for="name" string="Fee Structure Name"/>
+                        <h1><field name="name" placeholder="e.g. Grade 10 Annual Fees 2026"/></h1>
+                    </div>
+                    <group>
+                        <group string="Basic Information">
+                            <field name="academic_year_id"/>
+                            <field name="course_ids" widget="many2many_tags" string="Applicable Classes (Grade/Class)"/>
+                            <field name="batch_ids" widget="many2many_tags" string="Applicable Sections"/>
+                            <field name="code"/>
+                        </group>
+                        <group string="Summary" invisible="not assigned_student_count and not active_payment_count and not pending_payment_count">
+                            <field name="total_amount"/>
+                            <field name="assigned_student_count" string="Total Students Assigned"/>
+                            <field name="active_payment_count" string="Active Payments"/>
+                            <field name="pending_payment_count" string="Pending Payments"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Fee Categories" name="fee_categories">
+                            <field name="category_line_ids">
+                                <list editable="bottom">
+                                    <field name="category_id"/>
+                                    <field name="amount"/>
+                                    <field name="frequency"/>
+                                    <field name="currency_id" column_invisible="1"/>
+                                </list>
+                            </field>
+                            <group class="oe_subtotal_footer">
+                                <field name="total_amount"/>
+                            </group>
+                            <button name="action_recalculate_categories" type="object"
+                                    string="Recalculate Payment Schedule Split" class="btn-secondary"/>
+                        </page>
+                        <page string="Payment Schedule" name="payment_schedule">
+                            <group>
+                                <group>
+                                    <field name="installment_type"/>
+                                    <field name="installment_count" invisible="installment_type != 'n_installments'"/>
+                                    <field name="first_due_date"/>
+                                </group>
+                                <group>
+                                    <field name="payment_mode_note"/>
+                                    <field name="grace_period_days"/>
+                                </group>
+                            </group>
+                            <button name="action_generate_installments" type="object"
+                                    string="Generate Payment Schedule" class="btn-secondary"
+                                    invisible="installment_type == 'custom'"/>
+                            <field name="line_ids" readonly="installment_type != 'custom'">
+                                <list editable="bottom">
+                                    <field name="due_date"/>
+                                    <field name="value"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Late Fee &amp; Penalties" name="late_fee">
+                            <group>
+                                <field name="late_fee_enabled"/>
+                            </group>
+                            <group invisible="not late_fee_enabled">
+                                <group>
+                                    <field name="late_fee_type"/>
+                                    <field name="late_fee_amount"/>
+                                    <field name="late_fee_max_cap"/>
+                                </group>
+                                <group>
+                                    <field name="late_fee_apply_after_days"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Discounts &amp; Concessions" name="discounts">
+                            <group>
+                                <field name="discount_enabled" string="Enable Early Payment Discount"/>
+                            </group>
+                            <group invisible="not discount_enabled">
+                                <group>
+                                    <field name="discount_type"/>
+                                    <field name="discount_amount"/>
+                                </group>
+                                <group>
+                                    <field name="discount_valid_until" string="Valid Until"/>
+                                    <field name="allow_sibling_discount"/>
+                                </group>
+                            </group>
+                            <group>
+                                <field name="discount" string="Additional Flat Discount (%)"/>
+                            </group>
+                        </page>
+                        <page string="Additional Settings" name="additional_settings">
+                            <group>
+                                <field name="auto_reminder"/>
+                                <field name="auto_receipt"/>
+                                <field name="allow_partial_payment"/>
+                                <field name="notify_admin_on_payment"/>
+                            </group>
+                        </page>
+                        <page string="Notes &amp; Instructions" name="notes">
+                            <group>
+                                <field name="internal_notes" placeholder="Add internal notes for reference (not visible to parents)"/>
+                                <field name="parent_instructions" placeholder="Add instructions that will be shown to parents during payment"/>
+                                <field name="note" string="Description"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_fee_structure_search" model="ir.ui.view">
+        <field name="name">op.fees.terms.bxi.search</field>
+        <field name="model">op.fees.terms</field>
+        <field name="arch" type="xml">
+            <search string="Fee Structures">
+                <field name="name"/>
+                <field name="academic_year_id"/>
+                <field name="course_ids"/>
+                <filter string="Draft" name="filter_draft" domain="[('state', '=', 'draft')]"/>
+                <filter string="Active" name="filter_active" domain="[('state', '=', 'active')]"/>
+                <filter string="Inactive" name="filter_inactive" domain="[('state', '=', 'inactive')]"/>
+                <separator/>
+                <filter string="Academic Year" name="group_year" context="{'group_by': 'academic_year_id'}"/>
+                <filter string="Status" name="group_status" context="{'group_by': 'state'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_fee_structure" model="ir.actions.act_window">
+        <field name="name">Fee Structures</field>
+        <field name="res_model">op.fees.terms</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_fee_structure_search"/>
+        <field name="context">{'search_default_filter_active': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Create a fee structure with categories, amounts, and payment schedules</p>
+        </field>
+    </record>
+
+    <record id="action_fee_structure_view_list" model="ir.actions.act_window.view">
+        <field name="act_window_id" ref="action_fee_structure"/>
+        <field name="sequence" eval="10"/>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="view_fee_structure_list"/>
+    </record>
+
+    <record id="action_fee_structure_view_form" model="ir.actions.act_window.view">
+        <field name="act_window_id" ref="action_fee_structure"/>
+        <field name="sequence" eval="20"/>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_fee_structure_form"/>
+    </record>
+</odoo>

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_fee_payment_wizard_form" model="ir.ui.view">
+        <field name="name">bxi.fee.payment.wizard.form</field>
+        <field name="model">bxi.fee.payment.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Record Fee Payment">
+                <group>
+                    <group string="Student">
+                        <field name="fees_detail_id" required="1"/>
+                        <field name="student_id" readonly="1"/>
+                        <field name="structure_id" readonly="1"/>
+                    </group>
+                    <group string="Amount Due">
+                        <field name="total_payable" readonly="1"/>
+                        <field name="amount_pending" readonly="1"/>
+                        <field name="currency_id" invisible="1"/>
+                    </group>
+                </group>
+                <group string="Payment Details">
+                    <group>
+                        <field name="amount"/>
+                        <field name="payment_mode"/>
+                        <field name="payment_date"/>
+                    </group>
+                    <group>
+                        <field name="journal_id"/>
+                        <field name="reference"/>
+                        <field name="memo"/>
+                    </group>
+                </group>
+                <footer>
+                    <button name="action_confirm" type="object" string="Record Payment" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_fee_payment_wizard" model="ir.actions.act_window">
+        <field name="name">Record Fee Payment</field>
+        <field name="res_model">bxi.fee.payment.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{'default_fees_detail_id': active_id}</field>
+        <field name="binding_model_id" ref="openeducat_fees.model_op_student_fees_details"/>
+        <field name="binding_view_types">form,list</field>
+    </record>
+</odoo>

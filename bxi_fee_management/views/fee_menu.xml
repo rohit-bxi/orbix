@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_fee_management_root" name="Fee Management" sequence="26"
+              web_icon="bxi_fee_management,static/description/icon.png"/>
+
+    <menuitem id="menu_fee_collection" name="Fee Collection" parent="menu_fee_management_root"
+              action="action_fee_collection" sequence="10"/>
+
+    <menuitem id="menu_fee_structure_setup" name="Fee Structure Setup" parent="menu_fee_management_root"
+              action="action_fee_structure_category_overview" sequence="20"/>
+
+    <menuitem id="menu_fee_structure_config" name="Configuration" parent="menu_fee_management_root"
+              sequence="90" groups="openeducat_fees.group_op_fees_admin"/>
+
+    <menuitem id="menu_fee_structure" name="Fee Structures" parent="menu_fee_structure_config"
+              action="action_fee_structure" sequence="10"/>
+
+    <menuitem id="menu_fee_category" name="Fee Categories" parent="menu_fee_structure_config"
+              action="action_fee_category" sequence="20"/>
+</odoo>

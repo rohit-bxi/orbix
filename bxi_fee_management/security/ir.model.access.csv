@@ -1,0 +1,7 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_bxi_fee_category_manager,fee.category.manager,model_bxi_fee_category,openeducat_fees.group_op_fees_admin,1,1,1,1
+access_bxi_fee_category_user,fee.category.user,model_bxi_fee_category,openeducat_fees.group_openeducat_fees_user,1,0,0,0
+access_bxi_fee_structure_category_line_manager,fee.structure.category.line.manager,model_bxi_fee_structure_category_line,openeducat_fees.group_op_fees_admin,1,1,1,1
+access_bxi_fee_structure_category_line_user,fee.structure.category.line.user,model_bxi_fee_structure_category_line,openeducat_fees.group_openeducat_fees_user,1,0,0,0
+access_bxi_fee_payment_wizard_user,fee.payment.wizard.user,model_bxi_fee_payment_wizard,openeducat_fees.group_openeducat_fees_user,1,1,1,1
+access_bxi_fee_structure_deactivate_wizard_manager,fee.structure.deactivate.wizard.manager,model_bxi_fee_structure_deactivate_wizard,openeducat_fees.group_op_fees_admin,1,1,1,1
