@@ -44,7 +44,8 @@
                     <group>
                         <group string="Student Information">
                             <field name="student_id"/>
-                            <field name="parent_id" domain="[('id', 'in', student_id.parent_ids)]"/>
+                            <field name="parent_ids" invisible="1"/>
+                            <field name="parent_id" domain="[('id', 'in', parent_ids)]"/>
                             <field name="class_id" readonly="1"/>
                             <field name="section_id" readonly="1"/>
                             <field name="roll_number" readonly="1"/>

@@ -25,6 +25,7 @@ class StudentRefundRequest(models.Model):
 
     # Parent/Guardian Information
     parent_id = fields.Many2one('op.parent', string='Parent/Guardian')
+    parent_ids = fields.Many2many('op.parent', related='student_id.parent_ids', string='Student Parents')
 
     # Refund Request Details
     refund_type = fields.Selection([

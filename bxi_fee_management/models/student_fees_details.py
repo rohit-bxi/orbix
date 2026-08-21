@@ -76,7 +76,19 @@ class OpStudentFeesDetails(models.Model):
                 if structure.late_fee_max_cap:
                     late_fee = min(late_fee, structure.late_fee_max_cap)
 
-            total_payable = detail.after_discount_amount + late_fee
+            if invoice_posted:
+                # Once an invoice exists, its amount_total/amount_residual are the
+                # accounting source of truth: each fee category line rounds to 2
+                # decimals independently, so the invoice total can differ by a
+                # cent or two from summing after_discount_amount + late_fee in
+                # one shot. Deriving pending straight from amount_residual avoids
+                # a payment that exactly covers total_payable getting stuck as
+                # "partially paid" over a rounding cent.
+                total_payable = invoice.amount_total
+                pending = invoice.amount_residual
+            else:
+                total_payable = detail.after_discount_amount + late_fee
+                pending = total_payable
 
             if detail.state == 'cancel':
                 status = 'pending'
@@ -92,7 +104,7 @@ class OpStudentFeesDetails(models.Model):
             detail.amount_paid = paid
             detail.late_fee_amount = late_fee
             detail.total_payable = total_payable
-            detail.amount_pending = max(total_payable - paid, 0.0)
+            detail.amount_pending = max(pending, 0.0)
             detail.days_overdue = max(days_overdue, 0)
             detail.collection_status = status
 
