@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="openeducat_library.MultiSelectTags">
+        <div class="o_book_multiselect position-relative">
+            <div class="d-flex flex-wrap gap-1 mb-1" t-if="props.selected.length">
+                <span t-foreach="props.selected" t-as="tag" t-key="tag.id"
+                      class="badge text-bg-light border d-flex align-items-center gap-1">
+                    <t t-esc="tag.name"/>
+                    <i class="fa fa-times o_book_tag_remove" role="button"
+                       t-on-click="() => this.removeTag(tag.id)"/>
+                </span>
+            </div>
+            <input type="text"
+                   class="form-control"
+                   t-att-placeholder="props.placeholder"
+                   t-att-value="state.query"
+                   t-on-input="onInput"
+                   t-on-focus="onFocus"
+                   t-on-blur="onBlur"
+                   t-on-keydown="onKeydown"/>
+            <div class="o_book_suggestions list-group position-absolute w-100 shadow-sm"
+                 t-if="state.suggestions.length">
+                <a href="#" t-foreach="state.suggestions" t-as="s" t-key="s.id"
+                   class="list-group-item list-group-item-action"
+                   t-on-click.prevent="() => this.selectSuggestion(s)">
+                    <t t-esc="s.name"/>
+                </a>
+            </div>
+        </div>
+    </t>
+
+</templates>

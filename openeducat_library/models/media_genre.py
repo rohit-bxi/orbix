@@ -18,17 +18,15 @@
 #
 ###############################################################################
 
-from . import account_invoice
-from . import author
-from . import faculty
-from . import library
-from . import media
-from . import media_genre
-from . import media_movement
-from . import media_purchase
-from . import media_queue
-from . import media_type
-from . import media_unit
-from . import publisher
-from . import student
-from . import tag
+from odoo import fields, models
+
+
+class OpMediaGenre(models.Model):
+    _name = "op.media.genre"
+    _description = "Media Genre"
+    _order = "name"
+
+    name = fields.Char('Name', size=64, required=True)
+
+    _unique_media_genre_name = models.Constraint(
+        'unique(name)', 'Genre name must be unique!')

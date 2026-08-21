@@ -18,7 +18,16 @@
 #
 ###############################################################################
 
-from odoo import fields, models, api
+from odoo import _, fields, models, api
+from odoo.exceptions import ValidationError
+
+LANGUAGE_SELECTION = [
+    ('english', 'English'),
+    ('hindi', 'Hindi'),
+    ('marathi', 'Marathi'),
+    ('gujarati', 'Gujarati'),
+    ('other', 'Other'),
+]
 
 
 class OpMedia(models.Model):
@@ -46,6 +55,21 @@ class OpMedia(models.Model):
     unit_ids = fields.One2many('op.media.unit', 'media_id', 'Units')
     media_type_id = fields.Many2one('op.media.type', 'Media Type')
     active = fields.Boolean(default=True)
+    genre_id = fields.Many2one('op.media.genre', string='Genre', required=True)
+    publish_year = fields.Integer('Publish Year')
+    number_of_pages = fields.Integer('Number of Pages')
+    language = fields.Selection(LANGUAGE_SELECTION, string='Language')
+    shelf_location = fields.Char('Shelf Location')
+    allocation = fields.Char('Allocation', help='Class-Section, etc.')
+    rating = fields.Float('Rating')
+    total_copies = fields.Integer('Total Copies', default=0)
+    available_copies = fields.Integer(
+        'Available Copies', compute='_compute_copies', store=True)
+    status = fields.Selection(
+        [('unavailable', 'Unavailable'),
+         ('limited', 'Limited'),
+         ('available', 'Available')],
+        string='Status', compute='_compute_copies', store=True)
     attachment_ids = fields.Many2many(
         'ir.attachment', 
         string="Attachments"
@@ -84,3 +108,53 @@ class OpMedia(models.Model):
 
     _unique_name_internal_cod = models.Constraint(
         'unique(internal_code)', 'Internal Code must be unique per media!')
+
+    @api.depends('unit_ids.state', 'unit_ids.active', 'total_copies')
+    def _compute_copies(self):
+        for record in self:
+            available = len(record.unit_ids.filtered(
+                lambda unit: unit.state == 'available'))
+            record.available_copies = available
+            total = record.total_copies or len(record.unit_ids)
+            if available <= 0:
+                record.status = 'unavailable'
+            elif total and available <= total * 0.3:
+                record.status = 'limited'
+            else:
+                record.status = 'available'
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        for record in records:
+            if record.total_copies:
+                record._sync_media_units(record.total_copies)
+        return records
+
+    def write(self, vals):
+        res = super().write(vals)
+        if 'total_copies' in vals:
+            for record in self:
+                record._sync_media_units(record.total_copies)
+        return res
+
+    def _sync_media_units(self, total_copies):
+        self.ensure_one()
+        current_units = self.unit_ids
+        diff = total_copies - len(current_units)
+        if diff > 0:
+            vals_list = [{
+                'name': _('%(book)s - Copy %(number)s') % {
+                    'book': self.name, 'number': len(current_units) + i + 1},
+                'media_id': self.id,
+            } for i in range(diff)]
+            self.env['op.media.unit'].create(vals_list)
+        elif diff < 0:
+            to_archive_count = -diff
+            available_units = current_units.filtered(
+                lambda unit: unit.state == 'available')
+            if len(available_units) < to_archive_count:
+                raise ValidationError(_(
+                    'Cannot reduce Total Copies below the number of copies '
+                    'currently issued.'))
+            available_units[:to_archive_count].write({'active': False})

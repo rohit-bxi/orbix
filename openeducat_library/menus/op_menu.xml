@@ -7,6 +7,13 @@
                   web_icon="openeducat_library,static/description/icon.png"
                   groups="group_op_library,group_op_library_user"/>
 
+        <menuitem id="menu_op_book_catalog"
+                  name="Book Catalog"
+                  parent="menu_op_library_root"
+                  sequence="10"
+                  action="action_op_book_catalog"
+                  groups="group_op_library,group_op_library_user"/>
+
         <menuitem id="menu_library_medias"
                   name="All Media"
                   parent="menu_op_library_root"
@@ -93,6 +100,13 @@
                   parent="menu_op_school_library_config"
                   sequence="50"
                   action="act_open_op_media_type_view"
+                  groups="group_op_library"/>
+
+        <menuitem id="menu_media_genre"
+                  name="Genre"
+                  parent="menu_op_school_library_config"
+                  sequence="55"
+                  action="act_open_op_media_genre_view"
                   groups="group_op_library"/>
 
         <menuitem id="menu_op_library_card_type_sub"

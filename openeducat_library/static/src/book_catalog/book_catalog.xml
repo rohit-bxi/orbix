@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="openeducat_library.BookCatalog">
+        <div class="o_book_catalog h-100 d-flex flex-column p-3">
+            <div class="o_book_hero d-flex justify-content-between align-items-center mb-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="o_book_hero_icon">
+                        <i class="fa fa-book"/>
+                    </div>
+                    <div>
+                        <h3 class="mb-0">Book Catalog</h3>
+                        <div class="text-white-50">Browse and manage your library's collection</div>
+                    </div>
+                </div>
+                <button class="btn btn-light fw-semibold" t-if="state.isManager" t-on-click="openAddBook">
+                    <i class="fa fa-plus me-1"/>Add Book
+                </button>
+            </div>
+
+            <div class="d-flex gap-3 mb-3 flex-wrap">
+                <div class="o_book_stat_tile bg-cyan">
+                    <i class="fa fa-book"/>
+                    <div>
+                        <div class="o_book_stat_value" t-esc="state.total"/>
+                        <div class="o_book_stat_label">Total Books</div>
+                    </div>
+                </div>
+                <div class="o_book_stat_tile bg-magenta">
+                    <i class="fa fa-tags"/>
+                    <div>
+                        <div class="o_book_stat_value" t-esc="state.genres.length"/>
+                        <div class="o_book_stat_label">Genres</div>
+                    </div>
+                </div>
+                <div class="o_book_stat_tile bg-orange">
+                    <i class="fa fa-globe"/>
+                    <div>
+                        <div class="o_book_stat_value" t-esc="state.languageOptions.length"/>
+                        <div class="o_book_stat_label">Languages</div>
+                    </div>
+                </div>
+                <div class="o_book_stat_tile bg-green">
+                    <i class="fa fa-file-o"/>
+                    <div>
+                        <div class="o_book_stat_value">
+                            <t t-esc="state.page"/>/<t t-esc="totalPages"/>
+                        </div>
+                        <div class="o_book_stat_label">Page</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2 mb-3 position-relative">
+                <div class="flex-grow-1 position-relative">
+                    <i class="fa fa-search o_book_search_icon"/>
+                    <input type="text" class="form-control ps-5" placeholder="Search by title or author..."
+                           t-att-value="state.searchTerm" t-on-input="onSearchInput"/>
+                </div>
+                <button class="btn btn-outline-secondary" t-on-click="toggleFilters">
+                    <i class="fa fa-filter me-1"/>Filters
+                </button>
+                <div class="o_book_filters_panel card position-absolute shadow p-3"
+                     t-if="state.showFilters">
+                    <div class="mb-2">
+                        <label class="form-label small">Genre</label>
+                        <select class="form-select form-select-sm"
+                                t-on-change="onGenreFilterChange">
+                            <option value="">All</option>
+                            <option t-foreach="state.genres" t-as="genre" t-key="genre.id"
+                                    t-att-value="genre.id">
+                                <t t-esc="genre.name"/>
+                            </option>
+                        </select>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small">Language</label>
+                        <select class="form-select form-select-sm"
+                                t-on-change="onLanguageFilterChange">
+                            <option value="">All</option>
+                            <option t-foreach="state.languageOptions" t-as="opt" t-key="opt[0]"
+                                    t-att-value="opt[0]">
+                                <t t-esc="opt[1]"/>
+                            </option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label small">Status</label>
+                        <select class="form-select form-select-sm"
+                                t-on-change="onStatusFilterChange">
+                            <option value="">All</option>
+                            <option t-foreach="state.statusOptions" t-as="opt" t-key="opt[0]"
+                                    t-att-value="opt[0]">
+                                <t t-esc="opt[1]"/>
+                            </option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex-grow-1 overflow-auto o_book_table_wrap">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Book</th>
+                            <th>Genre</th>
+                            <th>Language</th>
+                            <th>Copies</th>
+                            <th>N.Pages</th>
+                            <th>Rating</th>
+                            <th>Status</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr t-foreach="state.books" t-as="book" t-key="book.id">
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div t-attf-class="o_book_cover {{ book.genre_id ? genreColorClass(book.genre_id[0]) : '' }}">
+                                        <t t-esc="book.name.charAt(0).toUpperCase()"/>
+                                    </div>
+                                    <div>
+                                        <div class="fw-semibold" t-esc="book.name"/>
+                                        <div class="text-muted small" t-esc="authorNames(book)"/>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span t-attf-class="badge o_book_genre_badge {{ genreColorClass(book.genre_id[0]) }}"
+                                      t-if="book.genre_id" t-esc="book.genre_id[1]"/>
+                                <span t-else="">-</span>
+                            </td>
+                            <td t-esc="book.language or '-'"/>
+                            <td>
+                                <span t-attf-class="fw-semibold {{ book.available_copies ? 'text-success' : 'text-danger' }}">
+                                    <t t-esc="book.available_copies"/>
+                                </span> / <t t-esc="book.total_copies"/>
+                            </td>
+                            <td t-esc="book.number_of_pages or '-'"/>
+                            <td>
+                                <i class="fa fa-star text-warning me-1"/>
+                                <t t-esc="book.rating.toFixed(1)"/>
+                            </td>
+                            <td>
+                                <span t-attf-class="badge rounded-pill {{ book.status === 'available' ? 'text-bg-success' : book.status === 'limited' ? 'text-bg-warning' : 'text-bg-danger' }}">
+                                    <t t-esc="statusLabel(book.status)"/>
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-link text-secondary" title="View"
+                                        t-on-click="() => this.openBookDetails(book)">
+                                    <i class="fa fa-eye"/>
+                                </button>
+                                <button class="btn btn-sm btn-link text-secondary" title="Edit"
+                                        t-if="state.isManager"
+                                        t-on-click="() => this.openEditBook(book)">
+                                    <i class="fa fa-pencil"/>
+                                </button>
+                                <button class="btn btn-sm btn-link text-danger" title="Delete"
+                                        t-if="state.isManager"
+                                        t-on-click="() => this.deleteBook(book)">
+                                    <i class="fa fa-trash"/>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr t-if="!state.books.length">
+                            <td colspan="8" class="text-center text-muted py-5">
+                                <i class="fa fa-book fa-2x mb-2 d-block text-muted opacity-50"/>
+                                No books found.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mt-2" t-if="state.total">
+                <div class="text-muted small">
+                    Showing <t t-esc="state.books.length"/> of <t t-esc="state.total"/> books
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-sm btn-outline-secondary" t-att-disabled="state.page === 1"
+                            t-on-click="() => this.goToPage(state.page - 1)">Previous</button>
+                    <button t-foreach="pageNumbers" t-as="p" t-key="p"
+                            t-attf-class="btn btn-sm {{ p === state.page ? 'btn-primary' : 'btn-outline-secondary' }}"
+                            t-on-click="() => this.goToPage(p)">
+                        <t t-esc="p"/>
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary" t-att-disabled="state.page === totalPages"
+                            t-on-click="() => this.goToPage(state.page + 1)">Next</button>
+                </div>
+            </div>
+        </div>
+    </t>
+
+</templates>
