@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_fee_category_list" model="ir.ui.view">
+        <field name="name">bxi.fee.category.list</field>
+        <field name="model">bxi.fee.category</field>
+        <field name="arch" type="xml">
+            <list string="Fee Categories">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="product_id"/>
+                <field name="default_frequency"/>
+                <field name="is_refundable"/>
+                <field name="active" column_invisible="True"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_fee_category_form" model="ir.ui.view">
+        <field name="name">bxi.fee.category.form</field>
+        <field name="model">bxi.fee.category</field>
+        <field name="arch" type="xml">
+            <form string="Fee Category">
+                <sheet>
+                    <widget name="web_ribbon" title="Archived" bg_color="bg-danger" invisible="active"/>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="e.g. Tuition Fee"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="code"/>
+                            <field name="product_id"/>
+                            <field name="default_frequency"/>
+                        </group>
+                        <group>
+                            <field name="is_refundable"/>
+                            <field name="active"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_fee_category_search" model="ir.ui.view">
+        <field name="name">bxi.fee.category.search</field>
+        <field name="model">bxi.fee.category</field>
+        <field name="arch" type="xml">
+            <search string="Fee Categories">
+                <field name="name"/>
+                <field name="code"/>
+                <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_fee_category" model="ir.actions.act_window">
+        <field name="name">Fee Categories</field>
+        <field name="res_model">bxi.fee.category</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Define the fee heads used across fee structures (Tuition, Transport, Library, ...)</p>
+        </field>
+    </record>
+</odoo>

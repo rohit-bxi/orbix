@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_student_fees_details_list" model="ir.ui.view">
+        <field name="name">op.student.fees.details.bxi.list</field>
+        <field name="model">op.student.fees.details</field>
+        <field name="arch" type="xml">
+            <list string="Fee Collection" decoration-danger="collection_status == 'overdue'"
+                  decoration-success="collection_status == 'paid'">
+                <field name="student_id"/>
+                <field name="course_id"/>
+                <field name="batch_id" string="Section"/>
+                <field name="structure_id"/>
+                <field name="date" string="Due Date"/>
+                <field name="after_discount_amount" string="Fee Amount" sum="Total"/>
+                <field name="late_fee_amount" sum="Total"/>
+                <field name="total_payable" sum="Total"/>
+                <field name="amount_paid" sum="Total"/>
+                <field name="amount_pending" sum="Total"/>
+                <field name="collection_status" widget="badge" string="Status"
+                       decoration-success="collection_status == 'paid'"
+                       decoration-info="collection_status == 'partially_paid'"
+                       decoration-warning="collection_status == 'pending'"
+                       decoration-danger="collection_status == 'overdue'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_student_fees_details_kanban" model="ir.ui.view">
+        <field name="name">op.student.fees.details.bxi.kanban</field>
+        <field name="model">op.student.fees.details</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="collection_status" class="o_kanban_small_column">
+                <field name="student_id"/>
+                <field name="structure_id"/>
+                <field name="amount_pending"/>
+                <field name="total_payable"/>
+                <field name="date"/>
+                <field name="collection_status"/>
+                <templates>
+                    <t t-name="card">
+                        <div t-attf-class="oe_kanban_card #{record.collection_status.raw_value == 'overdue' ? 'border-start border-danger border-4' : ''}">
+                            <strong><field name="student_id"/></strong>
+                            <div><field name="structure_id"/></div>
+                            <div>Due <field name="date"/></div>
+                            <div>
+                                <span class="text-muted">Pending: </span>
+                                <field name="amount_pending"/>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="view_student_fees_details_form" model="ir.ui.view">
+        <field name="name">op.student.fees.details.bxi.form</field>
+        <field name="model">op.student.fees.details</field>
+        <field name="arch" type="xml">
+            <form string="Fee Collection Details">
+                <sheet>
+                    <div name="button_box" class="oe_button_box">
+                        <button class="oe_stat_button" type="object" name="action_get_invoice" icon="fa-file-text-o"
+                                invisible="not invoice_id">
+                            <div class="o_stat_info">
+                                <span class="o_stat_text">View Invoice</span>
+                            </div>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="student_id"/></h1>
+                    </div>
+                    <group>
+                        <group string="Fee Structure Assignment">
+                            <field name="structure_id"/>
+                            <field name="course_id"/>
+                            <field name="batch_id" string="Section"/>
+                            <field name="date" string="Due Date"/>
+                        </group>
+                        <group string="Payment Status">
+                            <field name="collection_status" widget="badge"
+                                   decoration-success="collection_status == 'paid'"
+                                   decoration-info="collection_status == 'partially_paid'"
+                                   decoration-warning="collection_status == 'pending'"
+                                   decoration-danger="collection_status == 'overdue'"/>
+                            <field name="days_overdue" invisible="collection_status != 'overdue'"/>
+                            <field name="payment_mode"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Amount Breakdown">
+                            <field name="amount"/>
+                            <field name="discount"/>
+                            <field name="after_discount_amount"/>
+                            <field name="late_fee_amount"/>
+                            <field name="total_payable"/>
+                        </group>
+                        <group string="Collection">
+                            <field name="amount_paid"/>
+                            <field name="amount_pending"/>
+                        </group>
+                    </group>
+                    <button name="%(bxi_fee_management.action_fee_payment_wizard)d" type="action"
+                            string="Add Manual Payment" class="btn-primary"
+                            invisible="collection_status == 'paid'"
+                            context="{'default_fees_detail_id': id}"/>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_student_fees_details_search" model="ir.ui.view">
+        <field name="name">op.student.fees.details.bxi.search</field>
+        <field name="model">op.student.fees.details</field>
+        <field name="arch" type="xml">
+            <search string="Fee Collection">
+                <field name="student_id"/>
+                <field name="course_id"/>
+                <field name="batch_id"/>
+                <field name="structure_id"/>
+                <filter string="Pending" name="filter_pending" domain="[('collection_status', '=', 'pending')]"/>
+                <filter string="Partially Paid" name="filter_partial" domain="[('collection_status', '=', 'partially_paid')]"/>
+                <filter string="Paid" name="filter_paid" domain="[('collection_status', '=', 'paid')]"/>
+                <filter string="Overdue" name="filter_overdue" domain="[('collection_status', '=', 'overdue')]"/>
+                <separator/>
+                <filter string="Class" name="group_course" context="{'group_by': 'course_id'}"/>
+                <filter string="Section" name="group_batch" context="{'group_by': 'batch_id'}"/>
+                <filter string="Fee Structure" name="group_structure" context="{'group_by': 'structure_id'}"/>
+                <filter string="Status" name="group_status" context="{'group_by': 'collection_status'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_fee_collection" model="ir.actions.act_window">
+        <field name="name">Fee Collection</field>
+        <field name="res_model">op.student.fees.details</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="search_view_id" ref="view_student_fees_details_search"/>
+        <field name="context">{'search_default_group_status': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Fee lines appear here once a student is admitted against a fee structure</p>
+        </field>
+    </record>
+
+    <record id="action_fee_collection_view_list" model="ir.actions.act_window.view">
+        <field name="act_window_id" ref="action_fee_collection"/>
+        <field name="sequence" eval="10"/>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="view_student_fees_details_list"/>
+    </record>
+
+    <record id="action_fee_collection_view_kanban" model="ir.actions.act_window.view">
+        <field name="act_window_id" ref="action_fee_collection"/>
+        <field name="sequence" eval="20"/>
+        <field name="view_mode">kanban</field>
+        <field name="view_id" ref="view_student_fees_details_kanban"/>
+    </record>
+
+    <record id="action_fee_collection_view_form" model="ir.actions.act_window.view">
+        <field name="act_window_id" ref="action_fee_collection"/>
+        <field name="sequence" eval="30"/>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_student_fees_details_form"/>
+    </record>
+
+    <!-- Student form: Fee Collection stat button -->
+    <record id="view_op_student_form_inherit_fee_collection" model="ir.ui.view">
+        <field name="name">op.student.form.inherit.bxi.fee.collection</field>
+        <field name="model">op.student</field>
+        <field name="inherit_id" ref="openeducat_core.view_op_student_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button class="oe_stat_button" type="object" name="action_view_fee_collection" icon="fa-money"
+                        groups="openeducat_fees.group_op_fees_admin">
+                    <div class="o_stat_info">
+                        <span class="o_stat_text">Fee Collection</span>
+                    </div>
+                </button>
+            </xpath>
+        </field>
+    </record>
+</odoo>

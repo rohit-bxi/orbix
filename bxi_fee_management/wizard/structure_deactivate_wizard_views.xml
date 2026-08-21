@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_fee_structure_deactivate_wizard_form" model="ir.ui.view">
+        <field name="name">bxi.fee.structure.deactivate.wizard.form</field>
+        <field name="model">bxi.fee.structure.deactivate.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Deactivate Fee Structure">
+                <div class="alert alert-warning" role="alert">
+                    <strong>Status will change: Active &#8594; Inactive</strong><br/>
+                    This fee structure will be archived as inactive. Existing student assignments and
+                    in-progress payments are not affected, but no new students can be assigned.
+                </div>
+                <group string="Fee Structure Details">
+                    <group>
+                        <field name="name" string="Structure Name" readonly="1"/>
+                        <field name="academic_year_id" readonly="1"/>
+                        <field name="total_amount" readonly="1"/>
+                        <field name="currency_id" invisible="1"/>
+                    </group>
+                    <group>
+                        <field name="assigned_student_count" string="Total Students Assigned" readonly="1"/>
+                        <field name="active_payment_count" string="Active Payments" readonly="1"/>
+                        <field name="pending_payment_count" string="Pending Payments" readonly="1"/>
+                    </group>
+                </group>
+                <div class="alert alert-info" role="alert">
+                    <strong>What happens when deactivated</strong><br/>
+                    Existing student assignments remain intact. Active and pending payments continue.
+                    New students cannot be assigned. Hidden from the active structures list.
+                </div>
+                <group string="Confirmation">
+                    <field name="ack_impact"/>
+                    <field name="ack_reviewed"/>
+                </group>
+                <footer>
+                    <button name="action_confirm" type="object" string="Deactivate Structure" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

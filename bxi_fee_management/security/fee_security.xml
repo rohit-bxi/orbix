@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- bxi.fee.category -->
+    <record id="fee_category_rule_company" model="ir.rule">
+        <field name="name">Fee Category: Multi-company</field>
+        <field name="model_id" ref="model_bxi_fee_category"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <!-- op.student.fees.details: openeducat_fees Fee staff/admins see everything,
+         everyone else (e.g. a parent/student portal user) only their own
+         records, read-only -->
+    <record id="fee_details_rule_staff" model="ir.rule">
+        <field name="name">Student Fees Details: Fee User/Manager see all</field>
+        <field name="model_id" ref="openeducat_fees.model_op_student_fees_details"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(6, 0, [ref('openeducat_fees.group_openeducat_fees_user')])]"/>
+    </record>
+
+    <record id="fee_details_rule_self" model="ir.rule">
+        <field name="name">Student Fees Details: Self read-only</field>
+        <field name="model_id" ref="openeducat_fees.model_op_student_fees_details"/>
+        <field name="domain_force">[('student_id.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(6, 0, [ref('base.group_user')])]"/>
+        <field name="perm_read">1</field>
+        <field name="perm_write">0</field>
+        <field name="perm_create">0</field>
+        <field name="perm_unlink">0</field>
+    </record>
+</odoo>
