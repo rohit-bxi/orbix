@@ -35,12 +35,14 @@ class FeePaymentWizard(models.TransientModel):
     def action_confirm(self):
         self.ensure_one()
         detail = self.fees_detail_id
+        pending_before_invoice = detail.amount_pending
         if self.amount <= 0:
             raise UserError(_('Enter a payment amount greater than zero.'))
-        if self.amount > detail.amount_pending:
+        if self.amount > pending_before_invoice + 0.01:
             raise UserError(
-                _('Payment amount cannot exceed the pending amount of %s.') % detail.amount_pending)
-        if self.amount < detail.amount_pending and not detail.structure_id.allow_partial_payment:
+                _('Payment amount cannot exceed the pending amount of %s.') % pending_before_invoice)
+        is_full_payment = self.amount >= pending_before_invoice - 0.01
+        if not is_full_payment and not detail.structure_id.allow_partial_payment:
             raise UserError(_('Partial payments are not allowed for this fee structure.'))
 
         if not detail.invoice_id or detail.invoice_id.state == 'cancel':
@@ -48,11 +50,18 @@ class FeePaymentWizard(models.TransientModel):
         if detail.invoice_id.state == 'draft':
             detail.invoice_id.action_post()
 
+        # A fee line's invoice doesn't exist until this point, so "pay in full"
+        # was necessarily quoted before the invoice's per-line rounding was
+        # known. Settle against the invoice's real residual in that case so a
+        # full payment always closes the invoice, instead of a rounding cent
+        # leaving it stuck as partially paid.
+        pay_amount = detail.invoice_id.amount_residual if is_full_payment else self.amount
+
         register = self.env['account.payment.register'].with_context(
             active_model='account.move', active_ids=detail.invoice_id.ids,
             dont_redirect_to_payments=True,
         ).create({
-            'amount': self.amount,
+            'amount': pay_amount,
             'payment_date': self.payment_date,
             'journal_id': self.journal_id.id,
             'communication': self.memo or self.reference or detail.student_id.name,
