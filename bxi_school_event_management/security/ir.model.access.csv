@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_bxi_event_venue_manager,event.venue.manager,model_bxi_event_venue,event.group_event_manager,1,1,1,1
+access_bxi_event_venue_user,event.venue.user,model_bxi_event_venue,event.group_event_user,1,0,0,0
+access_event_bulk_registration_wizard,event.bulk.registration.wizard,model_event_bulk_registration_wizard,event.group_event_user,1,1,1,1
+access_event_certificate_wizard,event.certificate.wizard,model_event_certificate_wizard,event.group_event_user,1,1,1,1

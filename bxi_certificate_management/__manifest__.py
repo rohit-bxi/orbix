@@ -4,8 +4,6 @@
     'category': 'Education',
     'summary': 'Configure, issue, print and verify student certificates',
     'description': """
-        Certificate Management
-        =======================
         Standalone module integrating with OpenEduCat to manage:
         - Configurable certificate types (transfer, completion, achievement, etc.)
           with per-type numbering and optional custom wording, no coding required
@@ -30,6 +28,7 @@
         'security/ir.model.access.csv',
         'data/certificate_cron.xml',
         'data/certificate_mail_template.xml',
+        'data/certificate_type_data.xml',
         'wizard/certificate_bulk_wizard_view.xml',
         'wizard/certificate_revoke_wizard_view.xml',
         'report/certificate_report.xml',
@@ -40,9 +39,6 @@
         'views/faculty_views.xml',
         'views/certificate_menu.xml',
         'controllers/certificate_portal_templates.xml',
-    ],
-    'demo': [
-        'demo/certificate_demo.xml',
     ],
     'installable': True,
     'application': True,

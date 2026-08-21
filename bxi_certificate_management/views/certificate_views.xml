@@ -74,7 +74,7 @@
                             invisible="not (state == 'generated' and type_requires_approval and not approved_by)"/>
                     <button string="Issue" type="object" name="action_issue" class="btn-primary" invisible="state != 'generated'"/>
                     <button string="Print" type="object" name="action_print" invisible="state not in ('issued', 'revoked', 'expired')"/>
-                    <button string="Revoke" type="object" name="action_open_revoke_wizard" invisible="state != 'issued'" groups="group_certificate_manager"/>
+                    <button string="Revoke" type="object" name="action_open_revoke_wizard" invisible="state != 'issued'" groups="bxi_certificate_management.group_certificate_manager"/>
                     <button string="Reset to Draft" type="object" name="action_reset_to_draft" invisible="state != 'generated'"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,generated,issued"/>
                 </header>

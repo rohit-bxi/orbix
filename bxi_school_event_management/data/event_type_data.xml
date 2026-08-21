@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <record id="event_type_sports_day" model="event.type">
+        <field name="name">Sports Day</field>
+        <field name="event_type_mail_ids" eval="[
+            (0, 0, {'interval_nbr': 3, 'interval_unit': 'days', 'interval_type': 'before_event', 'template_ref': 'mail.template,%d' % ref('event.event_reminder')}),
+            (0, 0, {'interval_nbr': 1, 'interval_unit': 'days', 'interval_type': 'before_event', 'template_ref': 'mail.template,%d' % ref('event.event_reminder')}),
+        ]"/>
+    </record>
+
+    <record id="event_type_annual_day" model="event.type">
+        <field name="name">Annual Day</field>
+        <field name="event_type_mail_ids" eval="[
+            (0, 0, {'interval_nbr': 1, 'interval_unit': 'weeks', 'interval_type': 'before_event', 'template_ref': 'mail.template,%d' % ref('event.event_reminder')}),
+            (0, 0, {'interval_nbr': 1, 'interval_unit': 'days', 'interval_type': 'before_event', 'template_ref': 'mail.template,%d' % ref('event.event_reminder')}),
+        ]"/>
+    </record>
+
+    <record id="event_type_ptm" model="event.type">
+        <field name="name">Parent-Teacher Meeting</field>
+        <field name="event_type_mail_ids" eval="[
+            (0, 0, {'interval_nbr': 0, 'interval_unit': 'now', 'interval_type': 'after_sub', 'template_ref': 'mail.template,%d' % ref('event.event_subscription')}),
+            (0, 0, {'interval_nbr': 2, 'interval_unit': 'days', 'interval_type': 'before_event', 'template_ref': 'mail.template,%d' % ref('event.event_reminder')}),
+        ]"/>
+    </record>
+
+    <record id="event_type_workshop" model="event.type">
+        <field name="name">Workshop</field>
+        <field name="has_seats_limitation">True</field>
+        <field name="event_type_mail_ids" eval="[
+            (0, 0, {'interval_nbr': 1, 'interval_unit': 'days', 'interval_type': 'before_event', 'template_ref': 'mail.template,%d' % ref('event.event_reminder')}),
+        ]"/>
+    </record>
+
+    <record id="event_type_field_trip" model="event.type">
+        <field name="name">Field Trip</field>
+        <field name="event_type_mail_ids" eval="[
+            (0, 0, {'interval_nbr': 1, 'interval_unit': 'weeks', 'interval_type': 'before_event', 'template_ref': 'mail.template,%d' % ref('event.event_reminder')}),
+            (0, 0, {'interval_nbr': 1, 'interval_unit': 'days', 'interval_type': 'before_event', 'template_ref': 'mail.template,%d' % ref('event.event_reminder')}),
+        ]"/>
+    </record>
+
+    <record id="event_type_open_house" model="event.type">
+        <field name="name">Open House</field>
+        <field name="event_type_mail_ids" eval="[
+            (0, 0, {'interval_nbr': 3, 'interval_unit': 'days', 'interval_type': 'before_event', 'template_ref': 'mail.template,%d' % ref('event.event_reminder')}),
+        ]"/>
+    </record>
+
+    <record id="event_type_competition" model="event.type">
+        <field name="name">Competition</field>
+        <field name="event_type_mail_ids" eval="[
+            (0, 0, {'interval_nbr': 1, 'interval_unit': 'weeks', 'interval_type': 'before_event', 'template_ref': 'mail.template,%d' % ref('event.event_reminder')}),
+            (0, 0, {'interval_nbr': 1, 'interval_unit': 'days', 'interval_type': 'before_event', 'template_ref': 'mail.template,%d' % ref('event.event_reminder')}),
+        ]"/>
+    </record>
+
+</odoo>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_ptm_meeting_form_event" model="ir.ui.view">
+        <field name="name">bxi.ptm.meeting.form.event</field>
+        <field name="model">bxi.ptm.meeting</field>
+        <field name="inherit_id" ref="bxi_academic_management.view_ptm_meeting_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="before">
+                <header>
+                    <button name="action_convert_to_event" type="object" string="Convert to Event"
+                            class="btn-primary" invisible="event_id"
+                            groups="event.group_event_user"/>
+                </header>
+            </xpath>
+            <xpath expr="//group[field[@name='class_ids']]" position="after">
+                <field name="event_id" invisible="not event_id" readonly="1"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

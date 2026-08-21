@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="portal_my_events" name="My Events">
+        <t t-call="portal.portal_layout">
+            <div class="container">
+                <h3>My Events</h3>
+                <table class="table table-hover mt-3" t-if="events">
+                    <thead>
+                        <tr>
+                            <th>Event</th>
+                            <th>Category</th>
+                            <th>Date</th>
+                            <th>Student</th>
+                            <th/>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <t t-foreach="events" t-as="event">
+                            <t t-foreach="students" t-as="student">
+                                <tr>
+                                    <td t-out="event.name"/>
+                                    <td t-out="event.event_category"/>
+                                    <td t-esc="event.date_begin" t-options="{'widget': 'datetime'}"/>
+                                    <td t-out="student.name"/>
+                                    <td>
+                                        <t t-set="registration" t-value="registration_by_event.get(event.id) if registration_by_event.get(event.id) and registration_by_event.get(event.id).student_id.id == student.id else False"/>
+                                        <span t-if="registration" class="badge text-bg-success" t-out="registration.state"/>
+                                        <form t-else="" t-attf-action="/my/events/#{event.id}/rsvp" method="post">
+                                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                            <input type="hidden" name="student_id" t-att-value="student.id"/>
+                                            <button type="submit" class="btn btn-sm btn-primary">RSVP</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            </t>
+                        </t>
+                    </tbody>
+                </table>
+                <p t-else="" class="text-muted">No upcoming events right now.</p>
+            </div>
+        </t>
+    </template>
+
+    <template id="portal_my_home_event" name="Portal My Home: Events" customize_show="True" inherit_id="portal.portal_my_home" priority="65">
+        <xpath expr="//div[hasclass('o_portal_docs')]" position="inside">
+            <t t-call="portal.portal_docs_entry">
+                <t t-set="title">Events</t>
+                <t t-set="text">View upcoming school events and RSVP</t>
+                <t t-set="url" t-value="'/my/events'"/>
+            </t>
+        </xpath>
+    </template>
+</odoo>

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_event_registration_form_school" model="ir.ui.view">
+        <field name="name">event.registration.form.school</field>
+        <field name="model">event.registration</field>
+        <field name="inherit_id" ref="event.view_event_registration_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header/field[@name='state']" position="before">
+                <button name="action_view_invoice" type="object" string="View Invoice" invisible="not invoice_id"/>
+                <button name="action_add_transport" type="object" string="Add Transport"
+                        invisible="not event_id or transport_registration_id"/>
+            </xpath>
+            <xpath expr="//group[@name='attendee']" position="after">
+                <group string="School" name="school">
+                    <field name="student_id"/>
+                    <field name="parent_id"/>
+                    <field name="invoice_id" invisible="not invoice_id"/>
+                    <field name="invoice_payment_state" invisible="not invoice_id"/>
+                    <field name="certificate_id" invisible="not certificate_id"/>
+                    <field name="transport_registration_id" invisible="not transport_registration_id"/>
+                    <label for="permission_slip_signed" invisible="not event_id"/>
+                    <div invisible="not event_id">
+                        <field name="permission_slip_signed" class="oe_inline"/>
+                        <span invisible="not permission_slip_signed">
+                            by <field name="signed_by" class="oe_inline"/> on <field name="signed_date" class="oe_inline"/>
+                        </span>
+                    </div>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_event_registration_tree_school" model="ir.ui.view">
+        <field name="name">event.registration.list.school</field>
+        <field name="model">event.registration</field>
+        <field name="inherit_id" ref="event.view_event_registration_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='partner_id']" position="after">
+                <field name="student_id" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

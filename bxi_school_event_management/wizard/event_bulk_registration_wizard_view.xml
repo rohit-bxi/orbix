@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_event_bulk_registration_wizard_form" model="ir.ui.view">
+        <field name="name">event.bulk.registration.wizard.form</field>
+        <field name="model">event.bulk.registration.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Bulk Register Students">
+                <group>
+                    <field name="event_id"/>
+                    <field name="course_id"/>
+                    <field name="batch_id" domain="[('course_id', '=', course_id)]"/>
+                </group>
+                <field name="student_ids" widget="many2many_tags"/>
+                <footer>
+                    <button string="Register" class="btn btn-primary" type="object" name="action_create_registrations"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_event_bulk_registration_wizard" model="ir.actions.act_window">
+        <field name="name">Bulk Register Students</field>
+        <field name="res_model">event.bulk.registration.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <record id="view_event_certificate_wizard_form" model="ir.ui.view">
+        <field name="name">event.certificate.wizard.form</field>
+        <field name="model">event.certificate.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Generate Participation Certificates">
+                <group>
+                    <field name="event_id"/>
+                    <field name="certificate_type_id"/>
+                </group>
+                <footer>
+                    <button string="Generate" class="btn btn-primary" type="object" name="action_generate"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

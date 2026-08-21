@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <menuitem id="menu_event_bulk_registration" name="Bulk Register Students"
+              parent="event.menu_event_event" action="action_event_bulk_registration_wizard" sequence="10"/>
+
+    <menuitem id="menu_event_venue" name="Venues"
+              parent="event.menu_event_configuration" action="action_event_venue" sequence="5"/>
+</odoo>
