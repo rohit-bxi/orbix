@@ -19,6 +19,7 @@ class BxiStudentOnboarding(models.Model):
         ('documents', 'Upload Documents'),
         ('done', 'Completed'),
     ], string='Step', default='basic_info', copy=False, tracking=True)
+    company_id = fields.Many2one('res.company', default=lambda self: self.env.company)
 
     # Step 1 - Basic Information
     image_1920 = fields.Image('Photo')

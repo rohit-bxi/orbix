@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="seq_bxi_announcement" model="ir.sequence">
+        <field name="name">School Announcement</field>
+        <field name="code">bxi.announcement</field>
+        <field name="prefix">AN-</field>
+        <field name="padding">3</field>
+        <field name="company_id" eval="False"/>
+    </record>
+</odoo>

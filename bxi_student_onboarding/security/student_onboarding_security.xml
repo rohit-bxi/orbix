@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Back-office admins see every onboarding record (group_op_back_office_admin
+         is left ungated, matching the access-rights grant). Teachers only see
+         records they themselves are working on - onboarding carries sensitive
+         PII (medical info, DOB, guardian details) that has no business being
+         readable by every teacher in the school. -->
+    <record id="student_onboarding_rule_faculty_own" model="ir.rule">
+        <field name="name">Student Onboarding: Faculty see only their own</field>
+        <field name="model_id" ref="model_bxi_student_onboarding"/>
+        <field name="domain_force">[('create_uid', '=', user.id)]</field>
+        <field name="groups" eval="[(6, 0, [ref('openeducat_core.group_op_faculty')])]"/>
+    </record>
+
+    <record id="student_onboarding_rule_company" model="ir.rule">
+        <field name="name">Student Onboarding: Multi-company</field>
+        <field name="model_id" ref="model_bxi_student_onboarding"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+</odoo>

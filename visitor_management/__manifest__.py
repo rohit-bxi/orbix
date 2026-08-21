@@ -39,8 +39,8 @@
         'mail',
     ],
     'data': [
-        'security/ir.model.access.csv',
         'security/security_group.xml',
+        'security/ir.model.access.csv',
         'data/sequence.xml',
         'data/mail_template.xml',
         'views/visit.xml',

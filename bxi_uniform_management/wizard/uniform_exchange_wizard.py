@@ -27,6 +27,15 @@ class UniformExchangeWizard(models.TransientModel):
             raise UserError(_('Insufficient stock for %s (available %s, needed %s).') % (
                 self.new_product_id.display_name, new_stock.quantity_on_hand, line.quantity))
 
+        invoice = line.order_id.invoice_id
+        invoice_line = invoice.invoice_line_ids.filtered(
+            lambda l: l.product_id == line.product_id and l.quantity == line.quantity)[:1] if invoice else False
+        if invoice and invoice.state != 'draft' and invoice_line:
+            raise UserError(_(
+                'This order\'s invoice (%s) is already posted, so its price can\'t be silently changed by an '
+                'exchange. Issue a credit note for the old item and invoice the new one, then retry.'
+            ) % invoice.name)
+
         old_stock = self.env['bxi.uniform.stock']._get_or_create(line.product_id.id)
         self.env['bxi.uniform.stock.move'].create({
             'stock_id': old_stock.id,
@@ -46,4 +55,11 @@ class UniformExchangeWizard(models.TransientModel):
             'product_id': self.new_product_id.id,
             'price_unit': self.new_product_id.list_price,
         })
+        if invoice_line:
+            invoice_line.write({
+                'product_id': self.new_product_id.id,
+                'name': self.new_product_id.display_name,
+                'price_unit': self.new_product_id.list_price,
+            })
+            invoice._compute_tax_totals()
         return {'type': 'ir.actions.act_window_close'}

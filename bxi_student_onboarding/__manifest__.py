@@ -23,6 +23,7 @@
     ],
     'data': [
         'security/ir.model.access.csv',
+        'security/student_onboarding_security.xml',
         'data/ir_sequence_data.xml',
         'views/student_onboarding_views.xml',
         'views/student_view.xml',

@@ -13,6 +13,7 @@ class BxiSubjectMapping(models.Model):
     curriculum_id = fields.Many2one('bxi.curriculum', string='Curriculum', required=True)
     active = fields.Boolean(default=True)
     display_name = fields.Char(compute='_compute_display_name', store=True)
+    company_id = fields.Many2one('res.company', default=lambda self: self.env.company)
 
     _unique_subject_class_curriculum = models.Constraint(
         'unique(subject_id, class_id, curriculum_id)',

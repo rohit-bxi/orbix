@@ -20,7 +20,10 @@ class Visitor(models.Model):
         [('buyer', 'Buyer'), ('guest', 'Guest'), ('supplier', 'Supplier'), ('delivery', 'Delivery')], required=True)
     v_name = fields.Char(string="Name", required=True, tracking=True)
     v_company = fields.Char(string="Company", required=True, tracking=True)
-    v_phn = fields.Integer(string="Phone Number", required=True, tracking=True)
+    # Char, not Integer: a 10-digit mobile number (e.g. 9876543210) overflows
+    # Postgres's 32-bit int4 column outright, and Integer also silently drops
+    # any leading zero / '+' country-code prefix a real phone number can have.
+    v_phn = fields.Char(string="Phone Number", required=True, tracking=True)
     v_email = fields.Char(string="E-mail", tracking=True)
     # v_purpose = fields.Text(string="Purpose")
     v_gender = fields.Selection([('male', 'Male'), ('female', 'Female')], default='male', string="Gender",
@@ -44,8 +47,9 @@ class Visitor(models.Model):
     @api.constrains('v_phn')
     def check_phn(self):
         for rec in self:
-            if rec.v_phn > 11:
-                raise ValidationError(_("Incorrect"))
+            digits = re.sub(r'\D', '', rec.v_phn or '')
+            if len(digits) < 7 or len(digits) > 15:
+                raise ValidationError(_("Enter a valid phone number (7 to 15 digits)."))
         return True
 
     ################################################################################
@@ -95,13 +99,14 @@ class Visitor(models.Model):
 class Visit(models.Model):
     _name = 'visit.data'
     _inherit = ['mail.thread', 'mail.activity.mixin']
+    _description = 'Visitor Check-In/Check-Out'
     _rec_name = 'v_name'
 
     v_name = fields.Many2one(comodel_name="visitor.data", string="Name", required=True, )
     v_image = fields.Binary(related='v_name.v_image', string="Image")
     v_gender = fields.Selection(related='v_name.v_gender', string="Gender")
     I_AM = fields.Selection(related='v_name.I_AM', string="Type")
-    v_phn = fields.Integer(related='v_name.v_phn', string="Phone")
+    v_phn = fields.Char(related='v_name.v_phn', string="Phone")
     v_address = fields.Char(related='v_name.v_address', string="Address")
     v_company = fields.Char(related='v_name.v_company', string="Company")
     v_email = fields.Char(related='v_name.v_email', string="E-mail")
@@ -124,9 +129,11 @@ class Visit(models.Model):
     ], default='draft', tracking=True)
 
     def check_in_action(self):
+        for rec in self:
+            if rec.state != 'draft':
+                raise ValidationError(_('This visit is already checked in.'))
         if self.v_name:
             visitor_data = self.env['visit.data'].search([('v_name', '=', self.v_name.id)])
-            print("kk", visitor_data)
             for rec in visitor_data:
                 rec.entry_count = len(visitor_data)
         for rec in self:
@@ -134,7 +141,12 @@ class Visit(models.Model):
 
     def check_out_action(self):
         for rec in self:
-            rec.state = 'checkout'
+            if rec.state != 'checkin':
+                raise ValidationError(_('Only a checked-in visit can be checked out.'))
+            rec.write({
+                'state': 'checkout',
+                'check_out_date': fields.Datetime.now(),
+            })
 
     def visitor_entry_count(self):
         self.ensure_one()

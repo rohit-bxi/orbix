@@ -25,6 +25,7 @@
     'data': [
         'security/class_timetable_groups.xml',
         'security/ir.model.access.csv',
+        'security/class_timetable_security.xml',
         'views/batch_views.xml',
         'views/timing_views.xml',
         'views/timetable_views.xml',

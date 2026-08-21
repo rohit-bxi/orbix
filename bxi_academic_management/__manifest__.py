@@ -23,6 +23,7 @@
     'data': [
         'security/academic_management_groups.xml',
         'security/ir.model.access.csv',
+        'security/academic_management_security.xml',
         'views/board_views.xml',
         'views/curriculum_views.xml',
         'views/media_curriculum_views.xml',

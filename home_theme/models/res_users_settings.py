@@ -30,16 +30,19 @@ from odoo import fields, models
 class ResUsersSettings(models.Model):
     _inherit = 'res.users.settings'
 
+    # selection_add (not a full override) so the base web_enterprise values -
+    # in particular 'system' - stay valid; this module's own UI (see
+    # color_scheme_menu.js/color_scheme_service.js) only ever reads/writes
+    # 'light'/'dark'/'auto'/'schedule', so 'auto' here is deliberately a
+    # separate value from the base 'system' one, not a replacement for it.
     color_scheme = fields.Selection(
-        selection=[
-            ('light', 'Light'),
-            ('dark', 'Dark'),
+        selection_add=[
             ('auto', 'System'),
             # Dark within a per-user time window (e.g. 19:00–07:00). The
             # window fields + UI live in the Pro theme; the free service
             # still resolves the value so the schemes stay in one place.
             ('schedule', 'Scheduled'),
         ],
-        string='Color Scheme',
+        ondelete={'auto': 'set default', 'schedule': 'set default'},
         default='light',
     )

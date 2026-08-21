@@ -46,6 +46,7 @@ patch(attendanceApp.kioskAttendanceApp.prototype, {
         const self = this;
         let attempts = 0;
         const employeeDetails = await rpc('/employee/images',{
+            token: this.props.token,
             employee_id: employeeId,
         });
         

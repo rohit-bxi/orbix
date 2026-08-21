@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="timetable_rule_company" model="ir.rule">
+        <field name="name">Timetable: Multi-company</field>
+        <field name="model_id" ref="model_bxi_timetable"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <record id="timetable_line_rule_company" model="ir.rule">
+        <field name="name">Timetable Period: Multi-company</field>
+        <field name="model_id" ref="model_bxi_timetable_line"/>
+        <field name="domain_force">[('timetable_id.company_id', 'in', company_ids)]</field>
+    </record>
+</odoo>
