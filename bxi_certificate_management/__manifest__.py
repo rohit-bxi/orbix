@@ -1,6 +1,6 @@
 {
     'name': 'Certificate Management',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.0.1',
     'category': 'Education',
     'summary': 'Configure, issue, print and verify student certificates',
     'description': """
