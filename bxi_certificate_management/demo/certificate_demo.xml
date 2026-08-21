@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="demo_certificate_type_transfer" model="op.certificate.type">
+        <field name="name">Transfer Certificate</field>
+        <field name="code">TC</field>
+        <field name="category">transfer</field>
+        <field name="requires_approval">True</field>
+    </record>
+
+    <record id="demo_certificate_type_completion" model="op.certificate.type">
+        <field name="name">Course Completion Certificate</field>
+        <field name="code">CC</field>
+        <field name="category">academic</field>
+        <field name="validity_months">0</field>
+    </record>
+
+    <record id="demo_certificate_type_merit" model="op.certificate.type">
+        <field name="name">Merit Certificate</field>
+        <field name="code">MRT</field>
+        <field name="category">achievement</field>
+    </record>
+
+    <record id="demo_certificate_type_conduct" model="op.certificate.type">
+        <field name="name">Conduct Certificate</field>
+        <field name="code">CDT</field>
+        <field name="category">conduct</field>
+    </record>
+
+    <record id="demo_certificate_type_participation" model="op.certificate.type">
+        <field name="name">Participation Certificate</field>
+        <field name="code">PTC</field>
+        <field name="category">participation</field>
+        <field name="validity_months">12</field>
+    </record>
+</odoo>

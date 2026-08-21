@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="ir_cron_expire_certificates" model="ir.cron">
+        <field name="name">Certificate Management: Expire Certificates</field>
+        <field name="model_id" ref="model_op_certificate"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_expire_certificates()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="active">True</field>
+    </record>
+
+    <record id="ir_cron_certificate_expiry_reminder" model="ir.cron">
+        <field name="name">Certificate Management: Send Expiry Reminders</field>
+        <field name="model_id" ref="model_op_certificate"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_send_expiry_reminders()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="active">True</field>
+    </record>
+</odoo>

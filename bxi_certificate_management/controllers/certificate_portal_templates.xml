@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="certificate_verify_page" name="Certificate Verification">
+        <t t-call="website.layout">
+            <div class="container my-5" style="max-width:640px;">
+                <div class="card shadow-sm">
+                    <div class="card-body p-4">
+                        <t t-if="status == 'valid'">
+                            <span class="badge text-bg-success mb-3">Valid Certificate</span>
+                        </t>
+                        <t t-elif="status == 'revoked'">
+                            <span class="badge text-bg-danger mb-3">Revoked</span>
+                        </t>
+                        <t t-elif="status == 'expired'">
+                            <span class="badge text-bg-warning mb-3">Expired</span>
+                        </t>
+                        <t t-else="">
+                            <span class="badge text-bg-secondary mb-3">Certificate Not Found</span>
+                        </t>
+
+                        <t t-if="certificate and status != 'not_found'">
+                            <table class="table table-borderless mb-0">
+                                <tr>
+                                    <td class="text-muted">Certificate No.</td>
+                                    <td t-out="certificate.certificate_number"/>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Type</td>
+                                    <td t-out="certificate.certificate_type_id.name"/>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Issued To</td>
+                                    <td t-out="certificate.student_id.name"/>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Issue Date</td>
+                                    <td t-esc="certificate.issue_date" t-options="{'widget': 'date'}"/>
+                                </tr>
+                                <tr t-if="certificate.expiry_date">
+                                    <td class="text-muted">Valid Until</td>
+                                    <td t-esc="certificate.expiry_date" t-options="{'widget': 'date'}"/>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Institution</td>
+                                    <td t-out="certificate.company_id.name"/>
+                                </tr>
+                            </table>
+                        </t>
+                        <p t-else="" class="text-muted mb-0">
+                            No certificate matches this verification code.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <template id="portal_my_certificates" name="My Certificates">
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs_searchbar" t-value="False"/>
+            <div class="container">
+                <h3>My Certificates</h3>
+                <table class="table table-hover mt-3" t-if="certificates">
+                    <thead>
+                        <tr>
+                            <th>Certificate No.</th>
+                            <th>Type</th>
+                            <th>Issue Date</th>
+                            <th>Valid Until</th>
+                            <th/>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr t-foreach="certificates" t-as="certificate">
+                            <td t-out="certificate.certificate_number"/>
+                            <td t-out="certificate.certificate_type_id.name"/>
+                            <td t-esc="certificate.issue_date" t-options="{'widget': 'date'}"/>
+                            <td t-esc="certificate.expiry_date or ''" t-options="{'widget': 'date'}"/>
+                            <td>
+                                <a t-attf-href="/my/certificates/#{certificate.id}/download" class="btn btn-sm btn-primary">
+                                    Download
+                                </a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p t-else="" class="text-muted">You don't have any certificates yet.</p>
+            </div>
+        </t>
+    </template>
+
+    <template id="portal_my_home_certificate" name="Portal My Home: Certificates" customize_show="True" inherit_id="portal.portal_my_home" priority="60">
+        <xpath expr="//div[hasclass('o_portal_docs')]" position="inside">
+            <t t-call="portal.portal_docs_entry">
+                <t t-set="title">Certificates</t>
+                <t t-set="text">View and download your issued certificates</t>
+                <t t-set="url" t-value="'/my/certificates'"/>
+                <t t-set="placeholder_count" t-value="'certificate_count'"/>
+            </t>
+        </xpath>
+    </template>
+</odoo>
