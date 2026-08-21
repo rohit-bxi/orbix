@@ -59,6 +59,8 @@ class CanteenOrder(models.Model):
 
     def action_confirm(self):
         for order in self:
+            if order.state != 'draft':
+                raise ValidationError(_('Only a draft order can be confirmed.'))
             if not order.wallet_id:
                 raise ValidationError(_('No wallet found for this patron.'))
             if order.wallet_id.balance < order.total_amount:
@@ -72,18 +74,29 @@ class CanteenOrder(models.Model):
         if not self.env.user.has_group('bxi_school_canteen_management.group_canteen_manager'):
             raise AccessError(_('Only a Canteen Manager can force-confirm an order over wallet balance.'))
         for order in self:
+            if order.state != 'draft':
+                raise ValidationError(_('Only a draft order can be confirmed.'))
             if not order.wallet_id:
                 raise ValidationError(_('No wallet found for this patron.'))
             order._debit_wallet()
             order.write({'state': 'confirmed'})
 
     def action_preparing(self):
+        for order in self:
+            if order.state != 'confirmed':
+                raise ValidationError(_('Only a confirmed order can move to Preparing.'))
         self.write({'state': 'preparing'})
 
     def action_ready(self):
+        for order in self:
+            if order.state != 'preparing':
+                raise ValidationError(_('Only an order that is Preparing can move to Ready.'))
         self.write({'state': 'ready'})
 
     def action_served(self):
+        for order in self:
+            if order.state != 'ready':
+                raise ValidationError(_('Only an order that is Ready can be marked Served.'))
         self.write({'state': 'served'})
 
     def action_cancel(self):

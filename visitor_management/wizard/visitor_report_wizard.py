@@ -3,6 +3,7 @@ from odoo import fields, models
 
 class VisitorReport(models.TransientModel):
     _name = 'visitor.report.wizard'
+    _description = 'Visitor Report'
 
     date_from = fields.Date(string="Date From")
     date_to = fields.Date(string="Date To")

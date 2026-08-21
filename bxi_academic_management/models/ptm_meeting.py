@@ -13,3 +13,4 @@ class BxiPtmMeeting(models.Model):
     venue = fields.Char('Venue', required=True, tracking=True)
     class_ids = fields.Many2many('op.course', string='Classes', required=True, tracking=True)
     active = fields.Boolean(default=True)
+    company_id = fields.Many2one('res.company', default=lambda self: self.env.company)

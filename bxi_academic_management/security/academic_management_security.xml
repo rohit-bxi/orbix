@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="curriculum_rule_company" model="ir.rule">
+        <field name="name">Curriculum: Multi-company</field>
+        <field name="model_id" ref="model_bxi_curriculum"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <record id="subject_mapping_rule_company" model="ir.rule">
+        <field name="name">Subject Mapping: Multi-company</field>
+        <field name="model_id" ref="model_bxi_subject_mapping"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <record id="ptm_meeting_rule_company" model="ir.rule">
+        <field name="name">PTM Meeting: Multi-company</field>
+        <field name="model_id" ref="model_bxi_ptm_meeting"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+</odoo>

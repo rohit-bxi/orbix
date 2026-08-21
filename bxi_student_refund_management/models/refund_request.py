@@ -1,5 +1,5 @@
 from odoo import api, fields, models, _
-from odoo.exceptions import ValidationError
+from odoo.exceptions import UserError, ValidationError
 
 
 class StudentRefundRequest(models.Model):
@@ -152,6 +152,26 @@ class StudentRefundRequest(models.Model):
         if self.student_id:
             self.parent_id = self.student_id.parent_ids[:1]
 
+    @api.constrains('refund_amount', 'student_id')
+    def _check_refund_amount(self):
+        for refund in self:
+            if refund.refund_amount <= 0:
+                raise ValidationError(_('Refund amount must be greater than zero.'))
+            # A refund can never exceed what the student actually paid in, regardless
+            # of refund_type - this is the hard ceiling even where excess_amount (which
+            # only makes sense for a pure fee-overpayment refund) doesn't apply.
+            if refund.refund_amount > refund.total_paid_amount + 0.01:
+                raise ValidationError(_(
+                    'Refund amount (%(amount)s) cannot exceed the total amount this student has paid (%(paid)s).',
+                    amount=refund.refund_amount, paid=refund.total_paid_amount))
+
+    def _check_status(self, allowed, action_label):
+        for refund in self:
+            if refund.status not in allowed:
+                raise UserError(_(
+                    'Cannot %(action)s: refund %(name)s is in status "%(status)s".',
+                    action=action_label, name=refund.name, status=refund.status))
+
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
@@ -160,12 +180,15 @@ class StudentRefundRequest(models.Model):
         return super().create(vals_list)
 
     def action_submit(self):
+        self._check_status(('draft',), _('submit for review'))
         self.write({'status': 'pending_review'})
 
     def action_start_review(self):
+        self._check_status(('pending_review',), _('start review'))
         self.write({'status': 'under_review'})
 
     def action_approve(self):
+        self._check_status(('pending_review', 'under_review'), _('approve'))
         self.write({
             'status': 'approved',
             'approved_by': self.env.user.id,
@@ -173,9 +196,11 @@ class StudentRefundRequest(models.Model):
         })
 
     def action_reject(self):
+        self._check_status(('pending_review', 'under_review', 'approved'), _('reject'))
         self.write({'status': 'rejected'})
 
     def action_start_processing(self):
+        self._check_status(('approved',), _('start processing'))
         self.write({'status': 'processing'})
 
     def action_approve_and_process(self):
@@ -183,6 +208,7 @@ class StudentRefundRequest(models.Model):
         self.action_start_processing()
 
     def action_complete(self):
+        self._check_status(('processing',), _('mark completed'))
         for refund in self:
             if not refund.refund_utr:
                 raise ValidationError(_('Enter the UTR/Transaction ID before marking this refund completed.'))
@@ -194,5 +220,6 @@ class StudentRefundRequest(models.Model):
     def action_reset_to_draft(self):
         self.write({
             'status': 'draft', 'approved_by': False, 'approval_date': False,
-            'processed_date': False,
+            'processed_date': False, 'refund_utr': False,
+            'refund_completion_date': False, 'refund_confirmation_notes': False,
         })

@@ -26,9 +26,9 @@ class LabRoom(models.Model):
     active = fields.Boolean(default=True)
     company_id = fields.Many2one('res.company', default=lambda self: self.env.company)
 
-    _sql_constraints = [
-        ('code_uniq', 'unique(code)', 'Lab code must be unique!'),
-    ]
+    _code_uniq = models.Constraint(
+        'unique(code)', 'Lab code must be unique!',
+    )
 
     def _compute_session_count(self):
         for rec in self:

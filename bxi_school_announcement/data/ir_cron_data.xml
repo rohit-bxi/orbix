@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="ir_cron_announcement_publish_scheduled" model="ir.cron">
+        <field name="name">School Announcements: Publish Scheduled</field>
+        <field name="model_id" ref="model_bxi_announcement"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_publish_scheduled()</field>
+        <field name="interval_number">15</field>
+        <field name="interval_type">minutes</field>
+        <field name="active">True</field>
+    </record>
+</odoo>

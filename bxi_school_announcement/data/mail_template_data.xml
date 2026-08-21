@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="mail_template_announcement" model="mail.template">
+        <field name="name">Announcement: Notify Recipient</field>
+        <field name="model_id" ref="model_bxi_announcement"/>
+        <field name="subject">{{ object.title }}</field>
+        <field name="body_html" type="html">
+            <div style="margin:0;padding:0;">
+                <p><strong t-out="object.title"/></p>
+                <p t-out="object.body"/>
+                <p style="color:#888;font-size:12px;">Sent via the school announcement system.</p>
+            </div>
+        </field>
+        <field name="auto_delete" eval="True"/>
+    </record>
+</odoo>

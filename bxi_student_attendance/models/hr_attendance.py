@@ -50,7 +50,10 @@ class HrAttendance(models.Model):
         employee_ids = {vals['employee_id'] for vals in vals_list if vals.get('employee_id')}
         student_employee_ids = set()
         if employee_ids:
-            student_employee_ids = set(self.env['hr.employee'].browse(employee_ids).filtered('student_id').ids)
+            # .exists() first: a stale/invalid device-supplied employee_id must fall through to
+            # the normal FK validation in super().create() with a clean error, not crash here.
+            student_employee_ids = set(
+                self.env['hr.employee'].browse(employee_ids).exists().filtered('student_id').ids)
         for vals in vals_list:
             if 'status' not in vals and vals.get('employee_id') in student_employee_ids:
                 vals['status'] = 'present'

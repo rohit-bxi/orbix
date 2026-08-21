@@ -18,7 +18,7 @@ class LabAttendance(models.Model):
     date = fields.Date(related='session_id.date', string='Date', store=True)
     room_id = fields.Many2one(related='session_id.room_id', string='Lab Room', store=True)
 
-    _sql_constraints = [
-        ('session_student_uniq', 'unique(session_id, student_id)',
-         'Attendance for this student already exists for this session!'),
-    ]
+    _session_student_uniq = models.Constraint(
+        'unique(session_id, student_id)',
+        'Attendance for this student already exists for this session!',
+    )

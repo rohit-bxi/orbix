@@ -67,6 +67,8 @@ class UniformOrder(models.Model):
 
     def action_confirm(self):
         for order in self:
+            if order.state != 'draft':
+                raise ValidationError(_('Only a draft order can be confirmed.'))
             if not order.order_line_ids:
                 raise ValidationError(_('Add at least one order line before confirming.'))
             order._create_invoice()
@@ -136,6 +138,8 @@ class UniformOrder(models.Model):
 
     def action_mark_issued(self):
         for order in self:
+            if order.state != 'confirmed':
+                raise ValidationError(_('Only a confirmed order can be issued.'))
             shortages = order._check_stock_availability()
             if shortages:
                 raise ValidationError(_('Insufficient stock:\n%s') % '\n'.join(shortages))
@@ -146,6 +150,8 @@ class UniformOrder(models.Model):
         if not self.env.user.has_group('bxi_uniform_management.group_uniform_manager'):
             raise AccessError(_('Only a Uniform Manager can force-issue an order over available stock.'))
         for order in self:
+            if order.state != 'confirmed':
+                raise ValidationError(_('Only a confirmed order can be issued.'))
             order._issue_stock()
             order.write({'state': 'issued', 'issued_by': self.env.user.id})
 

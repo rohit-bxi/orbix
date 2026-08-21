@@ -66,7 +66,7 @@
                 <header>
                     <button name="check_in_action" type="object" class="oe_highlight" invisible="state != 'draft'" string="Check-In"/>
                     <button name="check_out_action" type="object" class="oe_highlight" string="Check-Out"
-                            invisible="check_out_date == False or state == 'checkout'"/>
+                            invisible="state != 'checkin'"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,checkin,checkout"/>
                 </header>
                 <sheet>

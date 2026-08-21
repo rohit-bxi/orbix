@@ -104,6 +104,16 @@ class StudentScholarship(models.Model):
             scholarship.scholarship_amount = discount
             scholarship.net_payable_amount = total - discount
 
+    @api.constrains('coverage_type', 'coverage_percentage', 'fixed_amount', 'max_amount_limit')
+    def _check_coverage_values(self):
+        for scholarship in self:
+            if scholarship.coverage_type == 'percentage' and not (0 <= scholarship.coverage_percentage <= 100):
+                raise ValidationError(_('Coverage Percentage must be between 0 and 100.'))
+            if scholarship.coverage_type == 'fixed_amount' and scholarship.fixed_amount < 0:
+                raise ValidationError(_('Fixed Amount cannot be negative.'))
+            if scholarship.max_amount_limit < 0:
+                raise ValidationError(_('Maximum Amount Limit cannot be negative.'))
+
     @api.onchange('program_id')
     def _onchange_program_id(self):
         if self.program_id:
@@ -176,6 +186,10 @@ class StudentScholarshipFeeLine(models.Model):
                     lambda l: scholarship.fee_category_scope == 'all'
                     or l.fee_category_id in scholarship.applicable_fee_category_ids)
                 discount = scholarship.fixed_amount / len(in_scope_siblings) if in_scope_siblings else 0.0
+            # A fee line's discount can never exceed what's actually owed on that
+            # line - clamp here so net_amount (and net_payable_amount) can't go
+            # negative regardless of how coverage_percentage/fixed_amount is set.
+            discount = max(0.0, min(discount, line.total_amount))
             line.discount_amount = discount
             line.net_amount = line.total_amount - discount
 
