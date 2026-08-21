@@ -1,0 +1,8 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_certificate_type_manager,certificate.type.manager,model_op_certificate_type,group_certificate_manager,1,1,1,1
+access_certificate_type_user,certificate.type.user,model_op_certificate_type,group_certificate_user,1,0,0,0
+access_certificate_manager,certificate.manager,model_op_certificate,group_certificate_manager,1,1,1,1
+access_certificate_user,certificate.user,model_op_certificate,group_certificate_user,1,1,1,0
+access_certificate_portal,certificate.portal,model_op_certificate,base.group_portal,1,0,0,0
+access_certificate_bulk_wizard,certificate.bulk.wizard,model_op_certificate_bulk_wizard,group_certificate_user,1,1,1,1
+access_certificate_revoke_wizard,certificate.revoke.wizard,model_op_certificate_revoke_wizard,group_certificate_manager,1,1,1,1

@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <template id="certificate_pdf_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="web.external_layout">
+                    <div class="page" style="position:relative;">
+                        <div t-if="o.state in ('revoked', 'expired')"
+                             style="position:absolute;top:40%;left:10%;width:80%;text-align:center;
+                                    font-size:64px;font-weight:bold;color:#c0392b;opacity:0.25;
+                                    transform:rotate(-25deg);z-index:10;">
+                            <t t-out="'REVOKED' if o.state == 'revoked' else 'EXPIRED'"/>
+                        </div>
+
+                        <div class="text-center mt-6">
+                            <h2 style="text-decoration:underline;">
+                                <t t-out="o.certificate_type_id.name"/>
+                            </h2>
+                        </div>
+                        <br/>
+                        <div style="width:100%;font-size:14px;">
+                            <span style="float:left;">
+                                <b>Certificate No.: </b><span t-out="o.certificate_number or '____________'"/>
+                            </span>
+                            <span style="float:right;">
+                                <b>Issue Date: </b><span t-esc="o.issue_date" t-options="{'widget': 'date'}"/>
+                            </span>
+                            <div style="clear:both;"></div>
+                        </div>
+                        <br/>
+
+                        <div style="font-size:16px;line-height:1.7;">
+                            <p>
+                                This is to certify that
+                                <strong><span t-out="o.student_id.name"/></strong>
+                                <t t-if="o.student_id.gr_no"> (Registration No. <span t-out="o.student_id.gr_no"/>)</t>
+                                <t t-if="o.course_id"> of <strong><span t-out="o.course_id.name"/></strong></t>
+                                <t t-if="o.batch_id"> (Batch: <span t-out="o.batch_id.name"/>)</t>
+                                <t t-if="o.subject_id"> in the subject <strong><span t-out="o.subject_id.name"/></strong></t>
+                                is associated with <strong><span t-out="o.company_id.name"/></strong>.
+                            </p>
+                            <p t-if="o.certificate_type_id.body_html" t-raw="o.certificate_type_id.body_html"/>
+                            <p t-if="o.expiry_date">
+                                This certificate is valid until <span t-esc="o.expiry_date" t-options="{'widget': 'date'}"/>.
+                            </p>
+                        </div>
+
+                        <div style="width:100%;margin-top:50px;display:flex;justify-content:space-between;align-items:flex-end;">
+                            <div>
+                                <img t-att-src="'/report/barcode/?barcode_type=QR&amp;value=%s&amp;width=110&amp;height=110'
+                                                 % ('%s/certificate/verify/%s' % (o.get_base_url(), o.verification_code))"
+                                     style="width:85px;height:85px;"/>
+                                <div style="font-size:9px;color:#666;max-width:140px;">
+                                    Scan to verify, or visit
+                                    <t t-out="'%s/certificate/verify/%s' % (o.get_base_url(), o.verification_code)"/>
+                                </div>
+                            </div>
+                            <div style="text-align:center;">
+                                <p>_______________________</p>
+                                <p>Principal / Head of Institution</p>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

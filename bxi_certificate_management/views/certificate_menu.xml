@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <menuitem id="menu_certificate_root" name="Certificates" sequence="66" web_icon="bxi_certificate_management,static/description/icon.png"/>
+
+    <menuitem id="menu_certificate_all" name="Certificates" parent="menu_certificate_root"
+              action="action_certificate" sequence="10"/>
+    <menuitem id="menu_certificate_bulk_wizard" name="Bulk Issue" parent="menu_certificate_root"
+              action="action_certificate_bulk_wizard" sequence="20"/>
+
+    <menuitem id="menu_certificate_config" name="Configuration" parent="menu_certificate_root"
+              sequence="90" groups="group_certificate_manager"/>
+    <menuitem id="menu_certificate_type" name="Certificate Types" parent="menu_certificate_config"
+              action="action_certificate_type" sequence="10"/>
+</odoo>
