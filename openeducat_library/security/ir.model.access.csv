@@ -26,6 +26,8 @@ access_op_student_course_parent,op_student_course_parent,openeducat_core.model_o
 access_op_res_partner_library,name_op_res_partner_library,base.model_res_partner,group_op_library,1,0,0,0
 access_op_media_type_faculty,name_op_media_type_faculty,model_op_media_type,group_op_library_user,1,1,0,0
 access_op_media_type_library,name_op_media_type_library,model_op_media_type,group_op_library,1,1,1,1
+access_op_media_genre_faculty,name_op_media_genre_faculty,model_op_media_genre,group_op_library_user,1,1,0,0
+access_op_media_genre_library,name_op_media_genre_library,model_op_media_genre,group_op_library,1,1,1,1
 access_issue_media,name_issue_media,model_issue_media,group_op_library,1,1,1,1
 access_reserve_media,name_reserve_media,model_reserve_media,group_op_library,1,1,1,1
 access_return_media,name_return_media,model_return_media,group_op_library,1,1,1,1

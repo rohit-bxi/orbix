@@ -28,6 +28,7 @@ class TestLibraryCommon(common.TransactionCase):
         self.op_author = self.env['op.author']
         self.op_publisher = self.env['op.publisher']
         self.op_media_type = self.env['op.media.type']
+        self.op_media_genre = self.env['op.media.genre']
         self.op_media_tag = self.env['op.tag']
         self.op_media = self.env['op.media']
         self.op_media_unit = self.env['op.media.unit']
@@ -55,10 +56,13 @@ class TestLibraryCommon(common.TransactionCase):
                          self.op_publisher.create({'name': 'Test Publisher'})
         self.media_type = self.op_media_type.search([('name', '=', 'Book')], limit=1) or \
                           self.op_media_type.create({'name': 'Book', 'code': 'B1'})
+        self.media_genre = self.op_media_genre.search([('name', '=', 'Test Genre')], limit=1) or \
+                           self.op_media_genre.create({'name': 'Test Genre'})
         self.media = self.op_media.search([('name', '=', 'Test Book')], limit=1) or \
                      self.op_media.create({
             'name': 'Test Book',
             'media_type_id': self.media_type.id,
+            'genre_id': self.media_genre.id,
             'isbn': '1234567890',
             'author_ids': [(6, 0, [self.author.id])],
             'publisher_ids': [(6, 0, [self.publisher.id])],

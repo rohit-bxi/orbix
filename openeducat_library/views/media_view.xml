@@ -9,6 +9,14 @@
                 <list string="Media">
                     <field name="name"/>
                     <field name="media_type_id"/>
+                    <field name="genre_id"/>
+                    <field name="language"/>
+                    <field name="total_copies"/>
+                    <field name="available_copies"/>
+                    <field name="status" widget="badge"
+                           decoration-success="status == 'available'"
+                           decoration-warning="status == 'limited'"
+                           decoration-danger="status == 'unavailable'"/>
                     <field name="isbn"/>
                     <field name="internal_code"/>
                     <field name="edition"/>
@@ -43,12 +51,22 @@
                                 <field name="isbn"/>
                                 <field name="edition"/>
                                 <field name="media_type_id"/>
+                                <field name="genre_id"/>
+                                <field name="language"/>
+                                <field name="publish_year"/>
+                                <field name="number_of_pages"/>
                             </group>
                             <group>
                                 <field name="publisher_ids" widget="many2many_tags"/>
                                 <field name="internal_code"/>
                                 <field name="tags" widget="many2many_tags"/>
-                                <field name="attachment_ids" widget="many2many_binary" string="Upload Book PDF"/>
+                                <field name="shelf_location"/>
+                                <field name="allocation"/>
+                                <field name="rating"/>
+                                <field name="total_copies"/>
+                                <field name="available_copies" readonly="1"/>
+                                <field name="status" readonly="1"/>
+                                <field name="attachment_ids" widget="many2many_binary" string="Upload File"/>
                             </group>
                         </group>
                         <notebook colspan="4">
@@ -121,12 +139,19 @@
                     <field name="course_ids"/>
                     <field name="subject_ids"/>
                     <field name="internal_code"/>
+                    <field name="genre_id"/>
                     <newline/>
                     <group>
                         <filter string="Edition" name="group_by_lbr_media_edition"
                                 domain="[]" context="{'group_by':'edition'}"/>
                         <filter string="Type" name="group_by_lbr_media_type"
                                 domain="[]" context="{'group_by':'media_type_id'}"/>
+                        <filter string="Genre" name="group_by_lbr_media_genre"
+                                domain="[]" context="{'group_by':'genre_id'}"/>
+                        <filter string="Language" name="group_by_lbr_media_language"
+                                domain="[]" context="{'group_by':'language'}"/>
+                        <filter string="Status" name="group_by_lbr_media_status"
+                                domain="[]" context="{'group_by':'status'}"/>
                         <filter string="Archived" name="inactive"
                                 domain="[('active', '=', False)]"/>
                     </group>

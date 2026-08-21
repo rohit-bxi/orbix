@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+        <record id="op_media_genre_1" model="op.media.genre">
+            <field name="name">Technology</field>
+        </record>
+
+        <record id="op_media_genre_2" model="op.media.genre">
+            <field name="name">Science</field>
+        </record>
+
+        <record id="op_media_genre_3" model="op.media.genre">
+            <field name="name">Finance</field>
+        </record>
+
+        <record id="op_media_genre_4" model="op.media.genre">
+            <field name="name">Fiction</field>
+        </record>
+
+</odoo>

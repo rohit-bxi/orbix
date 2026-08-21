@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+        <record id="action_op_book_catalog" model="ir.actions.client">
+            <field name="name">Book Catalog</field>
+            <field name="tag">book_catalog_client_action</field>
+            <field name="target">current</field>
+        </record>
+
+</odoo>

@@ -93,7 +93,10 @@ class TestLibraryMedia(TestLibraryCommon):
         media = self.op_media.create({
             'name': 'New Media',
             'media_type_id': self.media_type.id,
+            'genre_id': self.media_genre.id,
             'isbn': '9876543210',
+            'author_ids': [(6, 0, [self.author.id])],
+            'publisher_ids': [(6, 0, [self.publisher.id])],
         })
         self.assertEqual(media.name, 'New Media')
 

@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="openeducat_library.BookDetailsDialog">
+        <Dialog title="'Book Details'" size="'md'">
+            <div class="o_book_details" t-if="state.book">
+                <h5 class="d-flex align-items-center gap-2">
+                    <i class="fa fa-book text-primary"/>
+                    <t t-esc="state.book.name"/>
+                </h5>
+                <div class="row g-3 mt-1">
+                    <div class="col-6">
+                        <div class="text-muted small">Author</div>
+                        <div t-esc="authorNames"/>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-muted small">Genre</div>
+                        <div t-esc="state.book.genre_id and state.book.genre_id[1] or 'Not selected'"/>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-muted small">Publisher</div>
+                        <div t-esc="publisherNames"/>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-muted small">Publish Year</div>
+                        <div t-esc="state.book.publish_year or '-'"/>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-muted small">Total Copies</div>
+                        <div t-esc="state.book.total_copies"/>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-muted small">Number of Pages</div>
+                        <div t-esc="state.book.number_of_pages or '-'"/>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-muted small">Language</div>
+                        <div t-esc="state.book.language or '-'"/>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-muted small">Shelf Location</div>
+                        <div t-esc="state.book.shelf_location or '-'"/>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-muted small">Allocation</div>
+                        <div t-esc="state.book.allocation or '-'"/>
+                    </div>
+                    <div class="col-12">
+                        <div class="text-muted small">Description</div>
+                        <div t-esc="state.book.description or '-'"/>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-muted small">Available Copies</div>
+                        <div>
+                            <t t-esc="state.book.available_copies"/> / <t t-esc="state.book.total_copies"/>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-muted small">Status</div>
+                        <div>
+                            <span t-attf-class="badge {{ state.book.status === 'available' ? 'text-bg-success' : state.book.status === 'limited' ? 'text-bg-warning' : 'text-bg-danger' }}">
+                                <t t-if="state.book.status === 'available'">In Stock</t>
+                                <t t-elif="state.book.status === 'limited'">Limited</t>
+                                <t t-else="">Unavailable</t>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="col-12" t-if="state.attachments.length">
+                        <div class="text-muted small">File</div>
+                        <a t-foreach="state.attachments" t-as="att" t-key="att.id"
+                           t-att-href="attachmentUrl(att)" target="_blank" class="me-2">
+                            <i class="fa fa-file-pdf-o fa-2x text-danger"/>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <t t-set-slot="footer">
+                <button class="btn btn-secondary" t-on-click="() => this.props.close()">Close</button>
+            </t>
+        </Dialog>
+    </t>
+
+</templates>

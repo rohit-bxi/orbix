@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="openeducat_library.BookFormDialog">
+        <Dialog title="title" size="'lg'">
+            <div class="o_book_form">
+                <h6 class="text-muted mb-3">Book Details</h6>
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label">Book Title *</label>
+                        <input type="text" class="form-control" t-att-class="{'is-invalid': state.errors.name}"
+                               placeholder="Enter book title"
+                               t-att-value="state.name"
+                               t-on-input="onNameInput"/>
+                        <div class="invalid-feedback" t-if="state.errors.name" t-esc="state.errors.name"/>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Author(s) *</label>
+                        <MultiSelectTags resModel="'op.author'" selected="state.authors"
+                                          onChange="onAuthorsChange"
+                                          placeholder="'Author name'"/>
+                        <div class="text-danger small mt-1" t-if="state.errors.authors" t-esc="state.errors.authors"/>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Genre *</label>
+                        <select class="form-select" t-att-class="{'is-invalid': state.errors.genre_id}"
+                                t-on-change="onGenreChange">
+                            <option value="">Select Genre</option>
+                            <option t-foreach="state.genres" t-as="genre" t-key="genre.id"
+                                    t-att-value="genre.id" t-att-selected="genre.id === state.genre_id">
+                                <t t-esc="genre.name"/>
+                            </option>
+                        </select>
+                        <div class="invalid-feedback" t-if="state.errors.genre_id" t-esc="state.errors.genre_id"/>
+                        <small class="text-muted" t-if="!state.genres.length">
+                            No genres found. Create one from the Library &#8594; Genre menu first.
+                        </small>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Publisher(s) *</label>
+                        <MultiSelectTags resModel="'op.publisher'" selected="state.publishers"
+                                          onChange="onPublishersChange"
+                                          placeholder="'Publisher name'"/>
+                        <div class="text-danger small mt-1" t-if="state.errors.publishers" t-esc="state.errors.publishers"/>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Publish Year</label>
+                        <input type="number" class="form-control" placeholder="Enter Year"
+                               t-att-value="state.publish_year"
+                               t-on-input="onPublishYearInput"/>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Total Copies *</label>
+                        <input type="number" min="0" class="form-control" t-att-class="{'is-invalid': state.errors.total_copies}"
+                               placeholder="Number of copies"
+                               t-att-value="state.total_copies"
+                               t-on-input="onTotalCopiesInput"/>
+                        <div class="invalid-feedback" t-if="state.errors.total_copies" t-esc="state.errors.total_copies"/>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Number of Pages</label>
+                        <input type="number" class="form-control" placeholder="e.g. 300"
+                               t-att-value="state.number_of_pages"
+                               t-on-input="onNumberOfPagesInput"/>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Language</label>
+                        <select class="form-select"
+                                t-on-change="onLanguageChange">
+                            <option value="">Select Language</option>
+                            <option t-foreach="state.languageOptions" t-as="opt" t-key="opt[0]"
+                                    t-att-value="opt[0]" t-att-selected="opt[0] === state.language">
+                                <t t-esc="opt[1]"/>
+                            </option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Shelf Location</label>
+                        <input type="text" class="form-control" placeholder="e.g. A-12, Row 3"
+                               t-att-value="state.shelf_location"
+                               t-on-input="onShelfLocationInput"/>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Allocation</label>
+                        <input type="text" class="form-control" placeholder="Class-Section, etc."
+                               t-att-value="state.allocation"
+                               t-on-input="onAllocationInput"/>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" rows="3" placeholder="Short description of the book..."
+                                  t-on-input="onDescriptionInput"><t t-esc="state.description"/></textarea>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Upload File</label>
+                        <input type="file" class="form-control" accept=".pdf,.jpg,.jpeg,.png,.mp4"
+                               t-on-change="onFileChange"/>
+                        <small class="text-muted" t-if="state.newFile">
+                            <t t-esc="state.newFile.name"/>
+                        </small>
+                        <small class="text-muted" t-elif="state.attachments.length">
+                            <t t-esc="state.attachments[0].name"/>
+                        </small>
+                    </div>
+                </div>
+            </div>
+            <t t-set-slot="footer">
+                <button class="btn btn-secondary" t-on-click="onCancel">Cancel</button>
+                <button class="btn btn-primary" t-att-disabled="state.saving" t-on-click="onSave">
+                    <i class="fa fa-save me-1"/>Save
+                </button>
+            </t>
+        </Dialog>
+    </t>
+
+</templates>

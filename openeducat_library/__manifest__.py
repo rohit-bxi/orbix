@@ -58,12 +58,20 @@
         'views/publisher_view.xml',
         'views/tag_view.xml',
         'views/media_type_view.xml',
+        'views/media_genre_view.xml',
+        'views/book_catalog_view.xml',
         'views/student_view.xml',
         'views/faculty_view.xml',
         'menus/op_menu.xml',
     ],
+    'assets': {
+        'web.assets_backend': [
+            'openeducat_library/static/src/book_catalog/**/*',
+        ],
+    },
     'demo': [
         'demo/media_type_demo.xml',
+        'demo/media_genre_demo.xml',
         'demo/res_users_demo.xml',
         'demo/tag_demo.xml',
         'demo/publisher_demo.xml',
