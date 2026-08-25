@@ -12,6 +12,7 @@
                 <field name="I_AM"/>
                 <field name="v_gender" optional="hide"/>
                 <field name="v_company"/>
+                <field name="category_id" optional="show"/>
                 <field name="v_email" widget="email" optional="hide"/>
                 <field name="v_address" optional="hide"/>
             </list>
@@ -29,6 +30,7 @@
                 <field name="v_phn"/>
                 <field name="v_company"/>
                 <field name="v_email"/>
+                <field name="category_id"/>
                 <separator/>
                 <filter string="Male" name="male" domain="[('v_gender', '=', 'male')]"/>
                 <filter string="Female" name="female" domain="[('v_gender', '=', 'female')]"/>
@@ -41,6 +43,7 @@
                     <filter string="Visitor Type" name="group_i_am" context="{'group_by': 'I_AM'}"/>
                     <filter string="Company" name="group_company" context="{'group_by': 'v_company'}"/>
                     <filter string="Gender" name="group_gender" context="{'group_by': 'v_gender'}"/>
+                    <filter string="Category" name="group_category" context="{'group_by': 'category_id'}"/>
                 </group>
             </search>
         </field>
@@ -74,8 +77,14 @@
                             <field name="v_company"/>
                             <field name="v_email" widget="email"/>
                             <field name="v_address"/>
+                            <field name="category_id"/>
                         </group>
                     </group>
+                    <notebook>
+                        <page string="Documents">
+                            <field name="v_document_ids" widget="many2many_binary"/>
+                        </page>
+                    </notebook>
                 </sheet>
                 <chatter/>
             </form>

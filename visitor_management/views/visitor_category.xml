@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <!-- List View -->
+    <record id="visitor_category_tree_view" model="ir.ui.view">
+        <field name="name">visitor.category.list.view</field>
+        <field name="model">visitor.category</field>
+        <field name="arch" type="xml">
+            <list string="Visitor Categories" editable="bottom">
+                <field name="name"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="visitor_category_form_view" model="ir.ui.view">
+        <field name="name">visitor.category.form.view</field>
+        <field name="model">visitor.category</field>
+        <field name="arch" type="xml">
+            <form string="Visitor Category">
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_visitor_category" model="ir.actions.act_window">
+        <field name="name">Visitor Categories</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">visitor.category</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <menuitem id="visitor_category_config_menu" name="Configuration" parent="visitor_management.visitor_root" sequence="30"/>
+    <menuitem id="visitor_category_menu_id" name="Visitor Categories" parent="visitor_category_config_menu" action="action_visitor_category" sequence="1"/>
+</odoo>

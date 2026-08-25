@@ -13,6 +13,7 @@
                 <field name="v_company"/>
                 <field name="v_email" widget="email" optional="hide"/>
                 <field name="v_address" optional="hide"/>
+                <field name="category_id" optional="hide"/>
                 <field name="v_purpose" optional="hide"/>
                 <field name="employee_id"/>
                 <field name="work_phone" widget="phone" optional="hide"/>
@@ -39,6 +40,7 @@
                 <field name="v_company"/>
                 <field name="employee_id"/>
                 <field name="dept"/>
+                <field name="category_id"/>
                 <filter string="Today" name="today" domain="[('check_in_date', '&gt;=', context_today().strftime('%Y-%m-%d'))]"/>
                 <separator/>
                 <filter string="Draft" name="draft" domain="[('state', '=', 'draft')]"/>
@@ -79,7 +81,7 @@
                     <div class="oe_title">
                         <label for="v_name" string="Visitor"/>
                         <h1>
-                            <field name="v_name"/>
+                            <field name="v_name" options="{'no_create': True, 'no_open': True}"/>
                         </h1>
                     </div>
                     <group>
@@ -90,6 +92,7 @@
                             <field name="v_company"/>
                             <field name="v_email" widget="email"/>
                             <field name="v_address"/>
+                            <field name="category_id" options="{'no_create': True, 'no_open': True}"/>
                             <field name="v_purpose"/>
                         </group>
                         <group string="Host Details">
@@ -97,7 +100,7 @@
                             <field name="image_1920" widget="image" class="oe_avatar" options="{'preview_image': 'image_1920'}"/>
                             <field name="work_phone" widget="phone"/>
                             <field name="work_email" widget="email"/>
-                            <field name="dept"/>
+                            <field name="dept" options="{'no_create': True, 'no_open': True}"/>
                             <field name="job_title"/>
                         </group>
                     </group>
@@ -109,6 +112,11 @@
                             <field name="check_out_date" widget="datetime"/>
                         </group>
                     </group>
+                    <notebook>
+                        <page string="Documents">
+                            <field name="v_document_ids" widget="many2many_binary"/>
+                        </page>
+                    </notebook>
                 </sheet>
                 <chatter/>
             </form>
