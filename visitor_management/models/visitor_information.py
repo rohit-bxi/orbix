@@ -8,6 +8,14 @@ from odoo import fields, models, api
 from odoo.exceptions import ValidationError
 
 
+class VisitorCategory(models.Model):
+    _name = 'visitor.category'
+    _description = 'Visitor Category'
+    _order = 'name'
+
+    name = fields.Char(string='Name', required=True)
+
+
 class Visitor(models.Model):
     _name = 'visitor.data'
     _inherit = ['mail.thread', 'mail.activity.mixin']
@@ -34,6 +42,9 @@ class Visitor(models.Model):
                               index=True,
                               default=lambda self: _('New'))
     channel = fields.Many2one('discuss.channel')
+    category_id = fields.Many2one('visitor.category', string='Category', tracking=True)
+    v_document_ids = fields.Many2many('ir.attachment', 'visitor_data_attachment_rel',
+                                      'visitor_id', 'attachment_id', string='Documents')
     # appoint_count = fields.Integer(string='Appointment', computed='get_appoint_count')
 
     # @api.depends('v_name')
@@ -104,20 +115,22 @@ class Visit(models.Model):
 
     v_name = fields.Many2one(comodel_name="visitor.data", string="Name", required=True, )
     v_image = fields.Binary(related='v_name.v_image', string="Image")
-    v_gender = fields.Selection(related='v_name.v_gender', string="Gender")
-    I_AM = fields.Selection(related='v_name.I_AM', string="Type")
-    v_phn = fields.Char(related='v_name.v_phn', string="Phone")
-    v_address = fields.Char(related='v_name.v_address', string="Address")
-    v_company = fields.Char(related='v_name.v_company', string="Company")
-    v_email = fields.Char(related='v_name.v_email', string="E-mail")
+    v_gender = fields.Selection(related='v_name.v_gender', string="Gender", readonly=False)
+    I_AM = fields.Selection(related='v_name.I_AM', string="Type", readonly=False)
+    v_phn = fields.Char(related='v_name.v_phn', string="Phone", readonly=False)
+    v_address = fields.Char(related='v_name.v_address', string="Address", readonly=False)
+    v_company = fields.Char(related='v_name.v_company', string="Company", readonly=False)
+    v_email = fields.Char(related='v_name.v_email', string="E-mail", readonly=False)
+    category_id = fields.Many2one(related='v_name.category_id', string="Category", store=True, readonly=False)
+    v_document_ids = fields.Many2many(related='v_name.v_document_ids', string="Documents", readonly=False)
     v_purpose = fields.Text(string="Purpose")
     entry_count = fields.Integer(string="Total Entry")
 
     employee_id = fields.Many2one('hr.employee', string='Employee', required=True)
-    image_1920 = fields.Image(related='employee_id.image_1920', string="Photo")
-    work_phone = fields.Char(related='employee_id.work_phone', string="Phone")
-    work_email = fields.Char(related='employee_id.work_email', string="Email")
-    dept = fields.Many2one(related='employee_id.department_id', string="Department")
+    image_1920 = fields.Image(related='employee_id.image_1920', string="Photo", readonly=False)
+    work_phone = fields.Char(related='employee_id.work_phone', string="Phone", readonly=False)
+    work_email = fields.Char(related='employee_id.work_email', string="Email", readonly=False)
+    dept = fields.Many2one(related='employee_id.department_id', string="Department", readonly=False)
     job_title = fields.Char(related='employee_id.job_title', string=" Job Position")
     check_in_date = fields.Datetime(string='Check-In', default=lambda self: datetime.today(), readonly=True)
     check_out_date = fields.Datetime(string='Check-Out', )

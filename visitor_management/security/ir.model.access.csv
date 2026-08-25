@@ -4,3 +4,5 @@ access_visit_data,access.visit.data,model_visit_data,,1,1,1,0
 access_visitor_report_wizard,access.visitor.report.wizard,model_visitor_report_wizard,,1,1,1,1
 access_visitor_data_management,access.visitor.data.management,model_visitor_data,group_visitor_management,1,1,1,1
 access_visit_data_management,access.visit.data.management,model_visit_data,group_visitor_management,1,1,1,1
+access_visitor_category,access.visitor.category,model_visitor_category,,1,0,0,0
+access_visitor_category_management,access.visitor.category.management,model_visitor_category,group_visitor_management,1,1,1,1
