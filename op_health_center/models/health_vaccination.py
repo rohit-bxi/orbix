@@ -9,6 +9,10 @@ class HealthVaccination(models.Model):
     _order = 'scheduled_date desc'
 
     name = fields.Char(string='Reference', copy=False, readonly=True, default=lambda self: _('New'))
+    type = fields.Selection([
+        ('student', 'Student'),
+        ('teacher', 'Teacher'),
+    ], string='Type', required=True, default='student', tracking=True)
     vaccine_id = fields.Many2one('op.health.vaccine.type', string='Vaccine', required=True, tracking=True)
     dose_number = fields.Integer(string='Dose Number', default=1)
     scheduled_date = fields.Date()
@@ -32,6 +36,13 @@ class HealthVaccination(models.Model):
             if vals.get('name', _('New')) == _('New'):
                 vals['name'] = self.env['ir.sequence'].next_by_code('op.health.vaccination') or _('New')
         return super().create(vals_list)
+
+    @api.onchange('type')
+    def _onchange_type(self):
+        if self.type == 'student':
+            self.faculty_id = False
+        elif self.type == 'teacher':
+            self.student_id = False
 
     @api.constrains('state', 'date_administered')
     def _check_date_administered(self):

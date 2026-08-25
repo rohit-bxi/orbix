@@ -9,6 +9,10 @@ class HealthCheckup(models.Model):
     _order = 'checkup_date desc'
 
     name = fields.Char(string='Reference', copy=False, readonly=True, default=lambda self: _('New'))
+    type = fields.Selection([
+        ('student', 'Student'),
+        ('teacher', 'Teacher'),
+    ], string='Type', required=True, default='student', tracking=True)
     checkup_date = fields.Date(required=True, default=fields.Date.context_today, tracking=True)
     checkup_type = fields.Selection([
         ('annual', 'Annual'),
@@ -76,6 +80,13 @@ class HealthCheckup(models.Model):
             else:
                 record.bmi = 0.0
                 record.bmi_category = False
+
+    @api.onchange('type')
+    def _onchange_type(self):
+        if self.type == 'student':
+            self.faculty_id = False
+        elif self.type == 'teacher':
+            self.student_id = False
 
     @api.constrains('height_cm', 'weight_kg')
     def _check_positive_measurements(self):
