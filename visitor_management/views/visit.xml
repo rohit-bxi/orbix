@@ -73,8 +73,8 @@
                 </header>
                 <sheet>
                     <div name="button_box" class="oe_button_box">
-                        <button class="oe_stat_button" type="object" name="visitor_entry_count" icon="fa-users" string="All Entry">
-                            <field string="Total Visit" name="entry_count" readonly="1"/>
+                        <button class="oe_stat_button" type="object" name="visitor_entry_count" icon="fa-users">
+                            <field string="Total Visit" name="entry_count" widget="statinfo"/>
                         </button>
                     </div>
                     <field name="v_image" widget="image" class="oe_avatar" options="{'preview_image': 'v_image'}"/>

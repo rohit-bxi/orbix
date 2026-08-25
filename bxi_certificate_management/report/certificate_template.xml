@@ -3,65 +3,120 @@
     <template id="certificate_pdf_template">
         <t t-call="web.html_container">
             <t t-foreach="docs" t-as="o">
-                <t t-call="web.external_layout">
-                    <div class="page" style="position:relative;">
-                        <div t-if="o.state in ('revoked', 'expired')"
-                             style="position:absolute;top:40%;left:10%;width:80%;text-align:center;
-                                    font-size:64px;font-weight:bold;color:#c0392b;opacity:0.25;
-                                    transform:rotate(-25deg);z-index:10;">
-                            <t t-out="'REVOKED' if o.state == 'revoked' else 'EXPIRED'"/>
-                        </div>
+                    <div class="page" style="position:relative;padding:0;">
+                        <style>
+                            .cert-outer{border:6px solid #0e4a6b;padding:6px;}
+                            .cert-inner{border:1.5px solid #c9a34e;padding:26px 46px 18px 46px;
+                                font-family:Georgia,'Times New Roman',serif;color:#1f2937;position:relative;}
+                            .cert-watermark{position:absolute;top:46%;left:50%;transform:translate(-50%,-50%) rotate(-18deg);
+                                font-size:78px;font-weight:800;color:#c0392b;opacity:0.16;text-transform:uppercase;
+                                white-space:nowrap;z-index:5;font-family:Arial,sans-serif;}
+                            .cert-topline{display:flex;justify-content:space-between;font-family:Arial,sans-serif;
+                                font-size:9.5px;color:#8a8a8a;letter-spacing:0.4px;}
+                            .cert-brand{text-align:center;margin-top:2px;}
+                            .cert-brand img{max-height:44px;max-width:180px;}
+                            .cert-company{font-family:Arial,sans-serif;font-size:12px;letter-spacing:2px;
+                                text-transform:uppercase;color:#0e4a6b;font-weight:700;margin-top:4px;}
+                            .cert-tagline{font-family:Arial,sans-serif;font-size:9px;letter-spacing:1px;
+                                text-transform:uppercase;color:#9ca3af;margin-top:2px;}
+                            .cert-badge{display:inline-block;font-family:Arial,sans-serif;font-size:8.5px;
+                                letter-spacing:1px;text-transform:uppercase;color:#0e4a6b;border:1px solid #c9a34e;
+                                border-radius:10px;padding:2px 10px;margin-top:10px;}
+                            .cert-title{text-align:center;font-size:34px;font-weight:700;color:#0e4a6b;
+                                margin:14px 0 2px 0;letter-spacing:0.5px;}
+                            .cert-title-rule{width:130px;height:2px;background:#c9a34e;margin:0 auto 20px auto;}
+                            .cert-presented{text-align:center;font-family:Arial,sans-serif;font-size:10.5px;
+                                text-transform:uppercase;letter-spacing:2px;color:#9ca3af;}
+                            .cert-name{text-align:center;font-size:30px;font-style:italic;font-weight:700;
+                                color:#111827;margin:8px 0 2px 0;}
+                            .cert-name-rule{width:280px;border-bottom:1px solid #d1d5db;margin:0 auto 14px auto;}
+                            .cert-body{text-align:center;font-size:13px;line-height:1.9;color:#374151;
+                                max-width:640px;margin:0 auto;}
+                            .cert-meta{width:100%;font-family:Arial,sans-serif;font-size:9.5px;color:#6b7280;
+                                text-align:center;margin-top:10px;}
+                            .cert-footer{margin-top:34px;}
+                            .cert-seal{width:70px;height:70px;border-radius:50%;
+                                border:2px solid #c9a34e;background:#0e4a6b;color:#fff;text-align:center;
+                                line-height:66px;font-family:Georgia,serif;font-size:22px;font-weight:700;margin:0 auto;}
+                            .cert-seal-label{text-align:center;font-family:Arial,sans-serif;font-size:7.5px;
+                                letter-spacing:1px;text-transform:uppercase;color:#9ca3af;margin-top:4px;}
+                            .cert-sign{text-align:center;font-family:Arial,sans-serif;font-size:10px;color:#374151;}
+                            .cert-sign .line{border-top:1px solid #374151;width:160px;margin:32px auto 4px auto;}
+                            .cert-sign .role{font-size:8.5px;color:#9ca3af;text-transform:uppercase;letter-spacing:0.5px;}
+                            .cert-verify{text-align:center;font-family:Arial,sans-serif;font-size:7.5px;color:#b0b0b0;
+                                margin-top:10px;}
+                        </style>
 
-                        <div class="text-center mt-6">
-                            <h2 style="text-decoration:underline;">
-                                <t t-out="o.certificate_type_id.name"/>
-                            </h2>
-                        </div>
-                        <br/>
-                        <div style="width:100%;font-size:14px;">
-                            <span style="float:left;">
-                                <b>Certificate No.: </b><span t-out="o.certificate_number or '____________'"/>
-                            </span>
-                            <span style="float:right;">
-                                <b>Issue Date: </b><span t-esc="o.issue_date" t-options="{'widget': 'date'}"/>
-                            </span>
-                            <div style="clear:both;"></div>
-                        </div>
-                        <br/>
-
-                        <div style="font-size:16px;line-height:1.7;">
-                            <p>
-                                This is to certify that
-                                <strong><span t-out="o.student_id.name"/></strong>
-                                <t t-if="o.student_id.gr_no"> (Registration No. <span t-out="o.student_id.gr_no"/>)</t>
-                                <t t-if="o.course_id"> of <strong><span t-out="o.course_id.name"/></strong></t>
-                                <t t-if="o.batch_id"> (Batch: <span t-out="o.batch_id.name"/>)</t>
-                                <t t-if="o.subject_id"> in the subject <strong><span t-out="o.subject_id.name"/></strong></t>
-                                is associated with <strong><span t-out="o.company_id.name"/></strong>.
-                            </p>
-                            <p t-if="o.certificate_type_id.body_html" t-raw="o.certificate_type_id.body_html"/>
-                            <p t-if="o.expiry_date">
-                                This certificate is valid until <span t-esc="o.expiry_date" t-options="{'widget': 'date'}"/>.
-                            </p>
-                        </div>
-
-                        <div style="width:100%;margin-top:50px;display:flex;justify-content:space-between;align-items:flex-end;">
-                            <div>
-                                <img t-att-src="'/report/barcode/?barcode_type=QR&amp;value=%s&amp;width=110&amp;height=110'
-                                                 % ('%s/certificate/verify/%s' % (o.get_base_url(), o.verification_code))"
-                                     style="width:85px;height:85px;"/>
-                                <div style="font-size:9px;color:#666;max-width:140px;">
-                                    Scan to verify, or visit
-                                    <t t-out="'%s/certificate/verify/%s' % (o.get_base_url(), o.verification_code)"/>
+                        <div class="cert-outer">
+                            <div class="cert-inner">
+                                <div t-if="o.state in ('revoked', 'expired')" class="cert-watermark">
+                                    <t t-out="'REVOKED' if o.state == 'revoked' else 'EXPIRED'"/>
                                 </div>
-                            </div>
-                            <div style="text-align:center;">
-                                <p>_______________________</p>
-                                <p>Principal / Head of Institution</p>
+
+                                <div class="cert-topline">
+                                    <span>Certificate No.: <strong t-out="o.certificate_number or '____________'"/></span>
+                                    <span>Issue Date: <strong><span t-esc="o.issue_date" t-options="{'widget': 'date'}"/></strong></span>
+                                </div>
+
+                                <div class="cert-brand">
+                                    <img t-if="o.company_id.logo" t-att-src="image_data_uri(o.company_id.logo)" alt="Logo"/>
+                                    <div class="cert-company" t-out="o.company_id.name"/>
+                                    <div class="cert-tagline">School Certification Office</div>
+                                    <div class="cert-badge" t-out="dict(o.certificate_type_id._fields['category'].selection).get(o.certificate_type_id.category)"/>
+                                </div>
+
+                                <div class="cert-title" t-out="o.certificate_type_id.name"/>
+                                <div class="cert-title-rule"/>
+
+                                <div class="cert-presented">This certificate is proudly presented to</div>
+                                <div class="cert-name" t-out="o.student_id.name"/>
+                                <div class="cert-name-rule"/>
+
+                                <div class="cert-body">
+                                    <p>
+                                        <t t-if="o.student_id.gr_no">Registration No. <strong t-out="o.student_id.gr_no"/>, </t>
+                                        <t t-if="o.course_id">enrolled in <strong t-out="o.course_id.name"/></t>
+                                        <t t-if="o.batch_id"> (Batch: <t t-out="o.batch_id.name"/>)</t>
+                                        <t t-if="o.subject_id"> for the subject <strong t-out="o.subject_id.name"/></t>
+                                        , is hereby recognized as being duly associated with
+                                        <strong t-out="o.company_id.name"/> in good standing.
+                                    </p>
+                                    <p t-if="o.certificate_type_id.body_html" t-raw="o.certificate_type_id.body_html"/>
+                                </div>
+
+                                <div class="cert-meta">
+                                    <t t-if="o.expiry_date">
+                                        This certificate remains valid until
+                                        <strong><span t-esc="o.expiry_date" t-options="{'widget': 'date'}"/></strong>.
+                                    </t>
+                                    <t t-if="not o.expiry_date">This certificate does not expire.</t>
+                                </div>
+
+                                <div class="cert-footer">
+                                    <table style="width:100%;">
+                                        <tr>
+                                            <td style="width:33%;vertical-align:bottom;">
+                                                <img t-att-src="'/report/barcode/?barcode_type=QR&amp;value=%s&amp;width=100&amp;height=100'
+                                                                 % ('%s/certificate/verify/%s' % (o.get_base_url(), o.verification_code))"
+                                                     style="width:64px;height:64px;"/>
+                                                <div class="cert-verify">Scan to verify authenticity</div>
+                                            </td>
+                                            <td style="width:34%;vertical-align:bottom;">
+                                                <div class="cert-seal" t-out="(o.company_id.name or 'C')[0]"/>
+                                                <div class="cert-seal-label">Official Seal</div>
+                                            </td>
+                                            <td style="width:33%;vertical-align:bottom;">
+                                                <div class="cert-sign">
+                                                    <div class="line"/>
+                                                    Principal / Head of Institution
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </t>
             </t>
         </t>
     </template>
