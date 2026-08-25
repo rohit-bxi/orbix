@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_fee_exemption_reject_wizard_form" model="ir.ui.view">
+        <field name="name">bxi.fee.exemption.reject.wizard.form</field>
+        <field name="model">bxi.fee.exemption.reject.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Reject Exemption Request">
+                <div class="alert alert-danger" role="alert">
+                    <strong>Warning: Rejection Action</strong><br/>
+                    You are about to reject this exemption request. The parent and student will be notified of this
+                    decision. Please provide a clear reason for the rejection and review details carefully.
+                </div>
+                <group string="Request Information">
+                    <group>
+                        <field name="student_id" readonly="1"/>
+                        <field name="parent_id" readonly="1"/>
+                        <field name="class_id" readonly="1"/>
+                    </group>
+                    <group>
+                        <field name="exemption_type" readonly="1"/>
+                        <field name="requested_amount" readonly="1"/>
+                        <field name="currency_id" invisible="1"/>
+                    </group>
+                </group>
+                <group string="Original Request Reason" invisible="not original_reason">
+                    <field name="original_reason" readonly="1" nolabel="1"/>
+                </group>
+                <group string="Rejection Details">
+                    <field name="rejection_reason_category"/>
+                    <field name="detailed_rejection_reason" placeholder="Provide a clear, professional explanation for the rejection. This will be included in the notification sent to the parent."/>
+                    <field name="reapplication_suggestions" placeholder="What can the parent do to improve their request? E.g., 'Please submit updated income certificate', 'Provide additional supporting documents', etc."/>
+                    <field name="rejected_by"/>
+                    <field name="rejection_date"/>
+                    <field name="internal_notes" placeholder="Add internal notes for record keeping. This will not be shared with the parent."/>
+                </group>
+                <group string="Notification Settings">
+                    <field name="notify_parent"/>
+                    <field name="notify_sms"/>
+                    <field name="notify_update_portal"/>
+                    <field name="allow_reapplication"/>
+                </group>
+                <group string="Confirmation Required">
+                    <field name="confirmation_text" placeholder="Type REJECT to confirm"/>
+                </group>
+                <footer>
+                    <button name="action_confirm_reject" type="object" string="Reject Request" class="btn-danger"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

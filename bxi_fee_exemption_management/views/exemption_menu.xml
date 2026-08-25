@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <menuitem id="menu_exemption_root" name="Fee Exemptions" parent="bxi_fee_management.menu_fee_management_root" sequence="30"/>
+    <menuitem id="menu_exemption_request" name="Exemption Requests" parent="menu_exemption_root" action="action_fee_exemption_request" sequence="10"/>
+    <menuitem id="menu_exemption" name="Fee Exemptions" parent="menu_exemption_root" action="action_fee_exemption" sequence="20"/>
+</odoo>

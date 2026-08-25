@@ -1,0 +1,13 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_fee_exemption_request_manager,fee.exemption.request.manager,model_bxi_fee_exemption_request,group_exemption_manager,1,1,1,1
+access_fee_exemption_request_staff,fee.exemption.request.staff,model_bxi_fee_exemption_request,group_exemption_staff,1,1,1,0
+access_fee_exemption_request_self,fee.exemption.request.self,model_bxi_fee_exemption_request,base.group_user,1,0,0,0
+access_fee_exemption_manager,fee.exemption.manager,model_bxi_fee_exemption,group_exemption_manager,1,1,1,1
+access_fee_exemption_staff,fee.exemption.staff,model_bxi_fee_exemption,group_exemption_staff,1,1,1,0
+access_fee_exemption_self,fee.exemption.self,model_bxi_fee_exemption,base.group_user,1,0,0,0
+access_fee_exemption_fee_line_manager,fee.exemption.fee.line.manager,model_bxi_fee_exemption_fee_line,group_exemption_manager,1,1,1,1
+access_fee_exemption_fee_line_staff,fee.exemption.fee.line.staff,model_bxi_fee_exemption_fee_line,group_exemption_staff,1,1,1,1
+access_fee_exemption_fee_line_self,fee.exemption.fee.line.self,model_bxi_fee_exemption_fee_line,base.group_user,1,0,0,0
+access_fee_exemption_approve_wizard_staff,fee.exemption.approve.wizard.staff,model_bxi_fee_exemption_approve_wizard,group_exemption_staff,1,1,1,1
+access_fee_exemption_reject_wizard_staff,fee.exemption.reject.wizard.staff,model_bxi_fee_exemption_reject_wizard,group_exemption_staff,1,1,1,1
+access_fee_exemption_delete_wizard_manager,fee.exemption.delete.wizard.manager,model_bxi_fee_exemption_delete_wizard,group_exemption_manager,1,1,1,1

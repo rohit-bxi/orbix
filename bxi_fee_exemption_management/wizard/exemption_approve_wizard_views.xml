@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_fee_exemption_approve_wizard_form" model="ir.ui.view">
+        <field name="name">bxi.fee.exemption.approve.wizard.form</field>
+        <field name="model">bxi.fee.exemption.approve.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Approve Exemption Request">
+                <div class="alert alert-success" role="alert">
+                    <strong>Ready to Approve Request</strong><br/>
+                    You are about to approve this exemption request. Please review all details and configure the
+                    approval settings below.
+                </div>
+                <group string="Student Information">
+                    <group>
+                        <field name="student_id" readonly="1"/>
+                        <field name="parent_id" readonly="1"/>
+                        <field name="class_id" readonly="1"/>
+                    </group>
+                    <group>
+                        <field name="exemption_type" readonly="1"/>
+                        <field name="requested_amount" readonly="1"/>
+                        <field name="currency_id" invisible="1"/>
+                    </group>
+                </group>
+                <group string="Reason" invisible="not reason">
+                    <field name="reason" readonly="1" nolabel="1"/>
+                </group>
+                <group string="Approval Settings">
+                    <group>
+                        <field name="approval_type"/>
+                        <field name="exemption_method"/>
+                        <field name="approved_amount"/>
+                    </group>
+                    <group>
+                        <field name="fee_category_scope"/>
+                        <field name="applicable_fee_category_ids" widget="many2many_tags" invisible="fee_category_scope != 'specific'"/>
+                        <field name="priority_level"/>
+                    </group>
+                </group>
+                <group string="Validity Period">
+                    <group>
+                        <field name="valid_from"/>
+                        <field name="valid_until"/>
+                    </group>
+                    <group>
+                        <field name="auto_renew"/>
+                    </group>
+                </group>
+                <group string="Approval Details">
+                    <group>
+                        <field name="approved_by"/>
+                        <field name="approval_date"/>
+                    </group>
+                </group>
+                <group>
+                    <field name="approval_notes" placeholder="Add any notes or comments about this approval"/>
+                    <field name="internal_remarks" placeholder="Add internal remarks for record keeping"/>
+                </group>
+                <group string="Financial Impact Summary">
+                    <field name="total_fee_amount" readonly="1"/>
+                    <field name="current_pending_amount" readonly="1"/>
+                    <field name="approved_amount" readonly="1" string="Exemption Amount"/>
+                    <field name="new_pending_amount" readonly="1"/>
+                </group>
+                <group string="Notification Settings">
+                    <field name="notify_parent"/>
+                    <field name="notify_sms"/>
+                    <field name="notify_update_portal"/>
+                    <field name="notify_auto_adjust_pending"/>
+                </group>
+                <footer>
+                    <button name="action_confirm_approve" type="object" string="Approve Request" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

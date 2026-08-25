@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- bxi.fee.exemption.request -->
+    <record id="exemption_request_rule_staff" model="ir.rule">
+        <field name="name">Fee Exemption Request: Staff/Manager see all</field>
+        <field name="model_id" ref="model_bxi_fee_exemption_request"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_exemption_staff'))]"/>
+    </record>
+
+    <record id="exemption_request_rule_self" model="ir.rule">
+        <field name="name">Fee Exemption Request: Self read-only</field>
+        <field name="model_id" ref="model_bxi_fee_exemption_request"/>
+        <field name="domain_force">[('student_id.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="perm_read">1</field>
+        <field name="perm_write">0</field>
+        <field name="perm_create">0</field>
+        <field name="perm_unlink">0</field>
+    </record>
+
+    <record id="exemption_request_rule_company" model="ir.rule">
+        <field name="name">Fee Exemption Request: Multi-company</field>
+        <field name="model_id" ref="model_bxi_fee_exemption_request"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <!-- bxi.fee.exemption -->
+    <record id="exemption_rule_staff" model="ir.rule">
+        <field name="name">Fee Exemption: Staff/Manager see all</field>
+        <field name="model_id" ref="model_bxi_fee_exemption"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_exemption_staff'))]"/>
+    </record>
+
+    <record id="exemption_rule_self" model="ir.rule">
+        <field name="name">Fee Exemption: Self read-only</field>
+        <field name="model_id" ref="model_bxi_fee_exemption"/>
+        <field name="domain_force">[('student_id.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="perm_read">1</field>
+        <field name="perm_write">0</field>
+        <field name="perm_create">0</field>
+        <field name="perm_unlink">0</field>
+    </record>
+
+    <record id="exemption_rule_company" model="ir.rule">
+        <field name="name">Fee Exemption: Multi-company</field>
+        <field name="model_id" ref="model_bxi_fee_exemption"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <!-- bxi.fee.exemption.fee.line -->
+    <record id="exemption_fee_line_rule_staff" model="ir.rule">
+        <field name="name">Fee Exemption Fee Line: Staff/Manager see all</field>
+        <field name="model_id" ref="model_bxi_fee_exemption_fee_line"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_exemption_staff'))]"/>
+    </record>
+
+    <record id="exemption_fee_line_rule_self" model="ir.rule">
+        <field name="name">Fee Exemption Fee Line: Self read-only</field>
+        <field name="model_id" ref="model_bxi_fee_exemption_fee_line"/>
+        <field name="domain_force">[('exemption_id.student_id.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="perm_read">1</field>
+        <field name="perm_write">0</field>
+        <field name="perm_create">0</field>
+        <field name="perm_unlink">0</field>
+    </record>
+</odoo>
