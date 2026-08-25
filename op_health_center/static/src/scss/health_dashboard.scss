@@ -1,0 +1,68 @@
+.o_health_dashboard {
+    .o_health_dashboard_header_icon {
+        font-size: 2.5rem;
+        color: var(--bs-primary);
+    }
+
+    .o_health_kpi_card {
+        display: block;
+        border: none;
+        border-radius: 0.75rem;
+        padding: 1rem;
+        background-color: var(--bs-tertiary-bg, #f8f9fa);
+        border-left: 4px solid var(--o-health-kpi-color, var(--bs-primary));
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+
+        &:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .o_health_kpi_icon {
+            font-size: 1.4rem;
+            color: var(--o-health-kpi-color, var(--bs-primary));
+            margin-bottom: 0.35rem;
+            display: block;
+        }
+
+        .o_health_kpi_value {
+            display: block;
+            font-size: 1.6rem;
+            font-weight: 600;
+            line-height: 1.2;
+
+            .o_field_widget, input {
+                font-size: inherit;
+                font-weight: inherit;
+                pointer-events: none;
+            }
+        }
+
+        .o_health_kpi_label {
+            color: var(--bs-secondary-color, #6c757d);
+            font-size: 0.85rem;
+        }
+    }
+
+    .o_health_kpi_info { --o-health-kpi-color: var(--bs-info); }
+    .o_health_kpi_primary { --o-health-kpi-color: var(--bs-primary); }
+    .o_health_kpi_warning { --o-health-kpi-color: var(--bs-warning); }
+    .o_health_kpi_purple { --o-health-kpi-color: #8b5cf6; }
+    .o_health_kpi_danger { --o-health-kpi-color: var(--bs-danger); }
+    .o_health_kpi_success { --o-health-kpi-color: var(--bs-success); }
+
+    .o_health_dashboard_panel {
+        border: 1px solid var(--bs-border-color, #e9ecef);
+        border-radius: 0.75rem;
+        padding: 1rem;
+        background-color: var(--bs-body-bg, #fff);
+    }
+
+    .o_health_dashboard_panel_header {
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid var(--bs-border-color, #e9ecef);
+    }
+}
