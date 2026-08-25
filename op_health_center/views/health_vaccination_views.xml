@@ -43,8 +43,9 @@
                     </div>
                     <group>
                         <group string="Patient">
-                            <field name="student_id"/>
-                            <field name="faculty_id"/>
+                            <field name="type"/>
+                            <field name="student_id" invisible="type != 'student'" required="type == 'student'"/>
+                            <field name="faculty_id" invisible="type != 'teacher'" required="type == 'teacher'"/>
                             <field name="vaccine_id"/>
                             <field name="dose_number"/>
                         </group>

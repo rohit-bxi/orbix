@@ -6,7 +6,7 @@
         <field name="report_type">qweb-pdf</field>
         <field name="report_name">op_health_center.health_certificate_pdf_template</field>
         <field name="report_file">op_health_center.health_certificate_pdf_template</field>
-        <field name="print_report_name">'medical-certificate'</field>
+        <field name="print_report_name">(object.certificate_type or 'medical') + '-certificate'</field>
         <field name="binding_type">report</field>
     </record>
 </odoo>

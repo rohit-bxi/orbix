@@ -9,6 +9,10 @@ class HealthVisit(models.Model):
     _order = 'visit_datetime desc'
 
     name = fields.Char(string='Reference', copy=False, readonly=True, default=lambda self: _('New'))
+    type = fields.Selection([
+        ('student', 'Student'),
+        ('teacher', 'Teacher'),
+    ], string='Type', required=True, default='student', tracking=True)
     visit_datetime = fields.Datetime(string='Visit Date', required=True, default=fields.Datetime.now, tracking=True)
     visit_type = fields.Selection([
         ('illness', 'Illness'),
@@ -45,6 +49,13 @@ class HealthVisit(models.Model):
             if vals.get('name', _('New')) == _('New'):
                 vals['name'] = self.env['ir.sequence'].next_by_code('op.health.visit') or _('New')
         return super().create(vals_list)
+
+    @api.onchange('type')
+    def _onchange_type(self):
+        if self.type == 'student':
+            self.faculty_id = False
+        elif self.type == 'teacher':
+            self.student_id = False
 
     @api.constrains('follow_up_required', 'follow_up_date', 'visit_datetime')
     def _check_follow_up_date(self):
