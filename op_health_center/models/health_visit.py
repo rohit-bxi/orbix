@@ -40,8 +40,11 @@ class HealthVisit(models.Model):
         ('resolved', 'Resolved'),
         ('referred', 'Referred'),
         ('cancelled', 'Cancelled'),
-    ], default='draft', tracking=True)
+    ], default='draft', tracking=True, group_expand='_group_expand_states')
     company_id = fields.Many2one('res.company', default=lambda self: self.env.company)
+
+    def _group_expand_states(self, states, domain):
+        return [key for key, label in self._fields['state'].selection]
 
     @api.model_create_multi
     def create(self, vals_list):
