@@ -1,5 +1,19 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <odoo>
+    <record id="paperformat_certificate" model="report.paperformat">
+        <field name="name">Certificate (Landscape)</field>
+        <field name="default" eval="False"/>
+        <field name="format">A4</field>
+        <field name="orientation">Landscape</field>
+        <field name="margin_top">6</field>
+        <field name="margin_bottom">6</field>
+        <field name="margin_left">6</field>
+        <field name="margin_right">6</field>
+        <field name="header_line" eval="False"/>
+        <field name="header_spacing">0</field>
+        <field name="dpi">96</field>
+    </record>
+
     <record id="action_report_certificate" model="ir.actions.report">
         <field name="name">Certificate</field>
         <field name="model">op.certificate</field>
@@ -9,5 +23,6 @@
         <field name="print_report_name">'Certificate - %s' % (object.certificate_number or object.student_id.name)</field>
         <field name="binding_model_id" ref="model_op_certificate"/>
         <field name="binding_type">report</field>
+        <field name="paperformat_id" ref="paperformat_certificate"/>
     </record>
 </odoo>
