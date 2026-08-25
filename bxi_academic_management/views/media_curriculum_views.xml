@@ -47,16 +47,59 @@
         <field name="arch" type="xml">
             <form string="Smart Book">
                 <sheet>
-                    <group>
-                        <field name="name" string="Book Title" placeholder="e.g., Mathematics Grade 9"/>
-                        <field name="subject_ids" widget="many2many_tags" string="Subject"
-                               placeholder="e.g., Mathematics, Science, English"/>
-                        <field name="course_ids" widget="many2many_tags" string="Class"
-                               placeholder="e.g., Class 9, Class 10"/>
-                        <field name="curriculum_id" placeholder="Select curriculum"
-                               options="{'no_create': True, 'no_create_edit': True}"/>
+                    <field name="active" invisible="1"/>
+                    <widget name="web_ribbon" title="Archived" bg_color="bg-danger" invisible="active == True"/>
+                    <div class="oe_title">
+                        <span class="o_form_label text-muted">Book Title</span>
+                        <h1>
+                            <field name="name" placeholder="e.g., Mathematics Grade 9"/>
+                        </h1>
+                        <div class="d-flex align-items-center gap-3 mt-1">
+                            <field name="status" widget="badge" readonly="1"
+                                   decoration-success="status == 'available'"
+                                   decoration-warning="status == 'limited'"
+                                   decoration-danger="status == 'unavailable'"/>
+                            <span class="text-muted">
+                                <field name="available_copies" readonly="1" class="fw-bold"/> of
+                                <field name="total_copies" class="fw-bold"/> copies available
+                            </span>
+                        </div>
+                    </div>
+                    <group class="pt-2">
+                        <group string="Classification">
+                            <field name="subject_ids" widget="many2many_tags" string="Subject"
+                                   placeholder="e.g., Mathematics, Science, English"/>
+                            <field name="course_ids" widget="many2many_tags" string="Class"
+                                   placeholder="e.g., Class 9, Class 10"/>
+                            <field name="curriculum_id" placeholder="Select curriculum"
+                                   options="{'no_create': True, 'no_create_edit': True}"/>
+                            <field name="genre_id"/>
+                            <field name="language"/>
+                        </group>
+                        <group string="Authorship">
+                            <field name="author_ids" widget="many2many_tags"/>
+                            <field name="publisher_ids" widget="many2many_tags"/>
+                            <field name="publish_year"/>
+                            <field name="number_of_pages"/>
+                            <field name="rating" widget="float" string="Rating (out of 5)"/>
+                        </group>
                     </group>
+                    <group class="pt-2">
+                        <group string="Inventory">
+                            <field name="shelf_location"/>
+                            <field name="allocation"/>
+                        </group>
+                        <group string="Files">
+                            <field name="attachment_ids" widget="many2many_binary" string="Upload File" nolabel="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Description" name="description">
+                            <field name="description" nolabel="1" placeholder="Short description of the book..."/>
+                        </page>
+                    </notebook>
                 </sheet>
+                <chatter/>
             </form>
         </field>
     </record>
