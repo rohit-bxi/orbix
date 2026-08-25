@@ -27,32 +27,137 @@
         <field name="name">op.health.dashboard.form</field>
         <field name="model">op.health.dashboard</field>
         <field name="arch" type="xml">
-            <form string="Health Center Dashboard" create="false" delete="false">
+            <form string="Health Center Dashboard" create="false" delete="false" class="o_health_dashboard">
                 <sheet>
-                    <div class="oe_title">
-                        <h1>Health Center Dashboard</h1>
+                    <div class="o_health_dashboard_header d-flex align-items-center justify-content-between mb-4">
+                        <div class="d-flex align-items-center">
+                            <i class="fa fa-heartbeat o_health_dashboard_header_icon" role="img" aria-label="Health Center"/>
+                            <div class="ms-3">
+                                <h1 class="mb-0">Health Center Dashboard</h1>
+                                <div class="text-muted">Clinic activity, vaccinations and medical alerts at a glance</div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="o_horizontal_separator"/>
-                    <div class="row">
-                        <div class="col-3">
-                            <button type="object" name="action_view_visit_report" class="oe_stat_button" icon="fa-stethoscope">
-                                <field name="visit_count_month" widget="statinfo" string="Visits This Month"/>
+
+                    <!-- KPI cards -->
+                    <div class="o_health_dashboard_kpis row g-3 mb-4">
+                        <div class="col-12 col-sm-6 col-lg-2">
+                            <button type="object" name="action_view_visit_report" class="o_health_kpi_card o_health_kpi_info w-100 text-start">
+                                <i class="fa fa-calendar-check-o o_health_kpi_icon" title="Visits Today"/>
+                                <field name="visit_count_today" class="o_health_kpi_value"/>
+                                <div class="o_health_kpi_label">Visits Today</div>
                             </button>
                         </div>
-                        <div class="col-3">
-                            <button type="object" name="action_view_vaccination_report" class="oe_stat_button" icon="fa-medkit">
-                                <field name="upcoming_vaccination_count" widget="statinfo" string="Vaccinations Due (30d)"/>
+                        <div class="col-12 col-sm-6 col-lg-2">
+                            <button type="object" name="action_view_visit_report" class="o_health_kpi_card o_health_kpi_primary w-100 text-start">
+                                <i class="fa fa-stethoscope o_health_kpi_icon" title="Visits This Month"/>
+                                <field name="visit_count_month" class="o_health_kpi_value"/>
+                                <div class="o_health_kpi_label">Visits This Month</div>
                             </button>
                         </div>
-                        <div class="col-3">
-                            <button type="object" name="action_view_visit_report" class="oe_stat_button" icon="fa-exclamation-triangle">
-                                <field name="active_alert_count" widget="statinfo" string="Active Medical Alerts"/>
+                        <div class="col-12 col-sm-6 col-lg-2">
+                            <button type="object" name="action_view_open_cases" class="o_health_kpi_card o_health_kpi_warning w-100 text-start">
+                                <i class="fa fa-clock-o o_health_kpi_icon" title="Open Cases"/>
+                                <field name="open_case_count" class="o_health_kpi_value"/>
+                                <div class="o_health_kpi_label">Open Cases</div>
                             </button>
                         </div>
-                        <div class="col-3">
-                            <button type="object" name="action_view_checkup_report" class="oe_stat_button" icon="fa-heartbeat">
-                                <field name="checkup_compliance_rate" widget="statinfo" string="Checkup Compliance %"/>
+                        <div class="col-12 col-sm-6 col-lg-2">
+                            <button type="object" name="action_view_vaccination_report" class="o_health_kpi_card o_health_kpi_purple w-100 text-start">
+                                <i class="fa fa-medkit o_health_kpi_icon" title="Vaccinations Due"/>
+                                <field name="upcoming_vaccination_count" class="o_health_kpi_value"/>
+                                <div class="o_health_kpi_label">Vaccinations Due (30d)</div>
                             </button>
+                        </div>
+                        <div class="col-12 col-sm-6 col-lg-2">
+                            <button type="object" name="action_view_visit_report" class="o_health_kpi_card o_health_kpi_danger w-100 text-start">
+                                <i class="fa fa-exclamation-triangle o_health_kpi_icon" title="Active Medical Alerts"/>
+                                <field name="active_alert_count" class="o_health_kpi_value"/>
+                                <div class="o_health_kpi_label">Active Medical Alerts</div>
+                            </button>
+                        </div>
+                        <div class="col-12 col-sm-6 col-lg-2">
+                            <button type="object" name="action_view_checkup_report" class="o_health_kpi_card o_health_kpi_success w-100 text-start">
+                                <i class="fa fa-heart-o o_health_kpi_icon" title="Checkup Compliance"/>
+                                <span class="o_health_kpi_value"><field name="checkup_compliance_rate" digits="[3,0]"/>%</span>
+                                <div class="o_health_kpi_label">Checkup Compliance</div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Activity feeds -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-12 col-lg-7">
+                            <div class="o_health_dashboard_panel h-100">
+                                <div class="o_health_dashboard_panel_header">
+                                    <i class="fa fa-stethoscope me-2" title="Recent Visits"/>Recent Visits
+                                </div>
+                                <field name="recent_visit_ids" nolabel="1">
+                                    <list create="false" delete="false" open="true"
+                                          decoration-danger="state=='cancelled'"
+                                          decoration-success="state=='resolved'"
+                                          decoration-warning="state=='under_treatment'"
+                                          decoration-info="state=='referred'">
+                                        <field name="name"/>
+                                        <field name="patient_name"/>
+                                        <field name="visit_type"/>
+                                        <field name="visit_datetime"/>
+                                        <field name="state" widget="badge"
+                                               decoration-danger="state=='cancelled'"
+                                               decoration-success="state=='resolved'"
+                                               decoration-warning="state=='under_treatment'"
+                                               decoration-info="state=='referred'"/>
+                                    </list>
+                                </field>
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-5">
+                            <div class="o_health_dashboard_panel h-100">
+                                <div class="o_health_dashboard_panel_header">
+                                    <i class="fa fa-medkit me-2" title="Upcoming Vaccinations"/>Upcoming Vaccinations
+                                </div>
+                                <field name="upcoming_vaccination_ids" nolabel="1">
+                                    <list create="false" delete="false" open="true">
+                                        <field name="patient_name"/>
+                                        <field name="vaccine_id"/>
+                                        <field name="next_due_date"/>
+                                    </list>
+                                </field>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Attention lists -->
+                    <div class="row g-3">
+                        <div class="col-12 col-lg-6">
+                            <div class="o_health_dashboard_panel h-100">
+                                <div class="o_health_dashboard_panel_header d-flex align-items-center justify-content-between">
+                                    <span><i class="fa fa-user-o me-2" title="Students"/>Students Requiring Attention</span>
+                                    <button type="object" name="action_view_alert_students" class="btn btn-link btn-sm p-0">View all</button>
+                                </div>
+                                <field name="alert_student_ids" nolabel="1">
+                                    <list create="false" delete="false" open="true">
+                                        <field name="name"/>
+                                        <field name="chronic_conditions" optional="hide"/>
+                                        <field name="is_allergy" widget="boolean_toggle" readonly="1"/>
+                                    </list>
+                                </field>
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-6">
+                            <div class="o_health_dashboard_panel h-100">
+                                <div class="o_health_dashboard_panel_header d-flex align-items-center justify-content-between">
+                                    <span><i class="fa fa-user-md me-2" title="Teachers"/>Teachers Requiring Attention</span>
+                                    <button type="object" name="action_view_alert_faculty" class="btn btn-link btn-sm p-0">View all</button>
+                                </div>
+                                <field name="alert_faculty_ids" nolabel="1">
+                                    <list create="false" delete="false" open="true">
+                                        <field name="name"/>
+                                        <field name="chronic_conditions" optional="hide"/>
+                                        <field name="is_allergy" widget="boolean_toggle" readonly="1"/>
+                                    </list>
+                                </field>
+                            </div>
                         </div>
                     </div>
                 </sheet>

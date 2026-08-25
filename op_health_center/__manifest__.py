@@ -41,6 +41,11 @@
         'reports/health_visit_report.xml',
         'views/health_menu.xml',
     ],
+    'assets': {
+        'web.assets_backend': [
+            'op_health_center/static/src/scss/health_dashboard.scss',
+        ],
+    },
     'installable': True,
     'application': True,
     'license': 'LGPL-3',
