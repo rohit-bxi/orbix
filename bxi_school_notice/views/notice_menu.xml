@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_notice_root" name="Notice Board" sequence="26"
+              web_icon="bxi_school_notice,static/description/icon.png"
+              action="action_notice"/>
+</odoo>
