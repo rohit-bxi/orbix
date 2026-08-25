@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_notice_list" model="ir.ui.view">
+        <field name="name">bxi.notice.list</field>
+        <field name="model">bxi.notice</field>
+        <field name="arch" type="xml">
+            <list string="Notices" decoration-muted="not active">
+                <field name="title"/>
+                <field name="category" widget="badge"/>
+                <field name="body"/>
+                <field name="target_audience"/>
+                <field name="posted_date"/>
+                <field name="author_id"/>
+                <field name="expires_on" decoration-warning="is_expired"/>
+                <field name="is_expired" column_invisible="1"/>
+                <button name="action_toggle_pin" type="object"
+                        icon="fa-star" title="Pin/Unpin"
+                        invisible="not is_pinned"/>
+                <button name="action_toggle_pin" type="object"
+                        icon="fa-star-o" title="Pin/Unpin"
+                        invisible="is_pinned"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_notice_form" model="ir.ui.view">
+        <field name="name">bxi.notice.form</field>
+        <field name="model">bxi.notice</field>
+        <field name="arch" type="xml">
+            <form string="Notice">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="title"/>
+                        <h1><field name="title" placeholder="e.g. Annual Sports Day — July 20"/></h1>
+                        <field name="name" readonly="1" class="text-muted"/>
+                    </div>
+                    <group>
+                        <field name="body" placeholder="Write the full message here..."/>
+                    </group>
+                    <group>
+                        <group>
+                            <field name="category"/>
+                            <field name="target_audience"/>
+                        </group>
+                        <group>
+                            <field name="course_ids" widget="many2many_tags" string="Classes"
+                                   invisible="target_audience != 'specific_class'"/>
+                            <field name="batch_ids" widget="many2many_tags" string="Sections"
+                                   invisible="target_audience != 'specific_class'"/>
+                            <field name="expires_on"/>
+                            <field name="is_pinned"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="author_id" readonly="1"/>
+                        <field name="posted_date" readonly="1"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_notice_search" model="ir.ui.view">
+        <field name="name">bxi.notice.search</field>
+        <field name="model">bxi.notice</field>
+        <field name="arch" type="xml">
+            <search string="Notices">
+                <field name="title"/>
+                <field name="body"/>
+                <field name="category"/>
+                <field name="target_audience"/>
+                <filter string="Pinned" name="filter_pinned" domain="[('is_pinned', '=', True)]"/>
+                <filter string="Expired" name="filter_expired" domain="[('is_expired', '=', True)]"/>
+                <filter string="Active" name="filter_not_expired" domain="[('is_expired', '=', False)]"/>
+                <separator/>
+                <filter string="Category" name="group_category" context="{'group_by': 'category'}"/>
+                <filter string="Target Audience" name="group_audience" context="{'group_by': 'target_audience'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_notice" model="ir.actions.act_window">
+        <field name="name">Notice Board</field>
+        <field name="res_model">bxi.notice</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_notice_search"/>
+        <field name="context">{'search_default_filter_not_expired': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Post a notice to the school notice board</p>
+        </field>
+    </record>
+</odoo>
