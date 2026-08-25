@@ -32,6 +32,7 @@
         'openeducat_core',
         'openeducat_fees',
         'openeducat_parent',
+        'bxi_fee_management',
     ],
     'data': [
         'security/refund_groups.xml',
@@ -45,6 +46,6 @@
         'views/refund_menu.xml',
     ],
     'installable': True,
-    'application': True,
+    'application': False,
     'license': 'LGPL-3',
 }

@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_fee_exemption_request_list" model="ir.ui.view">
+        <field name="name">bxi.fee.exemption.request.list</field>
+        <field name="model">bxi.fee.exemption.request</field>
+        <field name="arch" type="xml">
+            <list string="Exemption Requests" decoration-muted="status == 'rejected'">
+                <field name="student_id"/>
+                <field name="parent_id"/>
+                <field name="class_id"/>
+                <field name="section_id"/>
+                <field name="exemption_type"/>
+                <field name="requested_amount" invisible="request_value_type != 'amount'"/>
+                <field name="requested_percentage" invisible="request_value_type != 'percentage'"/>
+                <field name="request_value_type" column_invisible="1"/>
+                <field name="reason"/>
+                <field name="submitted_date"/>
+                <field name="status" widget="badge"
+                       decoration-success="status == 'approved'"
+                       decoration-warning="status in ('pending_review', 'under_review')"
+                       decoration-danger="status == 'rejected'"
+                       decoration-muted="status == 'draft'"/>
+                <field name="currency_id" column_invisible="1"/>
+                <button name="action_open_approve_wizard" type="object" icon="fa-check" title="Approve"
+                        invisible="status not in ('pending_review', 'under_review')"/>
+                <button name="action_open_reject_wizard" type="object" icon="fa-times" title="Reject"
+                        invisible="status not in ('pending_review', 'under_review')"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_fee_exemption_request_form" model="ir.ui.view">
+        <field name="name">bxi.fee.exemption.request.form</field>
+        <field name="model">bxi.fee.exemption.request</field>
+        <field name="arch" type="xml">
+            <form string="Exemption Request">
+                <header>
+                    <button name="action_submit" type="object" string="Submit for Review" invisible="status != 'draft'"/>
+                    <button name="action_start_review" type="object" string="Start Review" invisible="status != 'pending_review'"/>
+                    <button name="action_open_approve_wizard" type="object" string="Approve Request" class="oe_highlight" invisible="status not in ('pending_review', 'under_review')"/>
+                    <button name="action_open_reject_wizard" type="object" string="Reject Request" invisible="status not in ('pending_review', 'under_review')"/>
+                    <button name="action_reset_to_draft" type="object" string="Reset to Draft" invisible="status != 'rejected'"/>
+                    <field name="status" widget="statusbar" statusbar_visible="draft,pending_review,under_review,approved"/>
+                </header>
+                <sheet>
+                    <div name="button_box" class="oe_button_box">
+                        <button class="oe_stat_button" type="object" name="action_view_exemption" icon="fa-shield"
+                                invisible="not exemption_id">
+                            <div class="o_stat_info">
+                                <span class="o_stat_text">Granted</span>
+                                <span class="o_stat_text">Exemption</span>
+                            </div>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <label for="name" string="Request ID"/>
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="Student Information">
+                            <field name="student_id"/>
+                            <field name="parent_ids" invisible="1"/>
+                            <field name="parent_id" domain="[('id', 'in', parent_ids)]"/>
+                            <field name="class_id" readonly="1"/>
+                            <field name="section_id" readonly="1"/>
+                            <field name="roll_number" readonly="1"/>
+                            <field name="admission_number" readonly="1"/>
+                            <field name="date_of_birth" readonly="1"/>
+                        </group>
+                        <group string="Fee Information">
+                            <field name="total_fee_amount"/>
+                            <field name="total_paid_amount"/>
+                            <field name="pending_amount"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Exemption Request Details">
+                            <group>
+                                <group>
+                                    <field name="exemption_type"/>
+                                    <field name="request_value_type"/>
+                                    <field name="requested_amount" invisible="request_value_type != 'amount'"/>
+                                    <field name="requested_percentage" invisible="request_value_type != 'percentage'"/>
+                                </group>
+                                <group>
+                                    <field name="academic_performance"/>
+                                    <field name="attendance_percentage"/>
+                                    <field name="family_income"/>
+                                    <field name="sibling_count"/>
+                                    <field name="previous_exemptions"/>
+                                </group>
+                            </group>
+                            <group>
+                                <field name="reason"/>
+                                <field name="additional_notes"/>
+                            </group>
+                        </page>
+                        <page string="Supporting Documents">
+                            <field name="document_ids" widget="many2many_binary"/>
+                        </page>
+                        <page string="Approval &amp; Processing">
+                            <group>
+                                <group>
+                                    <field name="submitted_date"/>
+                                    <field name="approved_by"/>
+                                    <field name="approval_date"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Rejection Details" invisible="status != 'rejected'">
+                            <group>
+                                <group>
+                                    <field name="rejection_reason_category"/>
+                                    <field name="rejected_by"/>
+                                    <field name="rejection_date"/>
+                                    <field name="allow_reapplication_after_days"/>
+                                </group>
+                            </group>
+                            <group>
+                                <field name="rejection_reason"/>
+                                <field name="reapplication_suggestions"/>
+                            </group>
+                        </page>
+                        <page string="Internal Notes">
+                            <field name="internal_notes"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_fee_exemption_request_search" model="ir.ui.view">
+        <field name="name">bxi.fee.exemption.request.search</field>
+        <field name="model">bxi.fee.exemption.request</field>
+        <field name="arch" type="xml">
+            <search string="Exemption Requests">
+                <field name="student_id"/>
+                <field name="parent_id"/>
+                <field name="class_id"/>
+                <field name="section_id"/>
+                <field name="exemption_type"/>
+                <filter string="Pending Review" name="filter_pending_review" domain="[('status', '=', 'pending_review')]"/>
+                <filter string="Under Review" name="filter_under_review" domain="[('status', '=', 'under_review')]"/>
+                <filter string="Approved" name="filter_approved" domain="[('status', '=', 'approved')]"/>
+                <filter string="Rejected" name="filter_rejected" domain="[('status', '=', 'rejected')]"/>
+                <separator/>
+                <filter string="Class" name="group_class" context="{'group_by': 'class_id'}"/>
+                <filter string="Section" name="group_section" context="{'group_by': 'section_id'}"/>
+                <filter string="Exemption Type" name="group_exemption_type" context="{'group_by': 'exemption_type'}"/>
+                <filter string="Status" name="group_status" context="{'group_by': 'status'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_fee_exemption_request" model="ir.actions.act_window">
+        <field name="name">Exemption Requests</field>
+        <field name="res_model">bxi.fee.exemption.request</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_fee_exemption_request_search"/>
+        <field name="context">{'search_default_group_status': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Create a fee exemption request</p>
+        </field>
+    </record>
+</odoo>
