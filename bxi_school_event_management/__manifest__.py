@@ -26,6 +26,7 @@
         'bxi_certificate_management',
         'bxi_school_announcement',
         'bxi_school_transport_bus_management',
+        'bxi_academic_management',
     ],
     'data': [
         'security/event_security.xml',
