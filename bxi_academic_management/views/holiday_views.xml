@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_academic_holiday_list" model="ir.ui.view">
+        <field name="name">resource.calendar.leaves.academic.list</field>
+        <field name="model">resource.calendar.leaves</field>
+        <field name="arch" type="xml">
+            <list string="Holidays">
+                <field name="name" string="Holiday Name"/>
+                <field name="date_from" string="Start Date"/>
+                <field name="date_to" string="End Date"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_academic_holiday_kanban" model="ir.ui.view">
+        <field name="name">resource.calendar.leaves.academic.kanban</field>
+        <field name="model">resource.calendar.leaves</field>
+        <field name="arch" type="xml">
+            <kanban class="o_kanban_small_column">
+                <templates>
+                    <t t-name="menu">
+                        <t t-if="widget.editable">
+                            <a role="menuitem" type="edit" class="dropdown-item">Edit</a>
+                        </t>
+                        <t t-if="widget.deletable">
+                            <a role="menuitem" type="delete" class="dropdown-item">Delete</a>
+                        </t>
+                    </t>
+                    <t t-name="card">
+                        <div class="fw-bold fs-5">
+                            <field name="name"/>
+                        </div>
+                        <div class="d-flex justify-content-between text-muted">
+                            <field name="date_from" widget="date"/>
+                            <field name="date_to" widget="date"/>
+                        </div>
+                        <div>
+                            <field name="description"/>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="view_academic_holiday_form" model="ir.ui.view">
+        <field name="name">resource.calendar.leaves.academic.form</field>
+        <field name="model">resource.calendar.leaves</field>
+        <field name="arch" type="xml">
+            <form string="Holiday">
+                <field name="calendar_id" invisible="1"/>
+                <field name="resource_id" invisible="1"/>
+                <sheet>
+                    <group>
+                        <field name="name" string="Holiday Name" placeholder="e.g. Independence Day"/>
+                        <field name="date_from" string="Start Date"/>
+                        <field name="date_to" string="End Date"/>
+                        <field name="description" placeholder="Enter holiday description"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_academic_holiday_search" model="ir.ui.view">
+        <field name="name">resource.calendar.leaves.academic.search</field>
+        <field name="model">resource.calendar.leaves</field>
+        <field name="arch" type="xml">
+            <search string="Holidays">
+                <field name="name" string="Holiday Name"/>
+                <filter name="filter_date_from" date="date_from" string="Start Date"/>
+                <group name="group_by">
+                    <filter string="Start Date" name="group_date_from" context="{'group_by': 'date_from'}"/>
+                    <filter string="Month" name="group_month" context="{'group_by': 'date_from:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_academic_holiday" model="ir.actions.act_window">
+        <field name="name">Holidays</field>
+        <field name="res_model">resource.calendar.leaves</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="domain">[('resource_id', '=', False), ('calendar_id', '=', False)]</field>
+        <field name="context">{'default_resource_id': False, 'default_calendar_id': False}</field>
+        <field name="search_view_id" ref="view_academic_holiday_search"/>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'kanban', 'view_id': ref('view_academic_holiday_kanban')}),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_academic_holiday_list')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('view_academic_holiday_form')})]"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smart_action">
+                Add a new Holiday
+            </p>
+            <p>
+                Holidays are non-working days that apply school-wide.
+            </p>
+        </field>
+    </record>
+</odoo>

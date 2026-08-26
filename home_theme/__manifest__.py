@@ -87,12 +87,7 @@ Compatibility
     'support': 'soporte.synthra@gmail.com',
     # Free AND open: use it, modify it, redistribute it (LGPL-3).
     'license': 'LGPL-3',
-    # web_enterprise (not just web/base): this module extends
-    # res.users.settings.color_scheme and ir.http, both defined there - without
-    # this dependency, load order isn't guaranteed and selection_add on
-    # color_scheme fails outright when web_enterprise hasn't set up its base
-    # `selection` yet.
-    'depends': ['web', 'base', 'web_enterprise'],
+    'depends': ['web', 'base'],
     'data': [
         'security/ir.model.access.csv',
         'views/webclient_templates.xml',

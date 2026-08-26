@@ -36,6 +36,12 @@
               action="action_ptm_meeting"
               sequence="10"/>
 
+    <menuitem id="menu_holiday"
+              name="Holiday"
+              parent="menu_academic_management_root"
+              action="action_academic_holiday"
+              sequence="40"/>
+
     <!-- Unify the standard Library "Media/Books" entry into the single Smart Book
          screen instead of keeping two separate menus/UIs for op.media records. -->
     <record id="openeducat_library.menu_op_sub_media_library" model="ir.ui.menu">

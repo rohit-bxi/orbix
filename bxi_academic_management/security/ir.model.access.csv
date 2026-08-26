@@ -11,3 +11,5 @@ access_bxi_ptm_meeting_coordinator,bxi.ptm.meeting.coordinator,model_bxi_ptm_mee
 access_bxi_ptm_meeting_manager,bxi.ptm.meeting.manager,model_bxi_ptm_meeting,group_academic_manager,1,1,1,1
 access_op_media_academic_coordinator,op.media.academic.coordinator,openeducat_library.model_op_media,group_academic_coordinator,1,1,1,0
 access_op_media_academic_manager,op.media.academic.manager,openeducat_library.model_op_media,group_academic_manager,1,1,1,1
+access_resource_calendar_leaves_academic_coordinator,resource.calendar.leaves.academic.coordinator,resource.model_resource_calendar_leaves,group_academic_coordinator,1,1,1,0
+access_resource_calendar_leaves_academic_manager,resource.calendar.leaves.academic.manager,resource.model_resource_calendar_leaves,group_academic_manager,1,1,1,1

@@ -17,6 +17,7 @@
     'depends': [
         'base',
         'mail',
+        'hr_holidays',
         'openeducat_core',
         'openeducat_library',
     ],
@@ -29,6 +30,7 @@
         'views/media_curriculum_views.xml',
         'views/subject_mapping_views.xml',
         'views/ptm_meeting_views.xml',
+        'views/holiday_views.xml',
         'views/academic_management_menu.xml',
     ],
     'installable': True,
