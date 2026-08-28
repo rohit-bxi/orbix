@@ -58,9 +58,9 @@
                     </div>
                     <group>
                         <group string="Student Information">
-                            <field name="student_id"/>
+                            <field name="student_id" readonly="status in ('approved', 'rejected')"/>
                             <field name="parent_ids" invisible="1"/>
-                            <field name="parent_id" domain="[('id', 'in', parent_ids)]"/>
+                            <field name="parent_id" domain="[('id', 'in', parent_ids)]" readonly="status in ('approved', 'rejected')"/>
                             <field name="class_id" readonly="1"/>
                             <field name="section_id" readonly="1"/>
                             <field name="roll_number" readonly="1"/>
@@ -78,31 +78,31 @@
                         <page string="Exemption Request Details">
                             <group>
                                 <group>
-                                    <field name="exemption_type"/>
-                                    <field name="request_value_type"/>
-                                    <field name="requested_amount" invisible="request_value_type != 'amount'"/>
-                                    <field name="requested_percentage" invisible="request_value_type != 'percentage'"/>
+                                    <field name="exemption_type" readonly="status in ('approved', 'rejected')"/>
+                                    <field name="request_value_type" readonly="status in ('approved', 'rejected')"/>
+                                    <field name="requested_amount" invisible="request_value_type != 'amount'" readonly="status in ('approved', 'rejected')"/>
+                                    <field name="requested_percentage" invisible="request_value_type != 'percentage'" readonly="status in ('approved', 'rejected')"/>
                                 </group>
                                 <group>
-                                    <field name="academic_performance"/>
-                                    <field name="attendance_percentage"/>
-                                    <field name="family_income"/>
-                                    <field name="sibling_count"/>
-                                    <field name="previous_exemptions"/>
+                                    <field name="academic_performance" readonly="status in ('approved', 'rejected')"/>
+                                    <field name="attendance_percentage" readonly="status in ('approved', 'rejected')"/>
+                                    <field name="family_income" readonly="status in ('approved', 'rejected')"/>
+                                    <field name="sibling_count" readonly="status in ('approved', 'rejected')"/>
+                                    <field name="previous_exemptions" readonly="status in ('approved', 'rejected')"/>
                                 </group>
                             </group>
                             <group>
-                                <field name="reason"/>
-                                <field name="additional_notes"/>
+                                <field name="reason" readonly="status in ('approved', 'rejected')"/>
+                                <field name="additional_notes" readonly="status in ('approved', 'rejected')"/>
                             </group>
                         </page>
                         <page string="Supporting Documents">
-                            <field name="document_ids" widget="many2many_binary"/>
+                            <field name="document_ids" widget="many2many_binary" readonly="status in ('approved', 'rejected')"/>
                         </page>
                         <page string="Approval &amp; Processing">
                             <group>
                                 <group>
-                                    <field name="submitted_date"/>
+                                    <field name="submitted_date" readonly="status in ('approved', 'rejected')"/>
                                     <field name="approved_by"/>
                                     <field name="approval_date"/>
                                 </group>
@@ -123,7 +123,7 @@
                             </group>
                         </page>
                         <page string="Internal Notes">
-                            <field name="internal_notes"/>
+                            <field name="internal_notes" readonly="status in ('approved', 'rejected')"/>
                         </page>
                     </notebook>
                 </sheet>
