@@ -90,13 +90,15 @@ class OpStudentFeesDetails(models.Model):
                 total_payable = detail.after_discount_amount + late_fee
                 pending = total_payable
 
+            overdue_threshold = structure.late_fee_apply_after_days or 0
+
             if detail.state == 'cancel':
                 status = 'pending'
             elif payment_state in ('paid', 'in_payment'):
                 status = 'paid'
             elif payment_state == 'partial':
                 status = 'partially_paid'
-            elif days_overdue > 0:
+            elif days_overdue > overdue_threshold:
                 status = 'overdue'
             else:
                 status = 'pending'
