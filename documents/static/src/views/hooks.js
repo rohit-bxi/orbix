@@ -1,4 +1,3 @@
-import { PromoteStudioAutomationDialog } from "@web_enterprise/webclient/promote_studio/promote_studio_dialog";
 import { _t } from "@web/core/l10n/translation";
 import { user } from "@web/core/user";
 import { useBus, useService } from "@web/core/utils/hooks";
@@ -101,9 +100,10 @@ export function useDocumentView(helpers) {
             ["state", "=", "installed"],
         ]);
         if (!checkBaseAutomation > 0) {
-            return dialogService.add(PromoteStudioAutomationDialog, {
-                title: _t("Odoo Studio - Customize workflows in minutes"),
-            });
+            return notification.add(
+                _t("Install the Studio app to create automation rules."),
+                { title: _t("Automations"), type: "info" }
+            );
         }
         const userHasAccessRight = await user.checkAccessRight("base.automation", "create");
         if (!userHasAccessRight) {

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="helpdesk_team_teacher_support" model="helpdesk.team">
+        <field name="name">Help &amp; Support</field>
+    </record>
+
+    <record id="tag_role_student" model="helpdesk.tag">
+        <field name="name">Student</field>
+    </record>
+    <record id="tag_role_parent" model="helpdesk.tag">
+        <field name="name">Parent</field>
+    </record>
+    <record id="tag_role_teacher" model="helpdesk.tag">
+        <field name="name">Teacher</field>
+    </record>
+
+    <record id="tag_account_profile" model="helpdesk.tag">
+        <field name="name">Account &amp; Profile</field>
+    </record>
+    <record id="tag_technical_errors" model="helpdesk.tag">
+        <field name="name">Technical Errors</field>
+    </record>
+    <record id="tag_timetable_calendar" model="helpdesk.tag">
+        <field name="name">Timetable &amp; Calendar</field>
+    </record>
+    <record id="tag_assignments_evaluation" model="helpdesk.tag">
+        <field name="name">Assignments &amp; Evaluation</field>
+    </record>
+    <record id="tag_attendance_reports" model="helpdesk.tag">
+        <field name="name">Attendance &amp; Reports</field>
+    </record>
+    <record id="tag_login_issues" model="helpdesk.tag">
+        <field name="name">Login Issues</field>
+    </record>
+</odoo>

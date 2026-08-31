@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.bxi.notification.gateway</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app string="Orbix Notifications" name="bxi_notification_gateway" logo="/bxi_notification_gateway/static/description/icon.png">
+                    <block title="MSG91 SMS / OTP" help="Used to deliver OTP codes and any other feature with an SMS/push option (announcements, exemption/refund notifications).">
+                        <setting id="msg91_auth_key" string="Auth Key">
+                            <field name="msg91_auth_key" password="True"/>
+                        </setting>
+                        <setting id="msg91_sender_id" string="Sender ID">
+                            <field name="msg91_sender_id"/>
+                        </setting>
+                        <setting id="msg91_otp_template_id" string="OTP Template ID">
+                            <field name="msg91_otp_template_id"/>
+                        </setting>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,628 @@
+{
+  "info": {
+    "_postman_id": "b6e2b3b0-3c8b-4a5e-9d2f-orbix-api-collection",
+    "name": "Orbix School ERP API",
+    "description": "API collection for all Orbix custom Odoo 19 modules (bxi_api, bxi_identity_verification, bxi_library_book_request, bxi_notification_gateway, bxi_online_fee_payment, bxi_parent_data_api, bxi_parent_teacher_messaging, bxi_settings_api, bxi_system_logs_api, bxi_teacher_support).\n\nAuth: call 'Login' in the Auth folder first - it saves the returned token into the {{token}} collection variable, which is used as a Bearer token on every other request via the collection-level Authorization.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      { "key": "token", "value": "{{token}}", "type": "string" }
+    ]
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8069", "type": "string" },
+    { "key": "token", "value": "", "type": "string" },
+    { "key": "student_id", "value": "1", "type": "string" },
+    { "key": "parent_id", "value": "1", "type": "string" },
+    { "key": "teacher_id", "value": "1", "type": "string" },
+    { "key": "media_id", "value": "1", "type": "string" },
+    { "key": "book_request_id", "value": "1", "type": "string" },
+    { "key": "fees_detail_id", "value": "1", "type": "string" },
+    { "key": "payment_order_id", "value": "1", "type": "string" },
+    { "key": "thread_id", "value": "1", "type": "string" },
+    { "key": "tag_id", "value": "1", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Auth (bxi_api)",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"login\": \"admin\",\n  \"password\": \"admin\",\n  \"device_name\": \"Postman\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "login"]
+            },
+            "description": "Public. Returns a bearer token on success (401 invalid_credentials, 400 missing_credentials)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const body = pm.response.json();",
+                  "  if (body && body.data && body.data.token) {",
+                  "    pm.collectionVariables.set('token', body.data.token);",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/logout",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "logout"]
+            },
+            "description": "Requires auth. Revokes the bearer token used to call it."
+          }
+        },
+        {
+          "name": "Me",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/me",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "me"]
+            },
+            "description": "Requires auth. Returns the current user's profile."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Identity Verification (bxi_identity_verification)",
+      "item": [
+        {
+          "name": "Get Verification Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/identity/status?subject_type=student&subject_id={{student_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "identity", "status"],
+              "query": [
+                { "key": "subject_type", "value": "student", "description": "'student' or 'parent'" },
+                { "key": "subject_id", "value": "{{student_id}}" }
+              ]
+            },
+            "description": "Requires auth. Caller must be staff, the parent record itself, or a parent linked to the student."
+          }
+        },
+        {
+          "name": "Submit Aadhar",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subject_type\": \"student\",\n  \"subject_id\": {{student_id}},\n  \"aadhar_number\": \"123456789012\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/identity/aadhar/submit",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "identity", "aadhar", "submit"]
+            },
+            "description": "Requires auth."
+          }
+        },
+        {
+          "name": "Submit Face",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subject_type\": \"student\",\n  \"subject_id\": {{student_id}},\n  \"image\": \"<base64-encoded-image>\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/identity/face/submit",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "identity", "face", "submit"]
+            },
+            "description": "Requires auth."
+          }
+        },
+        {
+          "name": "Link Student to Parent",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"student_id\": {{student_id}}\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/identity/link-student",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "identity", "link-student"]
+            },
+            "description": "Requires auth. Caller must have an op.parent record (403 not_a_parent otherwise)."
+          }
+        },
+        {
+          "name": "Unlink Student from Parent",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"student_id\": {{student_id}}\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/identity/unlink-student",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "identity", "unlink-student"]
+            },
+            "description": "Requires auth."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Library Book Requests (bxi_library_book_request)",
+      "item": [
+        {
+          "name": "List Book Requests",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/library/book-requests",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "library", "book-requests"]
+            },
+            "description": "Requires auth. Librarians see all requests; others see only their own."
+          }
+        },
+        {
+          "name": "Create Book Request",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"media_id\": {{media_id}},\n  \"reason\": \"Needed for research project\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/library/book-requests",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "library", "book-requests"]
+            },
+            "description": "Requires auth."
+          }
+        },
+        {
+          "name": "Approve Book Request",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notes\": \"Approved, available at the front desk.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/library/book-requests/{{book_request_id}}/approve",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "library", "book-requests", "{{book_request_id}}", "approve"]
+            },
+            "description": "Requires auth + librarian group (bxi_library_book_request.group_book_request_librarian)."
+          }
+        },
+        {
+          "name": "Reject Book Request",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notes\": \"Currently out of stock.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/library/book-requests/{{book_request_id}}/reject",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "library", "book-requests", "{{book_request_id}}", "reject"]
+            },
+            "description": "Requires auth + librarian group."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notification Gateway / OTP (bxi_notification_gateway)",
+      "item": [
+        {
+          "name": "Request OTP",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"+919876543210\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/otp/request",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "otp", "request"]
+            },
+            "description": "Public. Sends an OTP via MSG91 to the given phone number."
+          }
+        },
+        {
+          "name": "Verify OTP",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"+919876543210\",\n  \"otp\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/otp/verify",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "otp", "verify"]
+            },
+            "description": "Public."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Online Fee Payment (bxi_online_fee_payment)",
+      "item": [
+        {
+          "name": "Fee Payment Summary",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/payments/summary?student_id={{student_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "payments", "summary"],
+              "query": [{ "key": "student_id", "value": "{{student_id}}" }]
+            },
+            "description": "Requires auth. Staff or a parent linked to the student."
+          }
+        },
+        {
+          "name": "Create Razorpay Order",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fees_detail_id\": {{fees_detail_id}},\n  \"amount\": 5000\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/payments/create-order",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "payments", "create-order"]
+            },
+            "description": "Requires auth. Returns a Razorpay order to be opened in the app's checkout SDK."
+          }
+        },
+        {
+          "name": "Verify Payment",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"payment_order_id\": {{payment_order_id}},\n  \"razorpay_payment_id\": \"pay_xxxxxxxxxxxx\",\n  \"razorpay_signature\": \"<hmac-signature>\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/payments/verify",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "payments", "verify"]
+            },
+            "description": "Requires auth. Called by the mobile app after Razorpay checkout completes client-side."
+          }
+        },
+        {
+          "name": "Razorpay Webhook",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Razorpay-Signature", "value": "<hmac-signature>" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"payload\": {\n    \"payment\": {\n      \"entity\": {\n        \"id\": \"pay_xxxxxxxxxxxx\",\n        \"order_id\": \"order_xxxxxxxxxxxx\"\n      }\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/payments/webhook",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "payments", "webhook"]
+            },
+            "description": "Public (server-to-server from Razorpay). Verified via the X-Razorpay-Signature header, not a bearer token."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Parent Data (bxi_parent_data_api)",
+      "item": [
+        {
+          "name": "Exam Results",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/parent/exam-results?student_id={{student_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "parent", "exam-results"],
+              "query": [{ "key": "student_id", "value": "{{student_id}}" }]
+            },
+            "description": "Requires auth. Staff or a parent linked to the student."
+          }
+        },
+        {
+          "name": "Attendance",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/parent/attendance?student_id={{student_id}}&date_from=2026-01-01&date_to=2026-08-31",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "parent", "attendance"],
+              "query": [
+                { "key": "student_id", "value": "{{student_id}}" },
+                { "key": "date_from", "value": "2026-01-01" },
+                { "key": "date_to", "value": "2026-08-31" }
+              ]
+            },
+            "description": "Requires auth. date_from/date_to are optional (default range applies if omitted)."
+          }
+        },
+        {
+          "name": "Timetable",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/parent/timetable?student_id={{student_id}}&date_from=2026-01-01&date_to=2026-08-31",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "parent", "timetable"],
+              "query": [
+                { "key": "student_id", "value": "{{student_id}}" },
+                { "key": "date_from", "value": "2026-01-01" },
+                { "key": "date_to", "value": "2026-08-31" }
+              ]
+            },
+            "description": "Requires auth. date_from/date_to are optional."
+          }
+        },
+        {
+          "name": "Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/parent/dashboard?student_id={{student_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "parent", "dashboard"],
+              "query": [{ "key": "student_id", "value": "{{student_id}}" }]
+            },
+            "description": "Requires auth. Combined attendance %, upcoming sessions, latest exam result."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Parent-Teacher Messaging (bxi_parent_teacher_messaging)",
+      "item": [
+        {
+          "name": "List Threads",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/messages/threads",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "messages", "threads"]
+            },
+            "description": "Requires auth. Threads where the caller is the parent or the teacher participant."
+          }
+        },
+        {
+          "name": "Start Thread",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"student_id\": {{student_id}},\n  \"teacher_id\": {{teacher_id}}\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/messages/threads",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "messages", "threads"]
+            },
+            "description": "Requires auth. Caller must be the linked parent of the student."
+          }
+        },
+        {
+          "name": "List Messages in Thread",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/messages/threads/{{thread_id}}/messages",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "messages", "threads", "{{thread_id}}", "messages"]
+            },
+            "description": "Requires auth. Caller must be a participant of the thread."
+          }
+        },
+        {
+          "name": "Send Message",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"body\": \"Hello, could we discuss the upcoming test?\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/messages/threads/{{thread_id}}/messages",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "messages", "threads", "{{thread_id}}", "messages"]
+            },
+            "description": "Requires auth. Caller must be a participant of the thread."
+          }
+        },
+        {
+          "name": "Mark Thread Read",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": {
+              "raw": "{{base_url}}/api/v1/messages/threads/{{thread_id}}/read",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "messages", "threads", "{{thread_id}}", "read"]
+            },
+            "description": "Requires auth. Marks messages from the other participant as read."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin Settings (bxi_settings_api)",
+      "item": [
+        {
+          "name": "Get Settings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/settings",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "settings"]
+            },
+            "description": "Requires auth + base.group_system. Secret fields are returned as {\"configured\": true/false}, never their raw value."
+          }
+        },
+        {
+          "name": "Update Settings",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notifications\": {\n    \"msg91_auth_key\": \"<your-msg91-auth-key>\",\n    \"msg91_sender_id\": \"ORBIX\",\n    \"msg91_otp_template_id\": \"<template-id>\"\n  },\n  \"finance\": {\n    \"razorpay_key_id\": \"<razorpay-key-id>\",\n    \"razorpay_key_secret\": \"<razorpay-key-secret>\",\n    \"razorpay_webhook_secret\": \"<razorpay-webhook-secret>\",\n    \"online_payment_journal_id\": 1\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/settings",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "settings"]
+            },
+            "description": "Requires auth + base.group_system. Groups: 'notifications', 'finance'. Send only the fields you want to change."
+          }
+        }
+      ]
+    },
+    {
+      "name": "System Logs (bxi_system_logs_api)",
+      "item": [
+        {
+          "name": "List System Logs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/system-logs?model=op.student&res_id=1&date_from=2026-01-01&date_to=2026-08-31&limit=50&offset=0",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "system-logs"],
+              "query": [
+                { "key": "model", "value": "op.student", "description": "Optional model filter" },
+                { "key": "res_id", "value": "1", "description": "Optional record id filter" },
+                { "key": "date_from", "value": "2026-01-01" },
+                { "key": "date_to", "value": "2026-08-31" },
+                { "key": "limit", "value": "50" },
+                { "key": "offset", "value": "0" }
+              ]
+            },
+            "description": "Requires auth. All query params are optional; results ordered id desc."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Teacher Support (bxi_teacher_support)",
+      "item": [
+        {
+          "name": "List FAQs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/support/faqs?category=general",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "support", "faqs"],
+              "query": [{ "key": "category", "value": "general", "description": "Optional category filter" }]
+            },
+            "description": "Requires auth."
+          }
+        },
+        {
+          "name": "List My Tickets",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/support/tickets",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "support", "tickets"]
+            },
+            "description": "Requires auth. Returns tickets for the caller's partner only."
+          }
+        },
+        {
+          "name": "Create Ticket",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subject\": \"Unable to mark attendance\",\n  \"description\": \"The attendance screen crashes when I select a section.\",\n  \"category_tag_id\": {{tag_id}}\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/support/tickets",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "support", "tickets"]
+            },
+            "description": "Requires auth. description and category_tag_id are optional."
+          }
+        }
+      ]
+    }
+  ]
+}

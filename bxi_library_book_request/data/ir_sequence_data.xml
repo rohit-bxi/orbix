@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="seq_bxi_library_book_request" model="ir.sequence">
+        <field name="name">Library Book Request</field>
+        <field name="code">bxi.library.book.request</field>
+        <field name="prefix">BR/%(year)s/</field>
+        <field name="padding">4</field>
+    </record>
+</odoo>

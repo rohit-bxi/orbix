@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_op_parent_form_identity" model="ir.ui.view">
+        <field name="name">op.parent.form.identity.verification</field>
+        <field name="model">op.parent</field>
+        <field name="inherit_id" ref="openeducat_parent.view_op_parent_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="inside">
+                <group string="Identity Verification">
+                    <group string="Aadhaar">
+                        <field name="aadhar_card"/>
+                        <field name="aadhar_verification_status" widget="badge"
+                               decoration-success="aadhar_verification_status == 'verified'"
+                               decoration-warning="aadhar_verification_status == 'pending'"
+                               decoration-danger="aadhar_verification_status == 'rejected'"/>
+                        <field name="aadhar_submitted_at" readonly="1"/>
+                        <field name="aadhar_verified_at" readonly="1"/>
+                        <field name="aadhar_verification_notes"/>
+                        <div class="mt-2" groups="bxi_identity_verification.group_identity_reviewer">
+                            <button name="action_verify_aadhar" type="object" string="Verify Aadhaar"
+                                    class="btn-primary" invisible="aadhar_verification_status != 'pending'"/>
+                            <button name="action_reject_aadhar" type="object" string="Reject Aadhaar"
+                                    class="btn-secondary" invisible="aadhar_verification_status != 'pending'"/>
+                        </div>
+                    </group>
+                    <group string="Face Photo">
+                        <field name="face_verification_status" widget="badge"
+                               decoration-success="face_verification_status == 'verified'"
+                               decoration-warning="face_verification_status == 'pending'"
+                               decoration-danger="face_verification_status == 'rejected'"/>
+                        <field name="face_submitted_at" readonly="1"/>
+                        <field name="face_verified_at" readonly="1"/>
+                        <div class="mt-2" groups="bxi_identity_verification.group_identity_reviewer">
+                            <button name="action_verify_face" type="object" string="Verify Face Photo"
+                                    class="btn-primary" invisible="face_verification_status != 'pending'"/>
+                            <button name="action_reject_face" type="object" string="Reject Face Photo"
+                                    class="btn-secondary" invisible="face_verification_status != 'pending'"/>
+                        </div>
+                    </group>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>
