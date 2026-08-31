@@ -7,8 +7,8 @@
         <field name="arch" type="xml">
             <xpath expr="//page[@name='general_information']" position="after">
                 <page string="Canteen" name="canteen_info">
-                    <group>
-                        <field name="is_canteen_item"/>
+                    <group string="Canteen Item">
+                        <field name="is_canteen_item" string="Canteen Item"/>
                         <group invisible="not is_canteen_item">
                             <field name="available_today"/>
                             <field name="veg_type"/>
