@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from odoo import http
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 from odoo.http import request
 
 from odoo.addons.bxi_api.controllers.auth import api_error, api_response, require_auth
@@ -124,5 +124,8 @@ class BxiIdentityVerificationController(http.Controller):
         if not parent:
             return api_error('No parent record is linked to this account.', status=403, code='not_a_parent')
 
-        parent.sudo().write({'student_ids': [(3, int(student_id))]})
+        try:
+            parent.sudo().write({'student_ids': [(3, int(student_id))]})
+        except ValidationError:
+            return api_error('Cannot remove the last linked student.', status=400, code='last_student')
         return api_response({'linked_student_ids': parent.student_ids.ids})

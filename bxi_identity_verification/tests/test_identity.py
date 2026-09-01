@@ -207,6 +207,11 @@ class TestBxiIdentityVerification(HttpCase):
         self.assertIn(new_student.id, self.parent.student_ids.ids)
 
     def test_unlink_student_removes_from_parent(self):
+        second_student = self.env['op.student'].create({
+            'first_name': 'Second', 'last_name': 'Checked', 'gr_no': 'ID-003', 'gender': 'm',
+        })
+        self.parent.sudo().write({'student_ids': [(4, second_student.id)]})
+
         resp = self.url_open('/api/v1/identity/unlink-student', headers=self._headers('id_parent', 'ParentPass1!'), json={
             'student_id': self.student.id,
         })
@@ -242,3 +247,13 @@ class TestBxiIdentityVerification(HttpCase):
         })
         self.assertEqual(resp.status_code, 403)
         self.assertEqual(resp.json()['error']['code'], 'not_a_parent')
+
+    def test_unlink_last_student_rejected(self):
+        # cls.parent only has cls.student linked; student_ids is required on op.parent,
+        # so removing the last one must be rejected cleanly instead of a raw 500.
+        resp = self.url_open('/api/v1/identity/unlink-student', headers=self._headers('id_parent', 'ParentPass1!'), json={
+            'student_id': self.student.id,
+        })
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.json()['error']['code'], 'last_student')
+        self.assertIn(self.student.id, self.parent.student_ids.ids)
