@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_bxi_message_thread_auditor,message.thread.auditor,model_bxi_message_thread,group_messaging_auditor,1,0,0,0
+access_bxi_message_auditor,message.auditor,model_bxi_message,group_messaging_auditor,1,0,0,0

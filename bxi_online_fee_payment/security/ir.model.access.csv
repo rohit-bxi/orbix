@@ -1,0 +1,2 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_bxi_payment_order_admin,payment.order.admin,model_bxi_payment_order,bxi_api.group_api_admin,1,0,0,0

@@ -1,0 +1,67 @@
+# -*- coding: utf-8 -*-
+
+from odoo import _, fields, models
+from odoo.exceptions import UserError
+
+VERIFICATION_STATUSES = [
+    ('unverified', 'Unverified'),
+    ('pending', 'Pending Review'),
+    ('verified', 'Verified'),
+    ('rejected', 'Rejected'),
+]
+
+
+class BxiIdentityVerificationMixin(models.AbstractModel):
+    """Shared Aadhaar + face-photo verification state for op.student and
+    op.parent. Verification is a human judgment call (comparing a
+    submitted ID/photo against the record), so there is no automated
+    "verified" transition here - submitting only ever reaches 'pending',
+    a staff reviewer moves it to 'verified'/'rejected' from the normal
+    Odoo backend form.
+    """
+    _name = 'bxi.identity.verification.mixin'
+    _description = 'Identity Verification Fields'
+
+    aadhar_card = fields.Char(string='Aadhaar Number')
+    aadhar_verification_status = fields.Selection(
+        VERIFICATION_STATUSES, string='Aadhaar Status', default='unverified', tracking=True)
+    aadhar_submitted_at = fields.Datetime(readonly=True, copy=False)
+    aadhar_verified_at = fields.Datetime(readonly=True, copy=False)
+    aadhar_verification_notes = fields.Text(string='Aadhaar Review Notes')
+
+    face_verification_status = fields.Selection(
+        VERIFICATION_STATUSES, string='Face Photo Status', default='unverified', tracking=True)
+    face_submitted_at = fields.Datetime(readonly=True, copy=False)
+    face_verified_at = fields.Datetime(readonly=True, copy=False)
+
+    def _submit_aadhar(self, aadhar_number):
+        self.ensure_one()
+        if not aadhar_number:
+            raise UserError(_('An Aadhaar number is required.'))
+        self.write({
+            'aadhar_card': aadhar_number,
+            'aadhar_verification_status': 'pending',
+            'aadhar_submitted_at': fields.Datetime.now(),
+        })
+
+    def _submit_face(self, image_data):
+        self.ensure_one()
+        if not image_data:
+            raise UserError(_('A captured image is required.'))
+        self.register_face(image_data)
+        self.write({
+            'face_verification_status': 'pending',
+            'face_submitted_at': fields.Datetime.now(),
+        })
+
+    def action_verify_aadhar(self):
+        self.write({'aadhar_verification_status': 'verified', 'aadhar_verified_at': fields.Datetime.now()})
+
+    def action_reject_aadhar(self):
+        self.write({'aadhar_verification_status': 'rejected'})
+
+    def action_verify_face(self):
+        self.write({'face_verification_status': 'verified', 'face_verified_at': fields.Datetime.now()})
+
+    def action_reject_face(self):
+        self.write({'face_verification_status': 'rejected'})

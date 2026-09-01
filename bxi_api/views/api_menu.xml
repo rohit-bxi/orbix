@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <menuitem id="menu_api_root" name="Orbix API" sequence="95" groups="bxi_api.group_api_admin"
+              web_icon="bxi_api,static/description/icon.png"/>
+    <menuitem id="menu_api_token" name="API Tokens" parent="menu_api_root" action="action_bxi_api_token" sequence="10"/>
+</odoo>

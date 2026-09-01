@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_bxi_api_token_list" model="ir.ui.view">
+        <field name="name">bxi.api.token.list</field>
+        <field name="model">bxi.api.token</field>
+        <field name="arch" type="xml">
+            <list string="API Tokens" decoration-muted="not active">
+                <field name="user_id"/>
+                <field name="name"/>
+                <field name="token_last4" string="Ends with"/>
+                <field name="expires_at"/>
+                <field name="last_used_at"/>
+                <field name="active" widget="boolean_toggle"/>
+                <button name="action_revoke" type="object" string="Revoke" icon="fa-ban" invisible="not active"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_bxi_api_token_search" model="ir.ui.view">
+        <field name="name">bxi.api.token.search</field>
+        <field name="model">bxi.api.token</field>
+        <field name="arch" type="xml">
+            <search string="API Tokens">
+                <field name="user_id"/>
+                <field name="name"/>
+                <filter string="Active" name="filter_active" domain="[('active', '=', True)]"/>
+                <filter string="Revoked" name="filter_revoked" domain="[('active', '=', False)]"/>
+                <separator/>
+                <filter string="User" name="group_user" context="{'group_by': 'user_id'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_bxi_api_token" model="ir.actions.act_window">
+        <field name="name">API Tokens</field>
+        <field name="res_model">bxi.api.token</field>
+        <field name="view_mode">list</field>
+        <field name="search_view_id" ref="view_bxi_api_token_search"/>
+        <field name="context">{'search_default_filter_active': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No API tokens yet. Tokens are issued automatically when a user logs into the Orbix mobile app - there is nothing to create here manually.
+            </p>
+        </field>
+    </record>
+</odoo>
