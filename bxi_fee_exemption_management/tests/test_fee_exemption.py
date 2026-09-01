@@ -234,6 +234,30 @@ class TestFeeExemption(TransactionCase):
         self.assertEqual(request.exemption_id.approval_status, 'approved')
         self.assertEqual(request.exemption_id.fixed_amount, 300.0)
 
+    def test_approve_wizard_onchange_maps_amount_request_value_type(self):
+        # request_value_type uses 'amount'/'percentage'; exemption_method uses
+        # 'fixed_amount'/'percentage' - the onchange must translate, not copy raw.
+        request = self._make_request(request_value_type='amount', requested_amount=300.0)
+        request.action_submit()
+        request.action_start_review()
+
+        wizard = self.env['bxi.fee.exemption.approve.wizard'].new({'request_id': request.id})
+        wizard.approval_type = 'full_approval'
+        wizard._onchange_approval_type()
+        self.assertEqual(wizard.exemption_method, 'fixed_amount')
+        self.assertAlmostEqual(wizard.approved_amount, 300.0)
+
+    def test_approve_wizard_onchange_maps_percentage_request_value_type(self):
+        request = self._make_request(
+            request_value_type='percentage', requested_amount=0.0, requested_percentage=25.0)
+        request.action_submit()
+        request.action_start_review()
+
+        wizard = self.env['bxi.fee.exemption.approve.wizard'].new({'request_id': request.id})
+        wizard.approval_type = 'full_approval'
+        wizard._onchange_approval_type()
+        self.assertEqual(wizard.exemption_method, 'percentage')
+
     def test_approve_wizard_requires_positive_amount(self):
         request = self._make_request()
         request.action_submit()
