@@ -72,7 +72,8 @@ class FeeExemptionApproveWizard(models.TransientModel):
     def _onchange_approval_type(self):
         if self.request_id:
             if self.approval_type == 'full_approval':
-                self.exemption_method = self.request_id.request_value_type
+                self.exemption_method = (
+                    'fixed_amount' if self.request_id.request_value_type == 'amount' else 'percentage')
                 self.approved_amount = (
                     self.request_id.requested_amount if self.request_id.request_value_type == 'amount'
                     else self.request_id.pending_amount * self.request_id.requested_percentage / 100.0)
