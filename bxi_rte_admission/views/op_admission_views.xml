@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_op_admission_form_rte" model="ir.ui.view">
+        <field name="name">op.admission.form.rte</field>
+        <field name="model">op.admission</field>
+        <field name="inherit_id" ref="openeducat_admission.view_op_admission_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_verify_documents" string="Verify Documents"
+                        type="object" class="oe_highlight"
+                        invisible="not is_rte_applicant or rte_state not in ('draft', 'doc_rejected')"/>
+                <button name="action_reject_documents" string="Reject Documents"
+                        type="object"
+                        invisible="not is_rte_applicant or rte_state not in ('draft', 'doc_verified')"/>
+                <button name="action_confirm_admission" string="Confirm Admission"
+                        type="object" class="oe_highlight"
+                        invisible="not is_rte_applicant or rte_state not in ('allotted', 'waitlisted')"/>
+                <button name="action_mark_admitted" string="Mark Admitted"
+                        type="object" class="oe_highlight"
+                        invisible="not is_rte_applicant or rte_state != 'confirmed'"/>
+                <button name="action_mark_lapsed" string="Mark Lapsed"
+                        type="object"
+                        invisible="not is_rte_applicant or rte_state not in ('allotted', 'waitlisted', 'confirmed')"/>
+            </xpath>
+            <xpath expr="//sheet" position="before">
+                <div class="alert alert-info text-center mb0" role="alert"
+                     invisible="not is_rte_applicant" style="margin-bottom:0;">
+                    <field name="rte_state" widget="statusbar"
+                           statusbar_visible="draft,doc_verified,lottery_pending,allotted,confirmed,admitted"/>
+                </div>
+            </xpath>
+            <xpath expr="//field[@name='course_id']" position="after">
+                <field name="is_rte_applicant"/>
+            </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page name="rte_admission" string="RTE" invisible="not is_rte_applicant">
+                    <group>
+                        <group string="RTE Status">
+                            <field name="verified_by" readonly="1"/>
+                            <field name="verification_date" readonly="1"/>
+                            <field name="rejection_reason"
+                                   invisible="rte_state != 'doc_rejected'"/>
+                        </group>
+                        <group string="Deadlines">
+                            <field name="doc_verification_deadline"/>
+                            <field name="confirmation_deadline"/>
+                        </group>
+                    </group>
+                    <group string="Identity">
+                        <group>
+                            <field name="rte_aadhaar_number"/>
+                            <field name="rte_aadhaar_enrollment_number"/>
+                            <field name="rte_religion"/>
+                            <field name="rte_caste_category"/>
+                            <field name="rte_cwsn_category"/>
+                        </group>
+                        <group>
+                            <field name="rte_parent_id" readonly="1"/>
+                            <field name="rte_missing_document_types" readonly="1"/>
+                            <field name="rte_father_aadhaar"/>
+                            <field name="rte_mother_aadhaar"/>
+                            <field name="rte_guardian_aadhaar"/>
+                        </group>
+                    </group>
+                    <group string="Residence Catchment">
+                        <group>
+                            <field name="rte_area_type"/>
+                            <field name="rte_ward" invisible="rte_area_type != 'urban'"/>
+                            <field name="rte_urban_body" invisible="rte_area_type != 'urban'"/>
+                            <field name="rte_pincode"/>
+                        </group>
+                        <group>
+                            <field name="rte_village" invisible="rte_area_type != 'rural'"/>
+                            <field name="rte_gram_panchayat" invisible="rte_area_type != 'rural'"/>
+                            <field name="rte_block"/>
+                            <field name="rte_district"/>
+                        </group>
+                    </group>
+                    <group string="Transfer / Dropout"
+                           invisible="rte_state not in ('confirmed', 'admitted')">
+                        <group>
+                            <field name="rte_dropout_date"/>
+                            <field name="rte_is_voluntary_transfer"/>
+                        </group>
+                    </group>
+                    <separator string="School Preferences"/>
+                    <field name="rte_preference_ids">
+                        <list editable="bottom">
+                            <field name="sequence" widget="handle"/>
+                            <field name="course_id"
+                                   options="{'no_create': True, 'no_create_edit': True}"/>
+                        </list>
+                    </field>
+                    <separator string="RTE Documents"/>
+                    <field name="rte_document_ids">
+                        <list editable="bottom">
+                            <field name="doc_type"/>
+                            <field name="document" widget="binary" filename="document_filename"/>
+                            <field name="document_filename" invisible="1"/>
+                            <field name="issue_date"/>
+                            <field name="verification_status"/>
+                            <field name="remarks"/>
+                        </list>
+                    </field>
+                    <separator string="Grievances"/>
+                    <field name="rte_grievance_ids" readonly="1">
+                        <list>
+                            <field name="name"/>
+                            <field name="state" widget="badge"/>
+                            <field name="description"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="act_open_op_admission_rte_view" model="ir.actions.act_window">
+        <field name="name">RTE Applications</field>
+        <field name="res_model">op.admission</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('is_rte_applicant', '=', True)]</field>
+        <field name="context">{'default_is_rte_applicant': True}</field>
+    </record>
+</odoo>

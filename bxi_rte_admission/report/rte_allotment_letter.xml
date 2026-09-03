@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_report_rte_allotment_letter" model="ir.actions.report">
+        <field name="name">RTE Allotment Letter</field>
+        <field name="model">op.admission</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">bxi_rte_admission.report_rte_allotment_letter</field>
+        <field name="report_file">bxi_rte_admission.report_rte_allotment_letter</field>
+        <field name="binding_model_id" ref="openeducat_admission.model_op_admission"/>
+        <field name="binding_type">report</field>
+        <field name="print_report_name">'RTE Allotment Letter - %s' % (object.application_number or object.name)</field>
+    </record>
+
+    <template id="report_rte_allotment_letter">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2>RTE Allotment Letter</h2>
+                        <p>Application Number: <span t-field="o.application_number"/></p>
+                        <table class="table table-sm">
+                            <tr>
+                                <td>Applicant Name</td>
+                                <td t-out="o.name"/>
+                            </tr>
+                            <tr>
+                                <td>Date of Birth</td>
+                                <td t-field="o.birth_date"/>
+                            </tr>
+                            <tr>
+                                <td>Course Allotted</td>
+                                <td t-out="o.course_id.name"/>
+                            </tr>
+                            <tr>
+                                <td>RTE Category</td>
+                                <td t-out="o.partner_id.name"/>
+                            </tr>
+                            <tr>
+                                <td>Allotment Status</td>
+                                <td t-out="o.rte_state"/>
+                            </tr>
+                            <tr>
+                                <td>Confirmation Deadline</td>
+                                <td t-field="o.confirmation_deadline"/>
+                            </tr>
+                        </table>
+                        <p>
+                            This letter confirms that the above applicant has been
+                            allotted a seat under RTE Section 12(1)(c) for the course
+                            mentioned above. Please confirm the seat before the
+                            confirmation deadline, failing which the seat will be
+                            offered to the next waitlisted applicant.
+                        </p>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

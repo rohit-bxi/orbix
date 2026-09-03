@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.bxi.rte.admission</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app string="RTE Admission" name="bxi_rte_admission" logo="/bxi_rte_admission/static/description/icon.png">
+                    <block title="Seat Quota" help="Applied to every RTE-active course's Total Intake unless a per-course manual override is set.">
+                        <setting id="rte_quota_percentage" string="RTE Quota Percentage">
+                            <field name="rte_quota_percentage"/> %
+                        </setting>
+                    </block>
+                    <block title="Deadlines" help="Lead time used by the daily confirmation-deadline reminder cron.">
+                        <setting id="rte_confirmation_reminder_days" string="Confirmation Reminder Lead Time">
+                            <field name="rte_confirmation_reminder_days"/> days before deadline
+                        </setting>
+                    </block>
+                    <block title="Documents" help="Required financial year for income certificates this admission session (para 7.7).">
+                        <setting id="rte_income_certificate_financial_year" string="Required Income Certificate FY">
+                            <field name="rte_income_certificate_financial_year" placeholder="e.g. 2025-26"/>
+                        </setting>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+</odoo>
