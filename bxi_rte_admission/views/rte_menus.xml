@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_rte_admission_root" name="RTE Admission"
+              sequence="35" web_icon="bxi_rte_admission,static/description/icon.png"
+              groups="bxi_rte_admission.group_rte_school_coordinator"/>
+
+    <menuitem id="menu_rte_admission_applications" name="Applications"
+              parent="menu_rte_admission_root"
+              action="act_open_op_admission_rte_view" sequence="10"/>
+
+    <menuitem id="menu_rte_lottery_batches" name="Lottery Batches"
+              parent="menu_rte_admission_root"
+              action="act_open_rte_lottery_batch_view" sequence="20"
+              groups="bxi_rte_admission.group_rte_district_officer"/>
+
+    <menuitem id="menu_rte_lottery_run" name="Run Lottery"
+              parent="menu_rte_admission_root"
+              action="act_rte_lottery_wizard" sequence="25"
+              groups="bxi_rte_admission.group_rte_district_officer"/>
+
+    <menuitem id="menu_rte_reimbursement_claims" name="Reimbursement Claims"
+              parent="menu_rte_admission_root"
+              action="act_open_rte_reimbursement_claim_view" sequence="30"
+              groups="bxi_rte_admission.group_rte_district_officer"/>
+
+    <menuitem id="menu_rte_grievances" name="Grievances"
+              parent="menu_rte_admission_root"
+              action="act_open_rte_grievance_view" sequence="35"
+              groups="bxi_rte_admission.group_rte_school_coordinator"/>
+
+    <menuitem id="menu_rte_admission_configuration" name="Configuration"
+              parent="menu_rte_admission_root" sequence="40"
+              groups="bxi_rte_admission.group_rte_admin"/>
+
+    <menuitem id="menu_rte_admission_courses" name="Courses"
+              parent="menu_rte_admission_configuration"
+              action="openeducat_core.act_open_op_course_view" sequence="10"/>
+
+    <menuitem id="menu_rte_class_enrollment_stats" name="Paid Enrollment Statistics"
+              parent="menu_rte_admission_configuration"
+              action="act_open_rte_class_enrollment_stat_view" sequence="20"/>
+</odoo>

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="mail_template_rte_allotment" model="mail.template">
+        <field name="name">RTE Admission: Allotment Notification</field>
+        <field name="model_id" ref="openeducat_admission.model_op_admission"/>
+        <field name="subject">RTE Admission Allotment - {{ object.name }}</field>
+        <field name="email_to">{{ object.email }}</field>
+        <field name="body_html" type="html">
+            <div>
+                <p>Dear <t t-out="object.name"/>,</p>
+                <p>
+                    Congratulations! You have been allotted a seat under
+                    RTE Section 12(1)(c) for course
+                    <t t-out="object.course_id.name"/>.
+                </p>
+                <p>
+                    Please confirm your seat before
+                    <t t-out="object.confirmation_deadline"/>.
+                </p>
+                <p>Regards,<br/>Admissions Office</p>
+            </div>
+        </field>
+    </record>
+
+    <record id="mail_template_rte_rejection" model="mail.template">
+        <field name="name">RTE Admission: Document Rejection Notification</field>
+        <field name="model_id" ref="openeducat_admission.model_op_admission"/>
+        <field name="subject">RTE Admission Documents Rejected - {{ object.name }}</field>
+        <field name="email_to">{{ object.email }}</field>
+        <field name="body_html" type="html">
+            <div>
+                <p>Dear <t t-out="object.name"/>,</p>
+                <p>
+                    Your RTE Section 12(1)(c) application documents for
+                    course <t t-out="object.course_id.name"/> could not be
+                    verified.
+                </p>
+                <p>Reason: <t t-out="object.rejection_reason or ''"/></p>
+                <p>Please resubmit the correct documents at the earliest.</p>
+                <p>Regards,<br/>Admissions Office</p>
+            </div>
+        </field>
+    </record>
+</odoo>

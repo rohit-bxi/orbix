@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_rte_document_verify_wizard_form" model="ir.ui.view">
+        <field name="name">rte.document.verify.wizard.form</field>
+        <field name="model">rte.document.verify.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Verify RTE Documents">
+                <group>
+                    <field name="admission_id" readonly="1"/>
+                    <field name="action_type" widget="radio"/>
+                    <field name="rejection_reason" invisible="action_type != 'reject'"/>
+                </group>
+                <footer>
+                    <button string="Confirm" type="object" name="action_confirm"
+                            class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="act_rte_document_verify_wizard" model="ir.actions.act_window">
+        <field name="name">Verify RTE Documents</field>
+        <field name="res_model">rte.document.verify.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="binding_model_id" ref="openeducat_admission.model_op_admission"/>
+        <field name="binding_view_types">form</field>
+    </record>
+</odoo>

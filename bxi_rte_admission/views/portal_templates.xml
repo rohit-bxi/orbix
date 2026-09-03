@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="portal_my_home_rte_link" inherit_id="portal.portal_my_home" name="RTE Admission Portal Link">
+        <xpath expr="//div[hasclass('o_portal_docs')]" position="inside">
+            <t t-call="portal.portal_docs_entry">
+                <t t-set="title">RTE Admission</t>
+                <t t-set="url" t-value="'/my/rte/applications'"/>
+                <t t-set="count" t-value="rte_admission_count"/>
+            </t>
+        </xpath>
+    </template>
+
+    <template id="portal_my_rte_applications" name="My RTE Applications">
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs_searchbar" t-value="False"/>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3 class="mb-0">My RTE Applications</h3>
+                <a class="btn btn-primary" href="/my/rte/apply">Apply for RTE Admission</a>
+            </div>
+            <t t-if="not admissions">
+                <p class="text-muted">You have not submitted any RTE applications yet.</p>
+            </t>
+            <t t-else="">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Application No.</th>
+                            <th>Course</th>
+                            <th>Status</th>
+                            <th>Applied On</th>
+                            <th/>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr t-foreach="admissions" t-as="admission">
+                            <td t-out="admission.application_number"/>
+                            <td t-out="admission.course_id.name"/>
+                            <td t-out="admission.rte_state"/>
+                            <td t-esc="admission.application_date" t-options="{'widget': 'date'}"/>
+                            <td>
+                                <t t-if="admission.rte_state == 'doc_rejected'">
+                                    <a class="btn btn-sm btn-link" data-bs-toggle="collapse"
+                                       t-attf-href="#grievance-{{admission.id}}">
+                                        File a grievance
+                                    </a>
+                                    <div t-attf-id="grievance-{{admission.id}}" class="collapse">
+                                        <form t-attf-action="/my/rte/grievance/{{admission.id}}"
+                                              method="post" class="mt-2">
+                                            <input type="hidden" name="csrf_token"
+                                                   t-att-value="request.csrf_token()"/>
+                                            <textarea name="description" class="form-control mb-2"
+                                                      placeholder="Explain why the document verification decision is wrong (para 6.6/8.3)"
+                                                      required="required"/>
+                                            <button type="submit" class="btn btn-sm btn-primary">
+                                                Submit Grievance
+                                            </button>
+                                        </form>
+                                    </div>
+                                </t>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </t>
+        </t>
+    </template>
+
+    <template id="portal_rte_apply_form" name="Apply for RTE Admission">
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs_searchbar" t-value="False"/>
+            <div class="container" style="max-width:720px;">
+                <h3>Apply for RTE Admission</h3>
+                <form action="/my/rte/apply" method="post" class="row g-3">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <div class="col-md-6">
+                        <label class="form-label">First Name</label>
+                        <input type="text" name="first_name" class="form-control"
+                               t-att-value="kw.get('first_name')" required="required"/>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Last Name</label>
+                        <input type="text" name="last_name" class="form-control"
+                               t-att-value="kw.get('last_name')" required="required"/>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Date of Birth</label>
+                        <input type="date" name="birth_date" class="form-control"
+                               t-att-value="kw.get('birth_date')" required="required"/>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Gender</label>
+                        <select name="gender" class="form-select">
+                            <option value="m">Male</option>
+                            <option value="f">Female</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Email</label>
+                        <input type="email" name="email" class="form-control"
+                               t-att-value="kw.get('email')" required="required"/>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Mobile</label>
+                        <input type="text" name="mobile" class="form-control"
+                               t-att-value="kw.get('mobile')" required="required"/>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Aadhaar Number</label>
+                        <input type="text" name="rte_aadhaar_number" class="form-control"
+                               maxlength="12" t-att-value="kw.get('rte_aadhaar_number')"/>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Aadhaar Enrolment Number (if Aadhaar not yet issued)</label>
+                        <input type="text" name="rte_aadhaar_enrollment_number" class="form-control"
+                               maxlength="16" t-att-value="kw.get('rte_aadhaar_enrollment_number')"/>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Religion</label>
+                        <input type="text" name="rte_religion" class="form-control"
+                               t-att-value="kw.get('rte_religion')"/>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Caste Category</label>
+                        <select name="rte_caste_category" class="form-select">
+                            <option value="sc">SC</option>
+                            <option value="st">ST</option>
+                            <option value="obc">OBC</option>
+                            <option value="sbc">SBC</option>
+                            <option value="gen">General</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">CWSN Special-Needs Category (if applicable)</label>
+                        <input type="text" name="rte_cwsn_category" class="form-control"
+                               t-att-value="kw.get('rte_cwsn_category')"/>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Father's Aadhaar Number</label>
+                        <input type="text" name="rte_father_aadhaar" class="form-control"
+                               maxlength="12" t-att-value="kw.get('rte_father_aadhaar')"/>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Mother's Aadhaar Number</label>
+                        <input type="text" name="rte_mother_aadhaar" class="form-control"
+                               maxlength="12" t-att-value="kw.get('rte_mother_aadhaar')"/>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Guardian's Aadhaar Number (if applicable)</label>
+                        <input type="text" name="rte_guardian_aadhaar" class="form-control"
+                               maxlength="12" t-att-value="kw.get('rte_guardian_aadhaar')"/>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">School Preferences, in order of choice (up to 5, within your catchment area)</label>
+                    </div>
+                    <t t-foreach="max_choices" t-as="choice_no">
+                        <div class="col-md-6">
+                            <label class="form-label" t-esc="'Choice %s%s' % (choice_no, ' (required)' if choice_no == 1 else '')"/>
+                            <select t-att-name="'course_id_%s' % choice_no" class="form-select"
+                                    t-att-required="'required' if choice_no == 1 else None">
+                                <option value="">-- select a school --</option>
+                                <t t-foreach="courses" t-as="course">
+                                    <option t-att-value="course.id" t-out="course.name"/>
+                                </t>
+                            </select>
+                        </div>
+                    </t>
+                    <div class="col-md-6">
+                        <label class="form-label">RTE Category</label>
+                        <select name="rte_category" class="form-select">
+                            <option value="weaker_section">Weaker Section (Income ≤ ₹2.5L)</option>
+                            <option value="sc">Scheduled Caste</option>
+                            <option value="st">Scheduled Tribe</option>
+                            <option value="orphan">Orphan</option>
+                            <option value="hiv_cancer">HIV/Cancer Affected</option>
+                            <option value="war_widow">Child of a War Widow</option>
+                            <option value="disabled">Child with Benchmark Disability</option>
+                            <option value="obc_sbc_income">OBC/SBC (Income ≤ ₹2.5L)</option>
+                            <option value="bpl">BPL List</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Residence Area Type</label>
+                        <select name="rte_area_type" class="form-select">
+                            <option value="urban">Urban (Local Body)</option>
+                            <option value="rural">Rural (Gram Panchayat)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Ward No. (Urban)</label>
+                        <input type="text" name="rte_ward" class="form-control"
+                               t-att-value="kw.get('rte_ward')"/>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Urban Local Body (Urban)</label>
+                        <input type="text" name="rte_urban_body" class="form-control"
+                               t-att-value="kw.get('rte_urban_body')"/>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Village (Rural)</label>
+                        <input type="text" name="rte_village" class="form-control"
+                               t-att-value="kw.get('rte_village')"/>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Gram Panchayat (Rural)</label>
+                        <input type="text" name="rte_gram_panchayat" class="form-control"
+                               t-att-value="kw.get('rte_gram_panchayat')"/>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Pin Code</label>
+                        <input type="text" name="rte_pincode" class="form-control"
+                               t-att-value="kw.get('rte_pincode')"/>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Block</label>
+                        <input type="text" name="rte_block" class="form-control"
+                               t-att-value="kw.get('rte_block')"/>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">District</label>
+                        <input type="text" name="rte_district" class="form-control"
+                               t-att-value="kw.get('rte_district')"/>
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary">Submit Application</button>
+                    </div>
+                </form>
+            </div>
+        </t>
+    </template>
+</odoo>

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_op_course_form_rte" model="ir.ui.view">
+        <field name="name">op.course.form.rte</field>
+        <field name="model">op.course</field>
+        <field name="inherit_id" ref="openeducat_core.view_op_course_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="RTE" name="rte">
+                    <group>
+                        <group>
+                            <field name="rte_active"/>
+                            <field name="rte_entry_class"/>
+                            <field name="total_intake"/>
+                            <field name="rte_seats_manual"/>
+                            <field name="rte_seats" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="reimbursement_rate"/>
+                        </group>
+                    </group>
+                    <group string="Catchment Area">
+                        <group>
+                            <field name="catchment_area_type"/>
+                            <field name="catchment_urban_body" invisible="catchment_area_type != 'urban'"/>
+                            <field name="catchment_ward" invisible="catchment_area_type != 'urban'"/>
+                        </group>
+                        <group>
+                            <field name="catchment_gram_panchayat" invisible="catchment_area_type != 'rural'"/>
+                            <field name="catchment_village" invisible="catchment_area_type != 'rural'"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

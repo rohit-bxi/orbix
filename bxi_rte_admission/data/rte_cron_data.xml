@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="cron_rte_waitlist_promotion" model="ir.cron">
+        <field name="name">RTE Admission: Waitlist Promotion</field>
+        <field name="model_id" ref="openeducat_admission.model_op_admission"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_promote_waitlist()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="active" eval="True"/>
+    </record>
+
+    <record id="cron_rte_confirmation_deadline_reminder" model="ir.cron">
+        <field name="name">RTE Admission: Confirmation Deadline Reminder</field>
+        <field name="model_id" ref="openeducat_admission.model_op_admission"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_confirmation_deadline_reminder()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="active" eval="True"/>
+    </record>
+
+    <record id="cron_rte_doc_verification_sla_alert" model="ir.cron">
+        <field name="name">RTE Admission: Document Verification SLA Alert</field>
+        <field name="model_id" ref="openeducat_admission.model_op_admission"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_doc_verification_sla_alert()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="active" eval="True"/>
+    </record>
+</odoo>
