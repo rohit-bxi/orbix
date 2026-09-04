@@ -128,7 +128,21 @@ class StudentScholarship(models.Model):
         for vals in vals_list:
             if vals.get('name', _('New')) == _('New'):
                 vals['name'] = self.env['ir.sequence'].next_by_code('bxi.student.scholarship') or _('New')
-        return super().create(vals_list)
+        scholarships = super().create(vals_list)
+        scholarships._sync_fee_waivers()
+        return scholarships
+
+    def write(self, vals):
+        res = super().write(vals)
+        if {'approval_status', 'fee_line_ids', 'max_amount_limit', 'student_id', 'active'} & vals.keys():
+            self._sync_fee_waivers()
+        return res
+
+    def unlink(self):
+        refs = ['bxi.student.scholarship,%d' % rid for rid in self.ids]
+        self.env['op.student.fee.waiver'].sudo().search(
+            [('source_ref', 'in', refs)]).unlink()
+        return super().unlink()
 
     def action_submit(self):
         self.write({'approval_status': 'pending'})
@@ -145,6 +159,55 @@ class StudentScholarship(models.Model):
 
     def action_reset_to_draft(self):
         self.write({'approval_status': 'draft', 'approved_by': False, 'approval_date': False})
+
+    def _sync_fee_waivers(self):
+        """Push an approved scholarship's per-category discounts onto the
+        matching op.student.fees.details rows as op.student.fee.waiver
+        credits, so an approval actually reduces what bxi_fee_management
+        bills. Rejecting, resetting to draft, or archiving/deleting
+        removes the waivers again. Per-line amounts are scaled down
+        proportionally when max_amount_limit caps the header total below
+        what the lines sum to.
+        """
+        Waiver = self.env['op.student.fee.waiver'].sudo()
+        Detail = self.env['op.student.fees.details'].sudo()
+        for scholarship in self:
+            source_ref = 'bxi.student.scholarship,%d' % scholarship.id
+            existing = Waiver.search([('source_ref', '=', source_ref)])
+            if scholarship.approval_status != 'approved' or not scholarship.active:
+                existing.unlink()
+                continue
+
+            raw_total = sum(scholarship.fee_line_ids.mapped('discount_amount'))
+            scale = (scholarship.scholarship_amount / raw_total) if raw_total else 0.0
+            by_product = {
+                line.fee_category_id.id: line.discount_amount * scale
+                for line in scholarship.fee_line_ids
+            }
+
+            details = Detail.search([
+                ('student_id', '=', scholarship.student_id.id),
+                ('product_id', 'in', list(by_product.keys())),
+                ('state', '!=', 'cancel'),
+            ])
+            keep_ids = []
+            for detail in details:
+                amount = by_product.get(detail.product_id.id) or 0.0
+                if not amount:
+                    continue
+                waiver = existing.filtered(lambda w, d=detail: w.detail_id == d)
+                if waiver:
+                    if waiver.amount != amount:
+                        waiver.amount = amount
+                    keep_ids.append(waiver.id)
+                else:
+                    keep_ids.append(Waiver.create({
+                        'detail_id': detail.id,
+                        'source': 'scholarship',
+                        'source_ref': source_ref,
+                        'amount': amount,
+                    }).id)
+            (existing - Waiver.browse(keep_ids)).unlink()
 
     def action_print_report(self):
         self.ensure_one()

@@ -23,3 +23,18 @@ class ResConfigSettings(models.TransientModel):
         help='Financial year (e.g. 2025-26) the income certificate must be '
              'issued for this admission session (para 7.7). Leave blank to '
              'skip the check. Update this every session.')
+    rte_doc_verification_sla_days = fields.Integer(
+        string='Document Verification SLA (days)', default=15,
+        config_parameter='bxi_rte_admission.doc_verification_sla_days',
+        help='Days from submission an application has before its document '
+             'verification is considered overdue. Stamped onto every new '
+             'RTE application as its Document Verification Deadline, so '
+             'the daily SLA-alert cron has something to act on.')
+    rte_confirmation_window_days = fields.Integer(
+        string='Seat Confirmation Window (days)', default=15,
+        config_parameter='bxi_rte_admission.confirmation_window_days',
+        help='Days an Allotted applicant has to confirm their seat before '
+             'it lapses to the next Waitlisted applicant. Stamped onto '
+             'every application as its Confirmation Deadline the moment '
+             'it is Allotted (by the lottery or by waitlist promotion), '
+             'so the daily lapse/promotion cron has something to act on.')

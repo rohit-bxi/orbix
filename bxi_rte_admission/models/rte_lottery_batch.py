@@ -2,6 +2,7 @@
 
 import hashlib
 import random
+import secrets
 
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
@@ -23,8 +24,11 @@ class RteLotteryBatch(models.Model):
     draw_date = fields.Datetime(string='Draw Date')
     random_seed = fields.Char(
         string='Random Seed', required=True,
+        default=lambda self: secrets.token_hex(16),
         help='Seed used to deterministically shuffle applicants. Keeping '
-             'this value makes the draw reproducible/auditable.')
+             'this value makes the draw reproducible/auditable. '
+             'Auto-generated - the standard rte.lottery.wizard flow does '
+             'not allow overriding it.')
     applicant_hash = fields.Char(
         string='Applicant List Hash', readonly=True, copy=False,
         help='SHA-256 hash of the sorted list of applicants included in '
@@ -204,8 +208,10 @@ class RteLotteryBatch(models.Model):
                 'applicant_hash': applicant_hash,
             })
             for result in batch.result_ids:
-                new_rte_state = 'allotted' if result.result_type == 'selected' else 'waitlisted'
-                result.admission_id.write({'rte_state': new_rte_state})
+                if result.result_type == 'selected':
+                    result.admission_id._set_rte_allotted(course_id=batch.course_id.id)
+                else:
+                    result.admission_id.write({'rte_state': 'waitlisted'})
             batch.message_post(
                 body=_('Lottery run for %s applicants. Seed: %s, Hash: %s')
                 % (len(shuffled), batch.random_seed, applicant_hash))

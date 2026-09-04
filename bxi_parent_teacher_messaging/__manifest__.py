@@ -31,6 +31,7 @@
         'bxi_api',
         'openeducat_core',
         'openeducat_parent',
+        'bxi_academic_management',
     ],
     'data': [
         'security/messaging_groups.xml',

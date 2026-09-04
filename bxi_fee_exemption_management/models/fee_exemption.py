@@ -150,7 +150,21 @@ class FeeExemption(models.Model):
         for vals in vals_list:
             if vals.get('name', _('New')) == _('New'):
                 vals['name'] = self.env['ir.sequence'].next_by_code('bxi.fee.exemption') or _('New')
-        return super().create(vals_list)
+        exemptions = super().create(vals_list)
+        exemptions._sync_fee_waivers()
+        return exemptions
+
+    def write(self, vals):
+        res = super().write(vals)
+        if {'approval_status', 'fee_line_ids', 'max_exemption_amount', 'student_id', 'active'} & vals.keys():
+            self._sync_fee_waivers()
+        return res
+
+    def unlink(self):
+        refs = ['bxi.fee.exemption,%d' % rid for rid in self.ids]
+        self.env['op.student.fee.waiver'].sudo().search(
+            [('source_ref', 'in', refs)]).unlink()
+        return super().unlink()
 
     def action_submit(self):
         self.write({'approval_status': 'pending'})
@@ -167,6 +181,58 @@ class FeeExemption(models.Model):
 
     def action_reset_to_draft(self):
         self.write({'approval_status': 'draft', 'approved_by': False, 'approval_date': False})
+
+    def _sync_fee_waivers(self):
+        """Push an approved exemption's per-category amounts onto the
+        matching op.student.fees.details rows as op.student.fee.waiver
+        credits, so an approval actually reduces what bxi_fee_management
+        bills - not just what this record snapshots. Rejecting, resetting
+        to draft, or archiving/deleting removes the waivers again.
+
+        Per-line amounts are scaled down proportionally when
+        max_exemption_amount caps the header total below what the lines
+        sum to, so the total waived never exceeds what was actually
+        approved.
+        """
+        Waiver = self.env['op.student.fee.waiver'].sudo()
+        Detail = self.env['op.student.fees.details'].sudo()
+        for exemption in self:
+            source_ref = 'bxi.fee.exemption,%d' % exemption.id
+            existing = Waiver.search([('source_ref', '=', source_ref)])
+            if exemption.approval_status != 'approved' or not exemption.active:
+                existing.unlink()
+                continue
+
+            raw_total = sum(exemption.fee_line_ids.mapped('exemption_applied'))
+            scale = (exemption.exemption_amount / raw_total) if raw_total else 0.0
+            by_product = {
+                line.fee_category_id.id: line.exemption_applied * scale
+                for line in exemption.fee_line_ids
+            }
+
+            details = Detail.search([
+                ('student_id', '=', exemption.student_id.id),
+                ('product_id', 'in', list(by_product.keys())),
+                ('state', '!=', 'cancel'),
+            ])
+            keep_ids = []
+            for detail in details:
+                amount = by_product.get(detail.product_id.id) or 0.0
+                if not amount:
+                    continue
+                waiver = existing.filtered(lambda w, d=detail: w.detail_id == d)
+                if waiver:
+                    if waiver.amount != amount:
+                        waiver.amount = amount
+                    keep_ids.append(waiver.id)
+                else:
+                    keep_ids.append(Waiver.create({
+                        'detail_id': detail.id,
+                        'source': 'exemption',
+                        'source_ref': source_ref,
+                        'amount': amount,
+                    }).id)
+            (existing - Waiver.browse(keep_ids)).unlink()
 
     def action_open_delete_wizard(self):
         self.ensure_one()

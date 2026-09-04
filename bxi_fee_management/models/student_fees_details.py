@@ -34,6 +34,10 @@ class OpStudentFeesDetails(models.Model):
 
     amount_paid = fields.Monetary(compute='_compute_payment_amounts', store=True, currency_field='currency_id')
     late_fee_amount = fields.Monetary(compute='_compute_payment_amounts', store=True, currency_field='currency_id')
+    waiver_ids = fields.One2many('op.student.fee.waiver', 'detail_id', string='Fee Waivers')
+    waiver_amount = fields.Monetary(
+        compute='_compute_payment_amounts', store=True, currency_field='currency_id',
+        help='Sum of approved fee-exemption/scholarship waivers applied to this line.')
     total_payable = fields.Monetary(compute='_compute_payment_amounts', store=True, currency_field='currency_id')
     amount_pending = fields.Monetary(compute='_compute_payment_amounts', store=True, currency_field='currency_id')
     days_overdue = fields.Integer(compute='_compute_payment_amounts', store=True)
@@ -41,7 +45,7 @@ class OpStudentFeesDetails(models.Model):
         COLLECTION_STATUSES, compute='_compute_payment_amounts', store=True, default='pending')
 
     @api.depends(
-        'after_discount_amount', 'date', 'state',
+        'after_discount_amount', 'date', 'state', 'waiver_ids.amount',
         'invoice_id.amount_total', 'invoice_id.amount_residual', 'invoice_id.payment_state', 'invoice_id.state',
         'structure_id.grace_period_days', 'structure_id.late_fee_enabled', 'structure_id.late_fee_type',
         'structure_id.late_fee_amount', 'structure_id.late_fee_max_cap', 'structure_id.late_fee_apply_after_days')
@@ -76,6 +80,8 @@ class OpStudentFeesDetails(models.Model):
                 if structure.late_fee_max_cap:
                     late_fee = min(late_fee, structure.late_fee_max_cap)
 
+            waiver = sum(detail.waiver_ids.mapped('amount'))
+
             if invoice_posted:
                 # Once an invoice exists, its amount_total/amount_residual are the
                 # accounting source of truth: each fee category line rounds to 2
@@ -83,11 +89,15 @@ class OpStudentFeesDetails(models.Model):
                 # cent or two from summing after_discount_amount + late_fee in
                 # one shot. Deriving pending straight from amount_residual avoids
                 # a payment that exactly covers total_payable getting stuck as
-                # "partially paid" over a rounding cent.
+                # "partially paid" over a rounding cent. Waivers approved before
+                # the invoice was generated are already folded into it as a
+                # dedicated invoice line (see get_invoice()) - a waiver approved
+                # after the invoice is posted is not retroactively applied here,
+                # the same way a late fee change wouldn't be either.
                 total_payable = invoice.amount_total
                 pending = invoice.amount_residual
             else:
-                total_payable = detail.after_discount_amount + late_fee
+                total_payable = max(detail.after_discount_amount + late_fee - waiver, 0.0)
                 pending = total_payable
 
             overdue_threshold = structure.late_fee_apply_after_days or 0
@@ -105,6 +115,7 @@ class OpStudentFeesDetails(models.Model):
 
             detail.amount_paid = paid
             detail.late_fee_amount = late_fee
+            detail.waiver_amount = waiver
             detail.total_payable = total_payable
             detail.amount_pending = max(pending, 0.0)
             detail.days_overdue = max(days_overdue, 0)
@@ -118,20 +129,36 @@ class OpStudentFeesDetails(models.Model):
         """Extends OpenEduCat's invoice creation to add a late fee line when
         one applies, so the invoice total the accounting side sees matches
         total_payable and a full payment reconciles cleanly instead of
-        leaving the invoice sitting in a 'partial' state.
+        leaving the invoice sitting in a 'partial' state. Also folds in any
+        already-approved exemption/scholarship waiver as its own negative
+        line, so what gets billed is what's actually owed - a waiver
+        approved after this point is not retroactively applied to an
+        already-generated invoice.
         """
         res = super().get_invoice()
         for detail in self:
-            if detail.late_fee_amount and detail.invoice_id:
-                product = detail.product_id
-                account_id = product.property_account_income_id.id \
-                    or product.categ_id.property_account_income_categ_id.id
-                detail.invoice_id.write({'invoice_line_ids': [(0, 0, {
+            if not detail.invoice_id:
+                continue
+            new_lines = []
+            product = detail.product_id
+            account_id = product.property_account_income_id.id \
+                or product.categ_id.property_account_income_categ_id.id
+            if detail.late_fee_amount:
+                new_lines.append({
                     'name': 'Late Fee',
                     'account_id': account_id,
                     'price_unit': detail.late_fee_amount,
                     'quantity': 1.0,
-                })]})
+                })
+            if detail.waiver_amount:
+                new_lines.append({
+                    'name': 'Fee Exemption / Scholarship Waiver',
+                    'account_id': account_id,
+                    'price_unit': -detail.waiver_amount,
+                    'quantity': 1.0,
+                })
+            if new_lines:
+                detail.invoice_id.write({'invoice_line_ids': [(0, 0, line) for line in new_lines]})
                 detail.invoice_id._compute_tax_totals()
         return res
 

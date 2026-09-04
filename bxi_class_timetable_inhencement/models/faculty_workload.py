@@ -18,6 +18,12 @@ class OpFacultyWorkload(models.Model):
     available_friday = fields.Boolean(default=True)
     available_saturday = fields.Boolean(default=True)
 
+    def is_available_on(self, day):
+        """Whether this teacher is marked available on `day` (a
+        bxi.timetable.line day-selection value, e.g. 'monday')."""
+        self.ensure_one()
+        return bool(getattr(self, 'available_%s' % day, True))
+
     def _compute_weekly_period_count(self):
         line_model = self.env['bxi.timetable.line']
         for faculty in self:

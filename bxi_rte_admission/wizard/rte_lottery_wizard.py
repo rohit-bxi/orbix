@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import secrets
+
 from odoo import fields, models
 
 
@@ -13,8 +15,13 @@ class RteLotteryWizard(models.TransientModel):
     academic_year_id = fields.Many2one(
         'op.academic.year', string='Academic Year', required=True)
     random_seed = fields.Char(
-        string='Random Seed', required=True,
-        default=lambda self: fields.Datetime.now().strftime('%Y%m%d%H%M%S'))
+        string='Random Seed', required=True, readonly=True,
+        default=lambda self: secrets.token_hex(16),
+        help='Generated fresh, server-side, each time this wizard opens - '
+             'not editable. Letting an operator pick or retry the seed '
+             'would let them influence who lands inside the cutoff before '
+             'committing to a draw; the seed is still recorded on the '
+             'batch afterwards for audit/reproducibility.')
 
     def action_create_and_run(self):
         self.ensure_one()

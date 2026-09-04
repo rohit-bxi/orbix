@@ -37,6 +37,14 @@
                     <field name="status" widget="statusbar" statusbar_visible="draft,pending_review,under_review,approved,processing,completed"/>
                 </header>
                 <sheet readonly="status == 'completed'">
+                    <div class="oe_button_box" name="button_box">
+                        <button class="oe_stat_button" type="object" name="action_view_payment" icon="fa-bank"
+                                invisible="not payment_id">
+                            <div class="o_stat_info">
+                                <span class="o_stat_text">Refund Payment</span>
+                            </div>
+                        </button>
+                    </div>
                     <div class="oe_title">
                         <label for="name" string="Refund ID"/>
                         <h1><field name="name" readonly="1"/></h1>

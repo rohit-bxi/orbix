@@ -11,18 +11,23 @@ class SchoolEventPortal(http.Controller):
             students |= request.env['op.student'].sudo().search([('user_id', 'in', user.child_ids.ids)])
         return students
 
+    def _eligible_events_domain(self, students):
+        # Events the household is eligible for: whole-school audiences, or
+        # specific_class events targeting one of the students' classes.
+        # Shared by the listing and the RSVP route, so a household can never
+        # register into an event that wasn't actually shown to them.
+        course_ids = students.mapped('course_detail_ids.course_id').ids
+        batch_ids = students.mapped('course_detail_ids.batch_id').ids
+        return ['|', '|',
+                ('target_audience', 'in', ('all_students', 'all_parents', 'everyone')),
+                '&', ('target_audience', '=', 'specific_class'), ('course_ids', 'in', course_ids or [0]),
+                '&', ('target_audience', '=', 'specific_class'), ('batch_ids', 'in', batch_ids or [0])]
+
     @http.route('/my/events', type='http', auth='user', website=True)
     def portal_my_events(self, **kw):
         students = self._portal_students()
-        # Events the household is eligible for: whole-school audiences, or
-        # specific_class events targeting one of the students' classes.
-        course_ids = students.mapped('course_detail_ids.course_id').ids
-        batch_ids = students.mapped('course_detail_ids.batch_id').ids
-        domain = ['|', '|',
-                  ('target_audience', 'in', ('all_students', 'all_parents', 'everyone')),
-                  '&', ('target_audience', '=', 'specific_class'), ('course_ids', 'in', course_ids or [0]),
-                  '&', ('target_audience', '=', 'specific_class'), ('batch_ids', 'in', batch_ids or [0])]
-        events = request.env['event.event'].sudo().search(domain, order='date_begin')
+        events = request.env['event.event'].sudo().search(
+            self._eligible_events_domain(students), order='date_begin')
         registrations = request.env['event.registration'].sudo().search([
             ('student_id', 'in', students.ids),
         ])
@@ -39,8 +44,12 @@ class SchoolEventPortal(http.Controller):
     @http.route('/my/events/<int:event_id>/rsvp', type='http', auth='user', website=True, methods=['POST'])
     def portal_event_rsvp(self, event_id, student_id, **kw):
         students = self._portal_students().filtered(lambda s: s.id == int(student_id))
-        event = request.env['event.event'].sudo().browse(event_id)
-        if students and event.exists():
+        # Re-apply the same eligibility domain the listing page used - a
+        # student's own household match isn't enough, the event itself
+        # must be one this household was actually shown.
+        event = request.env['event.event'].sudo().search(
+            [('id', '=', event_id)] + self._eligible_events_domain(students), limit=1)
+        if students and event:
             existing = request.env['event.registration'].sudo().search([
                 ('event_id', '=', event.id), ('student_id', '=', students.id),
             ], limit=1)

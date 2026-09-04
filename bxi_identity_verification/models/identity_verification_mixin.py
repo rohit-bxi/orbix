@@ -22,7 +22,11 @@ class BxiIdentityVerificationMixin(models.AbstractModel):
     _name = 'bxi.identity.verification.mixin'
     _description = 'Identity Verification Fields'
 
-    aadhar_card = fields.Char(string='Aadhaar Number')
+    aadhar_card = fields.Char(
+        string='Aadhaar Number',
+        groups='bxi_identity_verification.group_identity_reviewer',
+        help='Restricted to Identity Reviewers - other users with read '
+             'access to this record do not see this field.')
     aadhar_verification_status = fields.Selection(
         VERIFICATION_STATUSES, string='Aadhaar Status', default='unverified', tracking=True)
     aadhar_submitted_at = fields.Datetime(readonly=True, copy=False)
@@ -48,7 +52,8 @@ class BxiIdentityVerificationMixin(models.AbstractModel):
         self.ensure_one()
         if not image_data:
             raise UserError(_('A captured image is required.'))
-        self.register_face(image_data)
+        if not self.register_face(image_data):
+            raise UserError(_('The captured image could not be saved. Please try again.'))
         self.write({
             'face_verification_status': 'pending',
             'face_submitted_at': fields.Datetime.now(),

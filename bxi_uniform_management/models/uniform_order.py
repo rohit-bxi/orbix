@@ -147,10 +147,30 @@ class UniformOrder(models.Model):
                 'order_id': self.id,
             })
 
+    def _lock_stock_rows(self):
+        self.ensure_one()
+        product_ids = self.order_line_ids.product_id.ids
+        if not product_ids:
+            return
+        # Ensure every product already has a stock row (get_or_create can
+        # itself insert), then lock those rows for the rest of this
+        # transaction - without this, two concurrent orders for the last
+        # unit of the same item can both read enough stock and both issue.
+        stocks = self.env['bxi.uniform.stock']
+        for product_id in product_ids:
+            stocks |= self.env['bxi.uniform.stock']._get_or_create(product_id)
+        self.env.cr.execute(
+            'SELECT id FROM bxi_uniform_stock WHERE id = ANY(%s) FOR UPDATE', (stocks.ids,))
+        stocks.invalidate_recordset(['quantity_on_hand'])
+
     def action_mark_issued(self):
         for order in self:
             if order.state != 'confirmed':
                 raise ValidationError(_('Only a confirmed order can be issued.'))
+            if order.invoice_id and order.invoice_id.payment_state not in ('paid', 'in_payment'):
+                raise ValidationError(
+                    _('The uniform invoice must be paid before this order can be issued.'))
+            order._lock_stock_rows()
             shortages = order._check_stock_availability()
             if shortages:
                 raise ValidationError(_('Insufficient stock:\n%s') % '\n'.join(shortages))
@@ -159,7 +179,8 @@ class UniformOrder(models.Model):
 
     def action_force_issue(self):
         if not self.env.user.has_group('bxi_uniform_management.group_uniform_manager'):
-            raise AccessError(_('Only a Uniform Manager can force-issue an order over available stock.'))
+            raise AccessError(
+                _('Only a Uniform Manager can force-issue an order over available stock or an unpaid invoice.'))
         for order in self:
             if order.state != 'confirmed':
                 raise ValidationError(_('Only a confirmed order can be issued.'))

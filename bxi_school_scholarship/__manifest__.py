@@ -15,9 +15,9 @@
           coverage (percentage or fixed amount, optionally capped), a staff
           entered fee breakdown snapshot, a validity period, an approval
           workflow, a supporting-document checklist and uploads.
-        - Fee breakdown is a snapshot entered on the scholarship record
-          itself (not a live read of the invoicing engine), so it never
-          touches real invoices/accounting.
+        - Fee breakdown is entered on the scholarship record itself; once
+          approved it is pushed onto the matching bxi_fee_management fee
+          lines as a waiver, so it reduces what actually gets billed.
         - Guarded removal wizard showing the financial impact before
           archiving a scholarship.
         - Printable scholarship report (PDF).
@@ -31,6 +31,7 @@
         'product',
         'openeducat_core',
         'openeducat_fees',
+        'bxi_fee_management',
     ],
     'data': [
         'security/scholarship_groups.xml',

@@ -6,7 +6,7 @@ from odoo import http
 from odoo.exceptions import UserError
 from odoo.http import request
 
-from odoo.addons.bxi_api.controllers.auth import api_error, api_response, require_auth
+from odoo.addons.bxi_api.controllers.auth import api_error, api_response, parse_int, require_auth
 
 
 class BxiLibraryBookRequestController(http.Controller):
@@ -34,7 +34,10 @@ class BxiLibraryBookRequestController(http.Controller):
         if not media_id:
             return api_error('media_id is required.', status=400, code='missing_media_id')
 
-        media = request.env['op.media'].sudo().browse(int(media_id))
+        media_id, error = parse_int(media_id, 'media_id')
+        if error:
+            return error
+        media = request.env['op.media'].sudo().browse(media_id)
         if not media.exists():
             return api_error('Book/resource not found.', status=404, code='not_found')
 

@@ -6,7 +6,7 @@ from odoo import fields
 from odoo import http
 from odoo.http import request
 
-from odoo.addons.bxi_api.controllers.auth import api_error, api_response, require_auth
+from odoo.addons.bxi_api.controllers.auth import api_error, api_response, parse_int, require_auth
 
 
 def _user_can_access_student(env, student):
@@ -24,7 +24,10 @@ def _user_can_access_student(env, student):
 def _get_authorized_student(payload_student_id):
     if not payload_student_id:
         return None, api_error('student_id is required.', status=400, code='missing_student_id')
-    student = request.env['op.student'].sudo().browse(int(payload_student_id))
+    student_id, error = parse_int(payload_student_id, 'student_id')
+    if error:
+        return None, error
+    student = request.env['op.student'].sudo().browse(student_id)
     if not student.exists():
         return None, api_error('Student not found.', status=404, code='not_found')
     if not _user_can_access_student(request.env, student):

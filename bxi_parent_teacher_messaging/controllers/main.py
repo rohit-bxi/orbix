@@ -15,6 +15,21 @@ def _thread_participant_role(env, thread):
     return None
 
 
+def _teacher_teaches_student(env, teacher, student):
+    """A thread may only be opened with a teacher who actually teaches the
+    student's current class (per bxi.subject.mapping), not any op.faculty
+    id a caller happens to pass - being that student's parent is not by
+    itself grounds to message an arbitrary teacher.
+    """
+    enrollment = student.course_detail_ids.filtered(lambda line: line.state == 'running')[:1]
+    if not enrollment:
+        return False
+    return bool(env['bxi.subject.mapping'].sudo().search_count([
+        ('teacher_id', '=', teacher.id),
+        ('class_id', '=', enrollment.course_id.id),
+    ]))
+
+
 def _resolve_thread(env, thread_id):
     thread = env['bxi.message.thread'].sudo().browse(int(thread_id))
     if not thread.exists():
@@ -67,6 +82,8 @@ class BxiParentTeacherMessagingController(http.Controller):
             return api_error('Student or teacher not found.', status=404, code='not_found')
         if student.id not in parent.student_ids.ids:
             return api_error('This student is not linked to your account.', status=403, code='forbidden')
+        if not _teacher_teaches_student(request.env, teacher, student):
+            return api_error('This teacher does not teach this student.', status=403, code='forbidden')
 
         thread = request.env['bxi.message.thread']._get_or_create(student, parent, teacher)
         return api_response({'thread_id': thread.id})
