@@ -39,4 +39,9 @@ class BxiTransferPeriodWizard(models.TransientModel):
                 '%(teacher)s is already at their weekly period limit (%(count)s/%(max)s).',
                 teacher=self.to_teacher_id.name, count=self.to_teacher_id.weekly_period_count,
                 max=self.to_teacher_id.max_weekly_periods))
+        if not self.env.context.get('force_workload_override') and \
+                not self.to_teacher_id.is_available_on(self.day):
+            raise ValidationError(_(
+                '%(teacher)s is marked unavailable on %(day)s.',
+                teacher=self.to_teacher_id.name, day=dict(DAY_SELECTION)[self.day]))
         line.teacher_id = self.to_teacher_id.id

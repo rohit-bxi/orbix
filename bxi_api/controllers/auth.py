@@ -25,6 +25,18 @@ def api_error(message, status=400, code=None):
     return request.make_json_response(body, status=status)
 
 
+def parse_int(value, field_name):
+    """Parse a user-supplied id/limit/offset. Returns (int_value, None) on
+    success or (None, api_error(...)) on a non-numeric value, so a bad
+    query-string/payload value gets a clean 400 envelope instead of an
+    unhandled ValueError bubbling up as a generic 500."""
+    try:
+        return int(value), None
+    except (TypeError, ValueError):
+        return None, api_error(
+            '%s must be a number.' % field_name, status=400, code='invalid_%s' % field_name)
+
+
 def require_auth(func):
     """Validates the `Authorization: Bearer <token>` header against
     bxi.api.token and, on success, runs the wrapped route with

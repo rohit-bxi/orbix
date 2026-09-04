@@ -4,7 +4,7 @@ from odoo import fields as odoo_fields
 from odoo import http
 from odoo.http import request
 
-from odoo.addons.bxi_api.controllers.auth import api_error, api_response, require_auth
+from odoo.addons.bxi_api.controllers.auth import api_error, api_response, parse_int, require_auth
 
 VALUE_FIELDS = ['integer', 'float', 'char', 'text', 'datetime']
 
@@ -29,14 +29,26 @@ class BxiSystemLogsApiController(http.Controller):
         if model:
             domain.append(('mail_message_id.model', '=', model))
         if res_id:
-            domain.append(('mail_message_id.res_id', '=', int(res_id)))
+            res_id_val, error = parse_int(res_id, 'res_id')
+            if error:
+                return error
+            domain.append(('mail_message_id.res_id', '=', res_id_val))
         if date_from:
             domain.append(('mail_message_id.date', '>=', odoo_fields.Datetime.from_string(date_from)))
         if date_to:
             domain.append(('mail_message_id.date', '<=', odoo_fields.Datetime.from_string(date_to)))
 
-        limit_val = min(int(limit), 200) if limit else 100
-        offset_val = int(offset) if offset else 0
+        limit_val = 100
+        if limit:
+            limit_val, error = parse_int(limit, 'limit')
+            if error:
+                return error
+            limit_val = min(limit_val, 200)
+        offset_val = 0
+        if offset:
+            offset_val, error = parse_int(offset, 'offset')
+            if error:
+                return error
 
         trackings = request.env['mail.tracking.value'].sudo().search(
             domain, order='id desc', limit=limit_val, offset=offset_val)

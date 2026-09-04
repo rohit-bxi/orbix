@@ -66,6 +66,12 @@ class TransportRegistration(models.Model):
 
     def action_confirm(self):
         for reg in self:
+            # Lock the route row before reading seats_available: without
+            # it, two concurrent confirmations for the last seat on the
+            # same route can both read a free seat and both succeed.
+            self.env.cr.execute(
+                'SELECT id FROM bxi_transport_route WHERE id = %s FOR UPDATE', (reg.route_id.id,))
+            reg.route_id.invalidate_recordset(['seats_available'])
             if reg.route_id.seats_available <= 0:
                 raise ValidationError(_('No seats available on route %s.') % reg.route_id.name)
             reg._create_invoice()

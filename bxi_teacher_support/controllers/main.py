@@ -3,7 +3,7 @@
 from odoo import http
 from odoo.http import request
 
-from odoo.addons.bxi_api.controllers.auth import api_error, api_response, require_auth
+from odoo.addons.bxi_api.controllers.auth import api_error, api_response, parse_int, require_auth
 
 ROLE_TAG_XMLIDS = {
     'student': 'bxi_teacher_support.tag_role_student',
@@ -116,7 +116,10 @@ class BxiTeacherSupportController(http.Controller):
         tag_ids = set()
         category_tag_id = payload.get('category_tag_id')
         if category_tag_id:
-            tag_ids.add(int(category_tag_id))
+            category_tag_id, error = parse_int(category_tag_id, 'category_tag_id')
+            if error:
+                return error
+            tag_ids.add(category_tag_id)
         if role:
             role_tag = request.env.ref(ROLE_TAG_XMLIDS[role], raise_if_not_found=False)
             if role_tag:

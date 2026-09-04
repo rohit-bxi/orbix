@@ -6,3 +6,5 @@ access_bxi_fee_structure_category_line_user,fee.structure.category.line.user,mod
 access_bxi_fee_payment_wizard_user,fee.payment.wizard.user,model_bxi_fee_payment_wizard,openeducat_fees.group_openeducat_fees_user,1,1,1,1
 access_bxi_fee_structure_deactivate_wizard_manager,fee.structure.deactivate.wizard.manager,model_bxi_fee_structure_deactivate_wizard,openeducat_fees.group_op_fees_admin,1,1,1,1
 access_op_student_fees_details_self,student.fees.details.self,openeducat_fees.model_op_student_fees_details,base.group_user,1,0,0,0
+access_op_student_fee_waiver_manager,student.fee.waiver.manager,model_op_student_fee_waiver,openeducat_fees.group_op_fees_admin,1,1,1,1
+access_op_student_fee_waiver_user,student.fee.waiver.user,model_op_student_fee_waiver,openeducat_fees.group_openeducat_fees_user,1,0,0,0

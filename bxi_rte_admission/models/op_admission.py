@@ -145,6 +145,31 @@ class OpAdmission(models.Model):
              'for this applicant\'s category, per paras 7.2.1/7.2.2. '
              'Advisory -- does not block verification.')
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        sla_days = int(self.env['ir.config_parameter'].sudo().get_param(
+            'bxi_rte_admission.doc_verification_sla_days', default='15'))
+        today = fields.Date.context_today(self)
+        for vals in vals_list:
+            if vals.get('is_rte_applicant') and not vals.get('doc_verification_deadline'):
+                vals['doc_verification_deadline'] = today + timedelta(days=sla_days)
+        return super().create(vals_list)
+
+    def _set_rte_allotted(self, course_id=None):
+        """Move `self` to Allotted, stamping a fresh confirmation deadline
+        and - when the seat is on a different course than the applicant
+        originally applied to (won via a 2nd/3rd preference) - correcting
+        course_id so allotment letters and reimbursement claims reference
+        the school the applicant is actually being admitted to."""
+        window_days = int(self.env['ir.config_parameter'].sudo().get_param(
+            'bxi_rte_admission.confirmation_window_days', default='15'))
+        deadline = fields.Date.context_today(self) + timedelta(days=window_days)
+        for admission in self:
+            vals = {'rte_state': 'allotted', 'confirmation_deadline': deadline}
+            if course_id and admission.course_id.id != course_id:
+                vals['course_id'] = course_id
+            admission.write(vals)
+
     @api.depends('partner_id')
     def _compute_rte_parent_id(self):
         for admission in self:
@@ -389,7 +414,7 @@ class OpAdmission(models.Model):
             ], order='rank', limit=1)
             if next_waitlisted:
                 next_waitlisted.write({'result_type': 'selected'})
-                next_waitlisted.admission_id.write({'rte_state': 'allotted'})
+                next_waitlisted.admission_id._set_rte_allotted(course_id=result.batch_id.course_id.id)
                 next_waitlisted.admission_id.message_post(
                     body=_('Promoted from waitlist after seat %s lapsed.')
                     % admission.application_number)

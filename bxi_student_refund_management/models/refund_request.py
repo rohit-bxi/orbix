@@ -94,10 +94,16 @@ class StudentRefundRequest(models.Model):
     processing_notes = fields.Text()
     days_pending = fields.Integer(compute='_compute_days_pending')
 
-    # Payment Tracking (manual entry after paying outside Odoo)
+    # Payment Tracking
     refund_utr = fields.Char(string='UTR/Transaction ID')
     refund_completion_date = fields.Date()
     refund_confirmation_notes = fields.Text()
+    payment_id = fields.Many2one(
+        'account.payment', string='Refund Payment', readonly=True, copy=False,
+        help='The outbound customer payment recording this refund in accounting, '
+             'created when the refund is marked completed. Left in draft for an '
+             'accountant to review and post - completing a refund here does not '
+             'itself move money.')
 
     # Supporting Documents
     original_fee_receipt_submitted = fields.Boolean()
@@ -212,10 +218,57 @@ class StudentRefundRequest(models.Model):
         for refund in self:
             if not refund.refund_utr:
                 raise ValidationError(_('Enter the UTR/Transaction ID before marking this refund completed.'))
+            payment = refund.payment_id or refund._create_refund_payment()
             refund.write({
                 'status': 'completed',
                 'refund_completion_date': fields.Date.context_today(self),
+                'payment_id': payment.id,
             })
+
+    def _create_refund_payment(self):
+        """Record this refund as a real outbound customer payment instead of
+        only a free-text UTR field, so "completed" has an actual accounting
+        trace. Left in draft (not auto-posted/reconciled) since the UTR is
+        proof money already moved outside Odoo through whatever channel the
+        school used - an accountant confirms and posts it here rather than
+        this method silently deciding the journal/reconciliation for them.
+        """
+        self.ensure_one()
+        partner = self.student_id.partner_id
+        if not partner:
+            raise UserError(_(
+                'Student %(student)s has no linked contact to record the refund payment against.',
+                student=self.student_id.display_name))
+        journal = self.env['account.journal'].search([
+            ('type', 'in', ('bank', 'cash')), ('company_id', '=', self.company_id.id),
+        ], limit=1)
+        if not journal:
+            raise UserError(_(
+                'No bank or cash journal is configured for company %(company)s - '
+                'set one up before completing refunds.', company=self.company_id.name))
+        return self.env['account.payment'].sudo().create({
+            'payment_type': 'outbound',
+            'partner_type': 'customer',
+            'partner_id': partner.id,
+            'amount': self.refund_amount,
+            'currency_id': self.currency_id.id,
+            'journal_id': journal.id,
+            'company_id': self.company_id.id,
+            'memo': _('Refund %(name)s - UTR %(utr)s', name=self.name, utr=self.refund_utr),
+            'payment_reference': self.name,
+        })
+
+    def action_view_payment(self):
+        self.ensure_one()
+        if not self.payment_id:
+            return {'type': 'ir.actions.act_window_close'}
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Refund Payment'),
+            'res_model': 'account.payment',
+            'view_mode': 'form',
+            'res_id': self.payment_id.id,
+        }
 
     def action_reset_to_draft(self):
         self.write({

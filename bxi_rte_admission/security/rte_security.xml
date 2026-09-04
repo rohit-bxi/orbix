@@ -70,4 +70,80 @@
         <field name="perm_create">1</field>
         <field name="perm_unlink">0</field>
     </record>
+
+    <!-- rte.document rules - previously had no ir.rule at all, so the
+         portal ACL grant below (access_rte_document_portal) let ANY
+         authenticated portal user read EVERY applicant's documents.
+         Mirrors the same admin/coordinator/portal-parent shape used for
+         op.admission itself. -->
+    <record id="rte_document_rule_admin" model="ir.rule">
+        <field name="name">RTE Document: Admin see all</field>
+        <field name="model_id" ref="model_rte_document"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_rte_admin'))]"/>
+    </record>
+
+    <record id="rte_document_rule_coordinator" model="ir.rule">
+        <field name="name">RTE Document: Coordinator own department</field>
+        <field name="model_id" ref="model_rte_document"/>
+        <field name="domain_force">[('admission_id.course_id.department_id', '=', user.dept_id.id)]</field>
+        <field name="groups" eval="[(4, ref('group_rte_school_coordinator'))]"/>
+    </record>
+
+    <record id="rte_document_rule_portal_parent" model="ir.rule">
+        <field name="name">RTE Document: Portal parent own documents</field>
+        <field name="model_id" ref="model_rte_document"/>
+        <field name="domain_force">[('admission_id.partner_id', '=', user.partner_id.id)]</field>
+        <field name="groups" eval="[(4, ref('base.group_portal'))]"/>
+        <field name="perm_read">1</field>
+        <field name="perm_write">0</field>
+        <field name="perm_create">1</field>
+        <field name="perm_unlink">0</field>
+    </record>
+
+    <!-- rte.school.preference rules - same gap and same fix shape as
+         rte.document above. -->
+    <record id="rte_school_preference_rule_admin" model="ir.rule">
+        <field name="name">RTE School Preference: Admin see all</field>
+        <field name="model_id" ref="model_rte_school_preference"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_rte_admin'))]"/>
+    </record>
+
+    <record id="rte_school_preference_rule_coordinator" model="ir.rule">
+        <field name="name">RTE School Preference: Coordinator own department</field>
+        <field name="model_id" ref="model_rte_school_preference"/>
+        <field name="domain_force">[('admission_id.course_id.department_id', '=', user.dept_id.id)]</field>
+        <field name="groups" eval="[(4, ref('group_rte_school_coordinator'))]"/>
+    </record>
+
+    <record id="rte_school_preference_rule_portal_parent" model="ir.rule">
+        <field name="name">RTE School Preference: Portal parent own preferences</field>
+        <field name="model_id" ref="model_rte_school_preference"/>
+        <field name="domain_force">[('admission_id.partner_id', '=', user.partner_id.id)]</field>
+        <field name="groups" eval="[(4, ref('base.group_portal'))]"/>
+        <field name="perm_read">1</field>
+        <field name="perm_write">0</field>
+        <field name="perm_create">1</field>
+        <field name="perm_unlink">0</field>
+    </record>
+
+    <!-- rte.lottery.result rules - previously had no ir.rule at all, and
+         was readable by every internal user via the base.group_user ACL
+         grant regardless of school/department. That ACL row is replaced
+         by a coordinator-scoped one in ir.model.access.csv; these rules
+         restrict what it actually returns. -->
+    <record id="rte_lottery_result_rule_admin" model="ir.rule">
+        <field name="name">RTE Lottery Result: Admin see all</field>
+        <field name="model_id" ref="model_rte_lottery_result"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_rte_admin'))]"/>
+    </record>
+
+    <record id="rte_lottery_result_rule_coordinator" model="ir.rule">
+        <field name="name">RTE Lottery Result: Coordinator own department</field>
+        <field name="model_id" ref="model_rte_lottery_result"/>
+        <field name="domain_force">[('batch_id.course_id.department_id', '=', user.dept_id.id)]</field>
+        <field name="groups" eval="[(4, ref('group_rte_school_coordinator'))]"/>
+    </record>
 </odoo>

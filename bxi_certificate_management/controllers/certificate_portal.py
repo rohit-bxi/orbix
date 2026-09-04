@@ -1,15 +1,41 @@
 import base64
+import time
+from collections import defaultdict, deque
 
 from odoo import _, fields, http
 from odoo.addons.portal.controllers import portal
 from odoo.exceptions import MissingError
 from odoo.http import content_disposition, request
 
+# Simple per-process sliding-window limiter guarding the anonymous
+# verification lookup below from being scripted into a code-enumeration
+# or scraping tool. Deliberately lightweight (no external cache/queue
+# dependency) - in a multi-worker deployment each worker tracks its own
+# window, so this is a speed bump, not a hard global cap; put a proper
+# rate limit at the reverse-proxy/WAF layer for a stronger guarantee.
+_VERIFY_RATE_WINDOW = 60
+_VERIFY_RATE_MAX = 20
+_verify_attempts = defaultdict(deque)
+
+
+def _verify_rate_limited(key):
+    now = time.monotonic()
+    bucket = _verify_attempts[key]
+    while bucket and now - bucket[0] > _VERIFY_RATE_WINDOW:
+        bucket.popleft()
+    if len(bucket) >= _VERIFY_RATE_MAX:
+        return True
+    bucket.append(now)
+    return False
+
 
 class CertificateVerifyController(http.Controller):
 
     @http.route('/certificate/verify/<string:code>', type='http', auth='public', website=True, sitemap=False)
     def certificate_verify(self, code, **kw):
+        if _verify_rate_limited(request.httprequest.remote_addr):
+            return request.make_response(
+                'Too many verification attempts. Please try again in a minute.', status=429)
         certificate = request.env['op.certificate'].sudo().search(
             [('verification_code', '=', code)], limit=1)
         today = fields.Date.context_today(request.env['op.certificate'])

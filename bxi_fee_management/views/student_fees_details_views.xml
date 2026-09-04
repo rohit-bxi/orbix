@@ -94,12 +94,22 @@
                             <field name="discount"/>
                             <field name="after_discount_amount"/>
                             <field name="late_fee_amount"/>
+                            <field name="waiver_amount"/>
                             <field name="total_payable"/>
                         </group>
                         <group string="Collection">
                             <field name="amount_paid"/>
                             <field name="amount_pending"/>
                         </group>
+                    </group>
+                    <group string="Fee Waivers" invisible="not waiver_ids">
+                        <field name="waiver_ids" nolabel="1">
+                            <list create="0" delete="0">
+                                <field name="source"/>
+                                <field name="source_ref"/>
+                                <field name="amount" sum="Total"/>
+                            </list>
+                        </field>
                     </group>
                     <button name="%(bxi_fee_management.action_fee_payment_wizard)d" type="action"
                             string="Add Manual Payment" class="btn-primary"

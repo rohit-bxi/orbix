@@ -12,7 +12,13 @@
                             <field name="rte_quota_percentage"/> %
                         </setting>
                     </block>
-                    <block title="Deadlines" help="Lead time used by the daily confirmation-deadline reminder cron.">
+                    <block title="Deadlines" help="Lead time used by the daily confirmation-deadline reminder cron, and the SLA/window days stamped onto every application's deadlines.">
+                        <setting id="rte_doc_verification_sla_days" string="Document Verification SLA">
+                            <field name="rte_doc_verification_sla_days"/> days from submission
+                        </setting>
+                        <setting id="rte_confirmation_window_days" string="Seat Confirmation Window">
+                            <field name="rte_confirmation_window_days"/> days from allotment
+                        </setting>
                         <setting id="rte_confirmation_reminder_days" string="Confirmation Reminder Lead Time">
                             <field name="rte_confirmation_reminder_days"/> days before deadline
                         </setting>

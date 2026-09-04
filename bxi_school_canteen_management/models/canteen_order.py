@@ -63,6 +63,13 @@ class CanteenOrder(models.Model):
                 raise ValidationError(_('Only a draft order can be confirmed.'))
             if not order.wallet_id:
                 raise ValidationError(_('No wallet found for this patron.'))
+            # Lock the wallet row for the rest of this transaction: without
+            # it, two concurrent orders against the same wallet can both
+            # read a balance that covers their own total and both pass the
+            # check below, overdrawing the wallet.
+            self.env.cr.execute(
+                'SELECT id FROM bxi_canteen_wallet WHERE id = %s FOR UPDATE', (order.wallet_id.id,))
+            order.wallet_id.invalidate_recordset(['balance'])
             if order.wallet_id.balance < order.total_amount:
                 raise ValidationError(_('Insufficient wallet balance. Available: %(balance)s, Required: %(total)s') % {
                     'balance': order.wallet_id.balance, 'total': order.total_amount,
@@ -101,6 +108,8 @@ class CanteenOrder(models.Model):
 
     def action_cancel(self):
         for order in self:
+            if order.state == 'served':
+                raise ValidationError(_('A served order cannot be cancelled. Process a refund separately if needed.'))
             if order.debit_transaction_id and order.state not in ('draft', 'cancelled'):
                 self.env['bxi.canteen.wallet.transaction'].create({
                     'wallet_id': order.wallet_id.id,

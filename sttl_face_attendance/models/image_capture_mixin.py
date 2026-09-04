@@ -26,14 +26,19 @@ class ImageCaptureMixin(models.AbstractModel):
         }
 
     def register_face(self, image_data):
+        """Save a captured photo. Returns True on success, False otherwise -
+        callers must check this instead of assuming the write always
+        succeeds, since a malformed data URI or write error must not be
+        reported to the caller as "saved"."""
+        if not image_data:
+            _logger.warning("No image data provided.")
+            return False
+        if image_data.startswith('data:') and ';base64,' in image_data:
+            image_data = image_data.split(';base64,', 1)[1]
         try:
-            if image_data.startswith('data:image/png;base64,'):
-                image_data = image_data.split('base64,')[1]
-
-            if image_data:
-                self.image_1920 = image_data
-                _logger.info("Image saved successfully.")
-            else:
-                _logger.warning("No image data provided.")
+            self.image_1920 = image_data
         except Exception as e:
             _logger.error("Error registering face: %s", str(e))
+            return False
+        _logger.info("Image saved successfully.")
+        return True
