@@ -17,7 +17,9 @@
         - Notices can be pinned to keep them at the top of the board; pin
           status is set manually and is not affected by expiry.
     """,
-    'author': 'Vijay Shanker Dubey',
+    'author': 'BXI Technology Pvt. Ltd.',
+    'maintainer': 'BXI Technology Pvt. Ltd.',
+    'website': 'https://bxitech.com/',
     'depends': [
         'base',
         'mail',
@@ -35,5 +37,5 @@
     ],
     'installable': True,
     'application': True,
-    'license': 'LGPL-3',
+    'license': 'OPL-1',
 }

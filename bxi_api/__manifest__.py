@@ -22,7 +22,9 @@
         etc.) depends on this one and reuses its auth decorator and
         response helpers rather than building their own.
     """,
-    'author': 'Vijay Shanker Dubey',
+    'author': 'BXI Technology Pvt. Ltd.',
+    'maintainer': 'BXI Technology Pvt. Ltd.',
+    'website': 'https://bxitech.com/',
     'depends': [
         'base',
     ],
@@ -34,5 +36,5 @@
     ],
     'installable': True,
     'application': False,
-    'license': 'LGPL-3',
+    'license': 'OPL-1',
 }

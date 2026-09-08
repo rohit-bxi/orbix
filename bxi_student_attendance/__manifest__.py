@@ -21,7 +21,9 @@
         - Student Attendance list/search filterable by Student, Class,
           Section and Date.
     """,
-    'author': 'Vijay Shanker Dubey',
+    'author': 'BXI Technology Pvt. Ltd.',
+    'maintainer': 'BXI Technology Pvt. Ltd.',
+    'website': 'https://bxitech.com/',
     'depends': [
         'base',
         'mail',
@@ -41,5 +43,5 @@
     'post_init_hook': '_create_student_employees',
     'installable': True,
     'application': False,
-    'license': 'LGPL-3',
+    'license': 'OPL-1',
 }

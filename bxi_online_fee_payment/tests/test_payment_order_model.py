@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+# Copyright (c) 2026 BXI Technology Pvt. Ltd. All Rights Reserved.
+# License OPL-1 (Odoo Proprietary License v1.0, see LICENSE file for full text).
 """Model-level unit tests for bxi.payment.order, calling its methods
 directly (never through the HTTP controller / url_open). The controller
 behavior is already covered end-to-end in test_payment.py; here we test

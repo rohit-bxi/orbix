@@ -23,7 +23,9 @@
         - A small `bxi.faq` model (question, answer, category, audience,
           order) with a list endpoint filterable by audience.
     """,
-    'author': 'Vijay Shanker Dubey',
+    'author': 'BXI Technology Pvt. Ltd.',
+    'maintainer': 'BXI Technology Pvt. Ltd.',
+    'website': 'https://bxitech.com/',
     'depends': [
         'base',
         'bxi_api',
@@ -38,5 +40,5 @@
     ],
     'installable': True,
     'application': False,
-    'license': 'LGPL-3',
+    'license': 'OPL-1',
 }

@@ -19,8 +19,7 @@
                             <field name="name"/>
                         </div>
                         <div class="d-flex justify-content-between text-muted">
-                            <field name="date" widget="date"/>
-                            <field name="time" widget="float_time"/>
+                            <field name="start_datetime"/>
                         </div>
                         <div>
                             <field name="venue"/>
@@ -40,8 +39,8 @@
         <field name="arch" type="xml">
             <list string="Parent-Teacher Meetings">
                 <field name="name"/>
-                <field name="date"/>
-                <field name="time" widget="float_time"/>
+                <field name="start_datetime"/>
+                <field name="end_datetime"/>
                 <field name="venue"/>
                 <field name="class_ids" widget="many2many_tags"/>
             </list>
@@ -62,8 +61,8 @@
                     </div>
                     <group>
                         <group>
-                            <field name="date"/>
-                            <field name="time" widget="float_time"/>
+                            <field name="start_datetime"/>
+                            <field name="end_datetime"/>
                         </group>
                         <group>
                             <field name="venue" placeholder="e.g., Main Auditorium"/>
@@ -73,6 +72,10 @@
                         <field name="class_ids" widget="many2many_tags"
                                placeholder="Add class"
                                options="{'no_create': True, 'no_create_edit': True}"/>
+                    </group>
+                    <group string="Notified" groups="bxi_academic_management.group_academic_coordinator,bxi_academic_management.group_academic_manager">
+                        <field name="parent_ids" widget="many2many_tags" readonly="1"/>
+                        <field name="teacher_ids" widget="many2many_tags" readonly="1"/>
                     </group>
                 </sheet>
                 <chatter/>
@@ -89,16 +92,17 @@
                 <field name="venue"/>
                 <field name="class_ids"/>
                 <filter string="Today" name="today"
-                        domain="[('date', '=', context_today().strftime('%Y-%m-%d'))]"/>
+                        domain="[('start_datetime', '&gt;=', context_today().strftime('%Y-%m-%d 00:00:00')),
+                                 ('start_datetime', '&lt;', (context_today() + relativedelta(days=1)).strftime('%Y-%m-%d 00:00:00'))]"/>
                 <filter string="Upcoming" name="upcoming"
-                        domain="[('date', '&gt;=', context_today().strftime('%Y-%m-%d'))]"/>
+                        domain="[('start_datetime', '&gt;=', context_today().strftime('%Y-%m-%d 00:00:00'))]"/>
                 <filter string="Past" name="past"
-                        domain="[('date', '&lt;', context_today().strftime('%Y-%m-%d'))]"/>
+                        domain="[('start_datetime', '&lt;', context_today().strftime('%Y-%m-%d 00:00:00'))]"/>
                 <separator/>
                 <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
                 <group name="group_by">
-                    <filter string="Date" name="group_date" context="{'group_by': 'date'}"/>
-                    <filter string="Month" name="group_month" context="{'group_by': 'date:month'}"/>
+                    <filter string="Date" name="group_date" context="{'group_by': 'start_datetime:day'}"/>
+                    <filter string="Month" name="group_month" context="{'group_by': 'start_datetime:month'}"/>
                     <filter string="Venue" name="group_venue" context="{'group_by': 'venue'}"/>
                     <filter string="Class" name="group_class" context="{'group_by': 'class_ids'}"/>
                 </group>

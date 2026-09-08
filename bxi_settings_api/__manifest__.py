@@ -26,7 +26,9 @@
         codebase and are intentionally not fabricated here; they can be
         added to the same allow-list once those fields exist.
     """,
-    'author': 'Vijay Shanker Dubey',
+    'author': 'BXI Technology Pvt. Ltd.',
+    'maintainer': 'BXI Technology Pvt. Ltd.',
+    'website': 'https://bxitech.com/',
     'depends': [
         'base',
         'bxi_api',
@@ -36,5 +38,5 @@
     'data': [],
     'installable': True,
     'application': False,
-    'license': 'LGPL-3',
+    'license': 'OPL-1',
 }

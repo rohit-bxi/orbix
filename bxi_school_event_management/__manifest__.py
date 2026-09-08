@@ -16,7 +16,9 @@
         - Bulk participation-certificate issuance for attendees
         - Announcement bridge and portal RSVP for parents/students
         """,
-    'author': 'Vijay Shanker Dubey',
+    'author': 'BXI Technology Pvt. Ltd.',
+    'maintainer': 'BXI Technology Pvt. Ltd.',
+    'website': 'https://bxitech.com/',
     'depends': [
         'event',
         'mail',
@@ -46,5 +48,5 @@
     ],
     'installable': True,
     'application': False,
-    'license': 'LGPL-3',
+    'license': 'OPL-1',
 }

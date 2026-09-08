@@ -22,7 +22,9 @@
           payments.
         - Daily cron keeps collection status and late fees current.
     """,
-    'author': 'Vijay Shanker Dubey',
+    'author': 'BXI Technology Pvt. Ltd.',
+    'maintainer': 'BXI Technology Pvt. Ltd.',
+    'website': 'https://bxitech.com/',
     'depends': [
         'openeducat_fees',
         'openeducat_admission',
@@ -42,5 +44,5 @@
     ],
     'installable': True,
     'application': True,
-    'license': 'LGPL-3',
+    'license': 'OPL-1',
 }

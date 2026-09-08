@@ -2,7 +2,7 @@
 
 {
     'name': 'Academic Management',
-    'version': '19.0.1.0.0',
+    'version': '19.0.2.0.0',
     'category': 'Education',
     'summary': 'Curriculum boards, class assignment, smart books and subject-teacher mapping',
     'description': """
@@ -13,7 +13,9 @@
         - Subject Mapping: map Subject + Class + Curriculum to a Teacher
         - Event: schedule Parent-Teacher Meetings for one or more Classes
     """,
-    'author': 'Vijay Shanker Dubey',
+    'author': 'BXI Technology Pvt. Ltd.',
+    'maintainer': 'BXI Technology Pvt. Ltd.',
+    'website': 'https://bxitech.com/',
     'depends': [
         'base',
         'mail',
@@ -25,6 +27,7 @@
         'security/academic_management_groups.xml',
         'security/ir.model.access.csv',
         'security/academic_management_security.xml',
+        'data/mail_template_data.xml',
         'views/board_views.xml',
         'views/curriculum_views.xml',
         'views/media_curriculum_views.xml',
@@ -35,5 +38,5 @@
     ],
     'installable': True,
     'application': False,
-    'license': 'LGPL-3',
+    'license': 'OPL-1',
 }

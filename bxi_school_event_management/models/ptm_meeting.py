@@ -1,5 +1,6 @@
-from datetime import datetime, timedelta
-
+# -*- coding: utf-8 -*-
+# Copyright (c) 2026 BXI Technology Pvt. Ltd. All Rights Reserved.
+# License OPL-1 (Odoo Proprietary License v1.0, see LICENSE file for full text).
 from odoo import fields, models
 
 
@@ -17,13 +18,14 @@ class BxiPtmMeeting(models.Model):
         this module.
         """
         Event = self.env['event.event']
+        event_type = self.env.ref('bxi_school_event_management.event_type_ptm')
         for meeting in self.filtered(lambda m: not m.event_id):
-            start = datetime.combine(meeting.date, datetime.min.time()) + timedelta(hours=meeting.time)
             meeting.event_id = Event.create({
                 'name': meeting.name,
                 'event_category': 'ptm',
-                'date_begin': start,
-                'date_end': start + timedelta(hours=1),
+                'event_type_id': event_type.id,
+                'date_begin': meeting.start_datetime,
+                'date_end': meeting.end_datetime,
                 'target_audience': 'specific_class',
                 'course_ids': [(6, 0, meeting.class_ids.ids)],
                 'note': meeting.venue and f'Venue: {meeting.venue}' or False,

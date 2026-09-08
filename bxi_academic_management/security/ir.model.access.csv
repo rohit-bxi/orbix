@@ -9,6 +9,8 @@ access_bxi_subject_mapping_coordinator,bxi.subject.mapping.coordinator,model_bxi
 access_bxi_subject_mapping_manager,bxi.subject.mapping.manager,model_bxi_subject_mapping,group_academic_manager,1,1,1,1
 access_bxi_ptm_meeting_coordinator,bxi.ptm.meeting.coordinator,model_bxi_ptm_meeting,group_academic_coordinator,1,1,1,0
 access_bxi_ptm_meeting_manager,bxi.ptm.meeting.manager,model_bxi_ptm_meeting,group_academic_manager,1,1,1,1
+access_bxi_ptm_meeting_faculty,bxi.ptm.meeting.faculty,model_bxi_ptm_meeting,openeducat_core.group_op_faculty,1,0,0,0
+access_bxi_ptm_meeting_portal,bxi.ptm.meeting.portal,model_bxi_ptm_meeting,base.group_portal,1,0,0,0
 access_op_media_academic_coordinator,op.media.academic.coordinator,openeducat_library.model_op_media,group_academic_coordinator,1,1,1,0
 access_op_media_academic_manager,op.media.academic.manager,openeducat_library.model_op_media,group_academic_manager,1,1,1,1
 access_resource_calendar_leaves_academic_coordinator,resource.calendar.leaves.academic.coordinator,resource.model_resource_calendar_leaves,group_academic_coordinator,1,1,1,0

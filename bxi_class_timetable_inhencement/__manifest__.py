@@ -13,7 +13,9 @@
         - Teacher Workload: weekly period count, limit status and weekday availability on the Teacher form
         - Add / Remove / Transfer Period and Reassign Class wizards
     """,
-    'author': 'Vijay Shanker Dubey',
+    'author': 'BXI Technology Pvt. Ltd.',
+    'maintainer': 'BXI Technology Pvt. Ltd.',
+    'website': 'https://bxitech.com/',
     'depends': [
         'base',
         'mail',
@@ -38,5 +40,5 @@
     ],
     'installable': True,
     'application': False,
-    'license': 'LGPL-3',
+    'license': 'OPL-1',
 }
