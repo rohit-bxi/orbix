@@ -55,6 +55,11 @@ class TestAssessmentSubmission(TransactionCase):
         with self.assertRaises(UserError):
             self.submission.action_mark_submitted()
 
+    def test_name_computed_from_student_and_exam(self):
+        self.assertIn(self.student.name, self.submission.name)
+        self.assertIn(self.exam.name, self.submission.name)
+        self.assertNotIn('bxi.assessment.submission,', self.submission.display_name)
+
     def test_mark_submitted_succeeds_when_complete(self):
         self._fill_answers()
         self.submission.action_mark_submitted()

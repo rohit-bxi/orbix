@@ -54,6 +54,12 @@ class TestAssessmentSession(TransactionCase):
         session = self._make_session()
         self.assertEqual(session.total_marks, 5)
 
+    def test_name_computed_from_exam_class_date(self):
+        session = self._make_session()
+        self.assertIn(self.exam.name, session.name)
+        self.assertIn(self.course.name, session.name)
+        self.assertNotIn('bxi.assessment.session,', session.display_name)
+
     def test_assignment_summary(self):
         session = self._make_session()
         self.assertIn('1 question(s)', session.assignment_summary)

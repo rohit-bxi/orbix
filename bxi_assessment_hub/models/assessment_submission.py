@@ -10,7 +10,9 @@ class BxiAssessmentSubmission(models.Model):
     _description = 'Assessment Submission'
     _inherit = ['mail.thread']
     _order = 'create_date desc'
+    _rec_name = 'name'
 
+    name = fields.Char(compute='_compute_name', store=True)
     session_id = fields.Many2one('bxi.assessment.session', string='Session', required=True, ondelete='cascade')
     exam_id = fields.Many2one(related='session_id.exam_id', string='Exam', store=True, readonly=True)
     student_id = fields.Many2one('op.student', string='Student', required=True, tracking=True)
@@ -32,6 +34,14 @@ class BxiAssessmentSubmission(models.Model):
     manual_adjustment = fields.Float(default=0.0, copy=False)
     total_score = fields.Float(compute='_compute_total_score', store=True, string='Score')
     reevaluation_reason = fields.Text(copy=False)
+
+    @api.depends('student_id.name', 'exam_id.name')
+    def _compute_name(self):
+        for submission in self:
+            submission.name = _('%(student)s - %(exam)s') % {
+                'student': submission.student_id.name or _('New'),
+                'exam': submission.exam_id.name or '',
+            }
 
     @api.depends('answer_ids.awarded_marks')
     def _compute_computed_score(self):

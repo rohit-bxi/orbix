@@ -31,6 +31,9 @@
                     <field name="state" widget="statusbar" statusbar_visible="scheduled,completed"/>
                 </header>
                 <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
                     <group>
                         <group>
                             <field name="exam_id" options="{'no_create': True, 'no_create_edit': True}"/>

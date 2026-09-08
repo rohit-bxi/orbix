@@ -57,8 +57,12 @@ class TestAssessmentAutogradeWizard(TransactionCase):
             wizard.action_start_grading()
 
     def test_default_picks_up_all_submitted(self):
+        # Asserts the fixture's own submissions are included, not an exact
+        # count - other 'submitted' records may already exist in the
+        # database (e.g. real usage data), and the wizard is meant to pick
+        # up every pending submission system-wide, not just these two.
         wizard = self.env['bxi.assessment.autograde.wizard'].create({})
-        self.assertEqual(len(wizard.submission_ids), 2)
+        self.assertTrue(set(self.session.submission_ids.ids) <= set(wizard.submission_ids.ids))
 
     @patch('odoo.addons.bxi_assessment_hub.models.ai_client.BxiAiClient.grade_answer')
     def test_start_grading_grades_all_and_reports_counts(self, mock_grade):

@@ -9,7 +9,9 @@ class BxiAssessmentSession(models.Model):
     _description = 'Assigned Assessment Session'
     _inherit = ['mail.thread']
     _order = 'exam_date desc, exam_time desc'
+    _rec_name = 'name'
 
+    name = fields.Char(compute='_compute_name', store=True)
     exam_id = fields.Many2one(
         'bxi.exam', string='Exam', required=True, tracking=True,
         domain=[('state', '=', 'published')])
@@ -30,6 +32,15 @@ class BxiAssessmentSession(models.Model):
     submission_ids = fields.One2many('bxi.assessment.submission', 'session_id', string='Submissions')
     submission_count = fields.Integer(compute='_compute_submission_count')
     assignment_summary = fields.Char(compute='_compute_assignment_summary', string='Summary')
+
+    @api.depends('exam_id.name', 'class_id.name', 'exam_date')
+    def _compute_name(self):
+        for session in self:
+            session.name = _('%(exam)s - %(class)s (%(date)s)') % {
+                'exam': session.exam_id.name or _('New'),
+                'class': session.class_id.name or '',
+                'date': session.exam_date or '',
+            }
 
     @api.depends('submission_ids')
     def _compute_submission_count(self):
