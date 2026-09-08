@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="exam_rule_teacher_own" model="ir.rule">
+        <field name="name">Digital Exam: Teacher sees own</field>
+        <field name="model_id" ref="model_bxi_exam"/>
+        <field name="domain_force">[('teacher_id.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('openeducat_core.group_op_faculty'))]"/>
+    </record>
+
+    <record id="exam_rule_coordinator_all" model="ir.rule">
+        <field name="name">Digital Exam: Coordinator/Manager see all</field>
+        <field name="model_id" ref="model_bxi_exam"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('bxi_academic_management.group_academic_coordinator'))]"/>
+    </record>
+
+    <record id="exam_question_rule_teacher_own" model="ir.rule">
+        <field name="name">Exam Question: Teacher sees own exam's questions</field>
+        <field name="model_id" ref="model_bxi_exam_question"/>
+        <field name="domain_force">[('exam_id.teacher_id.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('openeducat_core.group_op_faculty'))]"/>
+    </record>
+
+    <record id="exam_question_rule_coordinator_all" model="ir.rule">
+        <field name="name">Exam Question: Coordinator/Manager see all</field>
+        <field name="model_id" ref="model_bxi_exam_question"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('bxi_academic_management.group_academic_coordinator'))]"/>
+    </record>
+
+    <record id="exam_question_option_rule_teacher_own" model="ir.rule">
+        <field name="name">Exam Question Option: Teacher sees own exam's options</field>
+        <field name="model_id" ref="model_bxi_exam_question_option"/>
+        <field name="domain_force">[('question_id.exam_id.teacher_id.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('openeducat_core.group_op_faculty'))]"/>
+    </record>
+
+    <record id="exam_question_option_rule_coordinator_all" model="ir.rule">
+        <field name="name">Exam Question Option: Coordinator/Manager see all</field>
+        <field name="model_id" ref="model_bxi_exam_question_option"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('bxi_academic_management.group_academic_coordinator'))]"/>
+    </record>
+
+    <record id="assessment_session_rule_teacher_own" model="ir.rule">
+        <field name="name">Assessment Session: Teacher sees own</field>
+        <field name="model_id" ref="model_bxi_assessment_session"/>
+        <field name="domain_force">[('teacher_id.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('openeducat_core.group_op_faculty'))]"/>
+    </record>
+
+    <record id="assessment_session_rule_coordinator_all" model="ir.rule">
+        <field name="name">Assessment Session: Coordinator/Manager see all</field>
+        <field name="model_id" ref="model_bxi_assessment_session"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('bxi_academic_management.group_academic_coordinator'))]"/>
+    </record>
+
+    <record id="assessment_submission_rule_teacher_own" model="ir.rule">
+        <field name="name">Assessment Submission: Teacher sees own session's submissions</field>
+        <field name="model_id" ref="model_bxi_assessment_submission"/>
+        <field name="domain_force">[('session_id.teacher_id.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('openeducat_core.group_op_faculty'))]"/>
+    </record>
+
+    <record id="assessment_submission_rule_coordinator_all" model="ir.rule">
+        <field name="name">Assessment Submission: Coordinator/Manager see all</field>
+        <field name="model_id" ref="model_bxi_assessment_submission"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('bxi_academic_management.group_academic_coordinator'))]"/>
+    </record>
+
+    <record id="assessment_submission_answer_rule_teacher_own" model="ir.rule">
+        <field name="name">Assessment Submission Answer: Teacher sees own session's answers</field>
+        <field name="model_id" ref="model_bxi_assessment_submission_answer"/>
+        <field name="domain_force">[('submission_id.session_id.teacher_id.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('openeducat_core.group_op_faculty'))]"/>
+    </record>
+
+    <record id="assessment_submission_answer_rule_coordinator_all" model="ir.rule">
+        <field name="name">Assessment Submission Answer: Coordinator/Manager see all</field>
+        <field name="model_id" ref="model_bxi_assessment_submission_answer"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('bxi_academic_management.group_academic_coordinator'))]"/>
+    </record>
+</odoo>

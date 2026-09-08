@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_ai_assignment_generate_wizard_form" model="ir.ui.view">
+        <field name="name">bxi.ai.assignment.generate.wizard.form</field>
+        <field name="model">bxi.ai.assignment.generate.wizard</field>
+        <field name="arch" type="xml">
+            <form string="AI Assignment Generator">
+                <field name="exam_id" invisible="1"/>
+                <group>
+                    <field name="class_id" options="{'no_create': True, 'no_create_edit': True}"/>
+                    <field name="subject_id" options="{'no_create': True, 'no_create_edit': True}"/>
+                    <field name="topic" placeholder="e.g., Linear Equations"/>
+                    <field name="difficulty"/>
+                    <field name="question_count"/>
+                </group>
+                <footer>
+                    <button name="action_generate" type="object" string="Generate Assignment" class="oe_highlight"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_ai_assignment_generate_wizard" model="ir.actions.act_window">
+        <field name="name">AI Assignment</field>
+        <field name="res_model">bxi.ai.assignment.generate.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

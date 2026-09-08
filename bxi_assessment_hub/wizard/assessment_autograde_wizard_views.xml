@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_assessment_autograde_wizard_form" model="ir.ui.view">
+        <field name="name">bxi.assessment.autograde.wizard.form</field>
+        <field name="model">bxi.assessment.autograde.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Auto-Grade All Pending">
+                <div invisible="state != 'confirm'">
+                    <p class="text-muted">
+                        AI Auto-Grading: this will automatically grade all pending submissions using AI and
+                        the answer key/sample answers on each question. You can review and adjust grades
+                        after auto-grading is completed.
+                    </p>
+                    <label for="submission_ids" string="Pending Submissions" class="fw-bold"/>
+                    <field name="submission_ids" readonly="1" nolabel="1">
+                        <list>
+                            <field name="student_id"/>
+                            <field name="exam_id"/>
+                        </list>
+                    </field>
+                    <p>
+                        <field name="submission_count" readonly="1" nolabel="1" class="oe_inline"/>
+                        submission(s) to be graded.
+                    </p>
+                </div>
+                <div invisible="state != 'done'">
+                    <p>
+                        Grading Completed -
+                        <field name="graded_count" readonly="1" nolabel="1" class="oe_inline"/> of
+                        <field name="submission_count" readonly="1" nolabel="1" class="oe_inline"/>
+                        pending submission(s) graded successfully
+                        (<field name="failed_count" readonly="1" nolabel="1" class="oe_inline"/> failed).
+                    </p>
+                </div>
+                <footer>
+                    <button name="action_start_grading" type="object" string="Start Auto-Grading"
+                            class="oe_highlight" invisible="state != 'confirm' or not submission_count"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel" invisible="state != 'confirm'"/>
+                    <button string="Close" class="btn-secondary" special="cancel" invisible="state != 'done'"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_assessment_autograde_wizard" model="ir.actions.act_window">
+        <field name="name">Auto-Grade All Pending</field>
+        <field name="res_model">bxi.assessment.autograde.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>
