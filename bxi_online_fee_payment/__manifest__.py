@@ -20,7 +20,9 @@
           the invoice using bxi_fee_management's existing payment-register
           flow (bxi.fee.payment.wizard) - no separate ledger is invented.
     """,
-    'author': 'Vijay Shanker Dubey',
+    'author': 'BXI Technology Pvt. Ltd.',
+    'maintainer': 'BXI Technology Pvt. Ltd.',
+    'website': 'https://bxitech.com/',
     'depends': [
         'base',
         'bxi_api',
@@ -34,5 +36,5 @@
     ],
     'installable': True,
     'application': False,
-    'license': 'LGPL-3',
+    'license': 'OPL-1',
 }

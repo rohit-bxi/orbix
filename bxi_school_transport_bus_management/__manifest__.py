@@ -14,7 +14,9 @@
         - Bulk registration wizard by batch
         - Route manifest report for drivers
     """,
-    'author': 'Vijay Shanker Dubey',
+    'author': 'BXI Technology Pvt. Ltd.',
+    'maintainer': 'BXI Technology Pvt. Ltd.',
+    'website': 'https://bxitech.com/',
     'depends': [
         'base',
         'mail',
@@ -41,5 +43,5 @@
     ],
     'installable': True,
     'application': True,
-    'license': 'LGPL-3',
+    'license': 'OPL-1',
 }

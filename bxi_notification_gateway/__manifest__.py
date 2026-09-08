@@ -20,7 +20,9 @@
           not by MSG91 - MSG91 is only used to deliver the SMS).
         - `/api/v1/otp/request` and `/api/v1/otp/verify` endpoints.
     """,
-    'author': 'Vijay Shanker Dubey',
+    'author': 'BXI Technology Pvt. Ltd.',
+    'maintainer': 'BXI Technology Pvt. Ltd.',
+    'website': 'https://bxitech.com/',
     'depends': [
         'base',
         'bxi_api',
@@ -31,5 +33,5 @@
     ],
     'installable': True,
     'application': False,
-    'license': 'LGPL-3',
+    'license': 'OPL-1',
 }

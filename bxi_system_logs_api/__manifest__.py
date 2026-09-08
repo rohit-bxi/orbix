@@ -16,7 +16,9 @@
         endpoint over that existing `mail.tracking.value` data, gated
         behind `base.group_system` (full administration access).
     """,
-    'author': 'Vijay Shanker Dubey',
+    'author': 'BXI Technology Pvt. Ltd.',
+    'maintainer': 'BXI Technology Pvt. Ltd.',
+    'website': 'https://bxitech.com/',
     'depends': [
         'base',
         'mail',
@@ -25,5 +27,5 @@
     'data': [],
     'installable': True,
     'application': False,
-    'license': 'LGPL-3',
+    'license': 'OPL-1',
 }

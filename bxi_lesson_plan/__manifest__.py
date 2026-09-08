@@ -11,7 +11,9 @@
         - Academic Coordinator/Manager reviews and Approves or Requests Revision, with feedback
         - Full audit trail via chatter
     """,
-    'author': 'Vijay Shanker Dubey',
+    'author': 'BXI Technology Pvt. Ltd.',
+    'maintainer': 'BXI Technology Pvt. Ltd.',
+    'website': 'https://bxitech.com/',
     'depends': [
         'base',
         'mail',
@@ -27,5 +29,5 @@
     ],
     'installable': True,
     'application': False,
-    'license': 'LGPL-3',
+    'license': 'OPL-1',
 }

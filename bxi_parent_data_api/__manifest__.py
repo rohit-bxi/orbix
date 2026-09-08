@@ -19,7 +19,9 @@
         - A single dashboard endpoint aggregating the above plus the fee
           summary already exposed by bxi_online_fee_payment
     """,
-    'author': 'Vijay Shanker Dubey',
+    'author': 'BXI Technology Pvt. Ltd.',
+    'maintainer': 'BXI Technology Pvt. Ltd.',
+    'website': 'https://bxitech.com/',
     'depends': [
         'base',
         'bxi_api',
@@ -31,5 +33,5 @@
     'data': [],
     'installable': True,
     'application': False,
-    'license': 'LGPL-3',
+    'license': 'OPL-1',
 }
