@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <template id="exam_question_paper_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2><span t-field="o.name"/></h2>
+                        <table class="table table-sm">
+                            <tr>
+                                <td><strong>Class</strong></td>
+                                <td><span t-field="o.class_id.name"/></td>
+                                <td><strong>Subject</strong></td>
+                                <td><span t-field="o.subject_id.name"/></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Duration</strong></td>
+                                <td><span t-field="o.duration"/> minutes</td>
+                                <td><strong>Total Marks</strong></td>
+                                <td><span t-field="o.total_marks"/></td>
+                            </tr>
+                        </table>
+
+                        <t t-foreach="o.question_ids" t-as="question">
+                            <div style="margin-top:14px;">
+                                <strong>
+                                    Q<span t-esc="question_index + 1"/>.
+                                    <span t-field="question.question_text"/>
+                                    (<span t-field="question.marks"/> marks)
+                                </strong>
+                                <t t-if="question.question_type == 'mcq'">
+                                    <ul>
+                                        <t t-foreach="question.option_ids" t-as="option">
+                                            <li>
+                                                <span t-field="option.label"/>.
+                                                <span t-field="option.option_text"/>
+                                            </li>
+                                        </t>
+                                    </ul>
+                                </t>
+                            </div>
+                        </t>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

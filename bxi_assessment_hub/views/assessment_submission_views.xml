@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_assessment_submission_list" model="ir.ui.view">
+        <field name="name">bxi.assessment.submission.list</field>
+        <field name="model">bxi.assessment.submission</field>
+        <field name="arch" type="xml">
+            <list string="Submissions" decoration-warning="status == 'submitted'"
+                  decoration-success="status in ('auto_graded', 'reviewed')">
+                <field name="student_id"/>
+                <field name="exam_id"/>
+                <field name="submitted_at"/>
+                <field name="status" widget="badge"/>
+                <field name="total_score"/>
+                <field name="max_score"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_assessment_submission_form" model="ir.ui.view">
+        <field name="name">bxi.assessment.submission.form</field>
+        <field name="model">bxi.assessment.submission</field>
+        <field name="arch" type="xml">
+            <form string="View Submission">
+                <header>
+                    <button name="action_mark_submitted" type="object" string="Mark as Submitted"
+                            invisible="status != 'not_submitted'"/>
+                    <button name="action_auto_grade" type="object" string="Auto-Grade" class="oe_highlight"
+                            invisible="status != 'submitted'"/>
+                    <button name="%(action_assessment_reevaluation_wizard)d" type="action" string="Re-evaluate"
+                            context="{'default_submission_id': id}"
+                            invisible="status not in ('auto_graded', 'reviewed')"/>
+                    <field name="status" widget="statusbar"
+                           statusbar_visible="not_submitted,submitted,auto_graded,reviewed"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="student_id"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="exam_id" readonly="1"/>
+                            <field name="submitted_at" readonly="1"/>
+                            <field name="grading_strictness"/>
+                        </group>
+                        <group>
+                            <field name="total_score"/>
+                            <field name="max_score"/>
+                        </group>
+                    </group>
+                    <field name="reevaluation_reason" invisible="not reevaluation_reason" readonly="1"/>
+                    <notebook>
+                        <page string="Answers">
+                            <field name="answer_ids">
+                                <list string="Answers" editable="bottom">
+                                    <field name="question_id" readonly="1"/>
+                                    <field name="question_type" column_invisible="1"/>
+                                    <field name="student_answer_text" invisible="question_type == 'mcq'"/>
+                                    <field name="selected_option_id" invisible="question_type != 'mcq'"
+                                           domain="[('question_id', '=', question_id)]"/>
+                                    <field name="marks" readonly="1" string="Max Marks"/>
+                                    <field name="awarded_marks"/>
+                                    <field name="is_ai_graded" readonly="1"/>
+                                    <field name="ai_rationale" readonly="1"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_assessment_submission_search" model="ir.ui.view">
+        <field name="name">bxi.assessment.submission.search</field>
+        <field name="model">bxi.assessment.submission</field>
+        <field name="arch" type="xml">
+            <search string="Submissions">
+                <field name="student_id"/>
+                <field name="exam_id"/>
+                <filter string="Pending Review" name="pending" domain="[('status', '=', 'submitted')]"/>
+                <filter string="Auto Graded" name="auto_graded" domain="[('status', '=', 'auto_graded')]"/>
+                <filter string="Reviewed" name="reviewed" domain="[('status', '=', 'reviewed')]"/>
+                <group name="group_by">
+                    <filter string="Status" name="group_status" context="{'group_by': 'status'}"/>
+                    <filter string="Exam" name="group_exam" context="{'group_by': 'exam_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_assessment_submission" model="ir.actions.act_window">
+        <field name="name">Auto-Grading &amp; Submissions</field>
+        <field name="res_model">bxi.assessment.submission</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_assessment_submission_search"/>
+        <field name="context">{'search_default_pending': 1}</field>
+    </record>
+
+    <record id="server_action_autograde_selected" model="ir.actions.server">
+        <field name="name">Auto-Grade Selected Submissions</field>
+        <field name="model_id" ref="model_bxi_assessment_submission"/>
+        <field name="binding_model_id" ref="model_bxi_assessment_submission"/>
+        <field name="state">code</field>
+        <field name="code">
+if records:
+    wizard = env['bxi.assessment.autograde.wizard'].create({'submission_ids': [(6, 0, records.ids)]})
+    action = {
+        'type': 'ir.actions.act_window',
+        'res_model': 'bxi.assessment.autograde.wizard',
+        'res_id': wizard.id,
+        'view_mode': 'form',
+        'target': 'new',
+    }
+</field>
+    </record>
+</odoo>

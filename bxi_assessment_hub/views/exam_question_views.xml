@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_exam_question_option_list" model="ir.ui.view">
+        <field name="name">bxi.exam.question.option.list</field>
+        <field name="model">bxi.exam.question.option</field>
+        <field name="arch" type="xml">
+            <list string="Answer Options" editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="label" readonly="1"/>
+                <field name="option_text"/>
+                <field name="is_correct"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_exam_question_form" model="ir.ui.view">
+        <field name="name">bxi.exam.question.form</field>
+        <field name="model">bxi.exam.question</field>
+        <field name="arch" type="xml">
+            <form string="Edit Question">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="question_type"/>
+                            <field name="marks"/>
+                        </group>
+                    </group>
+                    <field name="question_text" placeholder="Enter the question text"/>
+                    <field name="sample_answer_keywords"
+                           invisible="question_type == 'mcq'"
+                           placeholder="Sample answer or key concepts graders/AI should look for"/>
+                    <separator string="Answer Options" invisible="question_type != 'mcq'"/>
+                    <field name="option_ids" invisible="question_type != 'mcq'">
+                        <list string="Answer Options" editable="bottom">
+                            <field name="sequence" widget="handle"/>
+                            <field name="label" readonly="1"/>
+                            <field name="option_text"/>
+                            <field name="is_correct"/>
+                        </list>
+                    </field>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_exam_question_list" model="ir.ui.view">
+        <field name="name">bxi.exam.question.list</field>
+        <field name="model">bxi.exam.question</field>
+        <field name="arch" type="xml">
+            <list string="Exam Questions" editable="bottom" open_form_view="1">
+                <field name="sequence" widget="handle"/>
+                <field name="question_type"/>
+                <field name="question_text"/>
+                <field name="marks"/>
+            </list>
+        </field>
+    </record>
+</odoo>

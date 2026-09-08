@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_exam_kanban" model="ir.ui.view">
+        <field name="name">bxi.exam.kanban</field>
+        <field name="model">bxi.exam</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state" class="o_kanban_small_column">
+                <field name="state"/>
+                <templates>
+                    <t t-name="menu">
+                        <t t-if="widget.editable">
+                            <a role="menuitem" type="edit" class="dropdown-item">Edit</a>
+                        </t>
+                        <t t-if="widget.deletable">
+                            <a role="menuitem" type="delete" class="dropdown-item">Delete</a>
+                        </t>
+                    </t>
+                    <t t-name="card">
+                        <div t-attf-class="oe_kanban_card #{record.state.raw_value == 'published' ? 'border-success' : 'border-warning'}">
+                            <div class="fw-bold">
+                                <field name="name"/>
+                            </div>
+                            <div>
+                                <field name="class_id"/> - <field name="subject_id"/>
+                            </div>
+                            <div class="text-muted">
+                                <field name="teacher_id"/>
+                            </div>
+                            <div class="text-muted">
+                                <field name="question_count"/> question(s) - <field name="total_marks"/> marks
+                            </div>
+                            <div class="text-muted">
+                                Duration: <field name="duration"/> min
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="view_exam_list" model="ir.ui.view">
+        <field name="name">bxi.exam.list</field>
+        <field name="model">bxi.exam</field>
+        <field name="arch" type="xml">
+            <list string="Digital Exams" decoration-success="state == 'published'">
+                <field name="name"/>
+                <field name="class_id"/>
+                <field name="subject_id"/>
+                <field name="teacher_id"/>
+                <field name="question_count"/>
+                <field name="total_marks"/>
+                <field name="duration"/>
+                <field name="source"/>
+                <field name="state" widget="badge"
+                       decoration-warning="state == 'draft'"
+                       decoration-success="state == 'published'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_exam_form" model="ir.ui.view">
+        <field name="name">bxi.exam.form</field>
+        <field name="model">bxi.exam</field>
+        <field name="arch" type="xml">
+            <form string="Digital Exam">
+                <header>
+                    <button name="%(action_exam_question_import_wizard)d" type="action"
+                            string="Import Questions" context="{'default_exam_id': id}"
+                            invisible="state != 'draft'"/>
+                    <button name="%(action_ai_assignment_generate_wizard)d" type="action"
+                            string="Regenerate Questions"
+                            context="{'default_exam_id': id, 'default_class_id': class_id, 'default_subject_id': subject_id}"
+                            invisible="state != 'draft' or source != 'ai'"/>
+                    <button name="action_publish" type="object" string="Publish"
+                            class="oe_highlight" invisible="state != 'draft'"/>
+                    <button name="action_reset_to_draft" type="object" string="Reset to Draft"
+                            invisible="state != 'published'"/>
+                    <button name="%(action_assessment_session_new)d" type="action"
+                            string="Assign Assessment" class="oe_highlight"
+                            context="{'default_exam_id': id}"
+                            invisible="state != 'published'"/>
+                    <button name="%(action_report_exam_question_paper)d" type="action"
+                            string="Print / Export PDF"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,published"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" string="Exam Title"/>
+                        <h1>
+                            <field name="name" placeholder="e.g., Mathematics Quiz - Chapter 3"/>
+                        </h1>
+                    </div>
+                    <group readonly="state == 'published'">
+                        <group string="Exam Details">
+                            <field name="class_id" options="{'no_create': True, 'no_create_edit': True}"/>
+                            <field name="subject_id" options="{'no_create': True, 'no_create_edit': True}"/>
+                            <field name="teacher_id" options="{'no_create': True, 'no_create_edit': True}"/>
+                            <field name="duration"/>
+                        </group>
+                        <group string="Summary">
+                            <field name="source"/>
+                            <field name="question_count"/>
+                            <field name="total_marks"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Questions">
+                            <field name="question_ids" context="{'default_exam_id': id}"
+                                   readonly="state == 'published'"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_exam_search" model="ir.ui.view">
+        <field name="name">bxi.exam.search</field>
+        <field name="model">bxi.exam</field>
+        <field name="arch" type="xml">
+            <search string="Digital Exams">
+                <field name="name"/>
+                <field name="class_id"/>
+                <field name="subject_id"/>
+                <field name="teacher_id"/>
+                <filter string="Draft" name="draft" domain="[('state', '=', 'draft')]"/>
+                <filter string="Published" name="published" domain="[('state', '=', 'published')]"/>
+                <separator/>
+                <filter string="My Exams" name="my_exams" domain="[('teacher_id.user_id', '=', uid)]"/>
+                <group name="group_by">
+                    <filter string="Status" name="group_state" context="{'group_by': 'state'}"/>
+                    <filter string="Class" name="group_class" context="{'group_by': 'class_id'}"/>
+                    <filter string="Subject" name="group_subject" context="{'group_by': 'subject_id'}"/>
+                    <filter string="Teacher" name="group_teacher" context="{'group_by': 'teacher_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_exam" model="ir.actions.act_window">
+        <field name="name">Digital Exam Management</field>
+        <field name="res_model">bxi.exam</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="search_view_id" ref="view_exam_search"/>
+        <field name="context">{'search_default_my_exams': 1}</field>
+    </record>
+</odoo>

@@ -1,0 +1,4 @@
+# openpyxl and PyPDF2 already ship with Odoo's own requirements.txt.
+# python-docx is the one extra dependency this module needs, for parsing
+# Word (.docx) question-import files.
+python-docx

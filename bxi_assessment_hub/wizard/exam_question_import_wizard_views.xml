@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_exam_question_import_wizard_form" model="ir.ui.view">
+        <field name="name">bxi.exam.question.import.wizard.form</field>
+        <field name="model">bxi.exam.question.import.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Import Questions">
+                <group>
+                    <field name="exam_id" invisible="1"/>
+                    <field name="upload_file" filename="file_name"/>
+                    <field name="file_name" invisible="1"/>
+                </group>
+                <div class="text-muted" style="margin-top: 8px;">
+                    <p>
+                        <strong>Excel (.xlsx)</strong> is the recommended format. Columns:
+                        Question Text, Type (MCQ / Short Answer / Long Answer), Marks,
+                        Option A-D, Correct Option (A/B/C/D), Sample Answer/Keywords.
+                    </p>
+                    <p>
+                        <strong>Word (.docx) / PDF (.pdf)</strong> files must use this plain-text
+                        block format, one question per block, separated by a blank line:
+                    </p>
+                    <pre>Q: What is the capital of France?
+Type: short_answer
+Marks: 2
+Answer: Paris; capital of France
+
+Q: Who formulated the laws of motion?
+Type: mcq
+Marks: 1
+A) Newton
+B) Jonas
+C) Frost
+Correct: A</pre>
+                </div>
+                <footer>
+                    <button name="action_download_template" type="object" string="Download Excel Template"/>
+                    <button name="action_import" type="object" string="Import" class="oe_highlight"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_exam_question_import_wizard" model="ir.actions.act_window">
+        <field name="name">Import Questions</field>
+        <field name="res_model">bxi.exam.question.import.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>
