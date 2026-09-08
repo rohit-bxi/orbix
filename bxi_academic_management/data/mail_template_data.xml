@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="mail_template_ptm_meeting" model="mail.template">
+        <field name="name">PTM Meeting: Notify Recipient</field>
+        <field name="model_id" ref="model_bxi_ptm_meeting"/>
+        <field name="subject">Parent-Teacher Meeting: {{ object.name }}</field>
+        <field name="body_html" type="html">
+            <div style="margin:0;padding:0;">
+                <p><strong t-out="object.name"/></p>
+                <p>
+                    When: <span t-out="object.start_datetime"/> &#8211; <span t-out="object.end_datetime"/><br/>
+                    Venue: <span t-out="object.venue"/>
+                </p>
+                <p style="color:#888;font-size:12px;">Sent via the Orbix Parent-Teacher Meeting notice.</p>
+            </div>
+        </field>
+        <field name="auto_delete" eval="True"/>
+    </record>
+</odoo>

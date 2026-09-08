@@ -1,6 +1,8 @@
 from odoo.exceptions import ValidationError
 from odoo.tests.common import TransactionCase, tagged
 
+from odoo.addons.mail.tests.common import mail_new_test_user
+
 
 @tagged('post_install', '-at_install')
 class TestAcademicManagement(TransactionCase):
@@ -122,13 +124,117 @@ class TestAcademicManagement(TransactionCase):
     def test_ptm_meeting_creation(self):
         meeting = self.env['bxi.ptm.meeting'].create({
             'name': 'Term 1 PTM',
-            'date': '2026-09-15',
-            'time': 10.5,
+            'start_datetime': '2026-09-15 10:30:00',
+            'end_datetime': '2026-09-15 11:30:00',
             'venue': 'Main Hall',
             'class_ids': [(6, 0, [self.course.id, self.course_2.id])],
         })
         self.assertEqual(len(meeting.class_ids), 2)
         self.assertTrue(meeting.active)
+
+    def test_ptm_meeting_end_before_start_rejected(self):
+        with self.assertRaises(ValidationError):
+            self.env['bxi.ptm.meeting'].create({
+                'name': 'Bad PTM',
+                'start_datetime': '2026-09-15 11:30:00',
+                'end_datetime': '2026-09-15 10:30:00',
+                'venue': 'Main Hall',
+                'class_ids': [(6, 0, [self.course.id])],
+            })
+
+    def test_ptm_meeting_computes_parents_and_teachers(self):
+        student = self.env['op.student'].create({
+            'first_name': 'Ptm', 'last_name': 'Kid', 'gr_no': 'PTM-001', 'gender': 'm',
+        })
+        batch = self.env['op.batch'].create({
+            'name': 'PTM Batch', 'code': 'PTM-B1', 'course_id': self.course.id,
+            'start_date': '2026-01-01', 'end_date': '2026-12-31',
+        })
+        self.env['op.student.course'].create({
+            'student_id': student.id, 'course_id': self.course.id, 'batch_id': batch.id, 'state': 'running',
+        })
+        relationship = self.env['op.parent.relationship'].search([], limit=1) \
+            or self.env['op.parent.relationship'].create({'name': 'Guardian'})
+        parent = self.env['op.parent'].create({
+            'name': self.env['res.partner'].create({'name': 'Ptm Parent', 'is_parent': True}).id,
+            'relationship_id': relationship.id,
+            'student_ids': [(6, 0, [student.id])],
+        })
+        self.env['bxi.subject.mapping'].create({
+            'subject_id': self.subject.id, 'class_id': self.course.id,
+            'teacher_id': self.teacher.id, 'curriculum_id': self.curriculum.id,
+        })
+        meeting = self.env['bxi.ptm.meeting'].create({
+            'name': 'Term 1 PTM',
+            'start_datetime': '2026-09-15 10:30:00',
+            'end_datetime': '2026-09-15 11:30:00',
+            'venue': 'Main Hall',
+            'class_ids': [(6, 0, [self.course.id])],
+        })
+        self.assertIn(parent, meeting.parent_ids)
+        self.assertIn(self.teacher, meeting.teacher_ids)
+
+    def test_ptm_meeting_portal_parent_sees_only_own_childs_class(self):
+        other_course = self.env['op.course'].create({'name': 'Other Class', 'code': 'PTM-OC'})
+        student = self.env['op.student'].create({
+            'first_name': 'Ptm', 'last_name': 'Kid2', 'gr_no': 'PTM-002', 'gender': 'f',
+        })
+        batch = self.env['op.batch'].create({
+            'name': 'PTM Batch 2', 'code': 'PTM-B2', 'course_id': self.course.id,
+            'start_date': '2026-01-01', 'end_date': '2026-12-31',
+        })
+        self.env['op.student.course'].create({
+            'student_id': student.id, 'course_id': self.course.id, 'batch_id': batch.id, 'state': 'running',
+        })
+        parent_user = mail_new_test_user(
+            self.env, login='ptm_parent', groups='base.group_portal', password='PtmParent1!')
+        relationship = self.env['op.parent.relationship'].search([], limit=1) \
+            or self.env['op.parent.relationship'].create({'name': 'Guardian'})
+        self.env['op.parent'].create({
+            'name': self.env['res.partner'].create({'name': 'Ptm Parent 2', 'is_parent': True}).id,
+            'relationship_id': relationship.id,
+            'user_id': parent_user.id,
+            'student_ids': [(6, 0, [student.id])],
+        })
+        meeting_own = self.env['bxi.ptm.meeting'].create({
+            'name': 'Own Class PTM',
+            'start_datetime': '2026-09-15 10:30:00', 'end_datetime': '2026-09-15 11:30:00',
+            'venue': 'Main Hall', 'class_ids': [(6, 0, [self.course.id])],
+        })
+        meeting_other = self.env['bxi.ptm.meeting'].create({
+            'name': 'Other Class PTM',
+            'start_datetime': '2026-09-16 10:30:00', 'end_datetime': '2026-09-16 11:30:00',
+            'venue': 'Main Hall', 'class_ids': [(6, 0, [other_course.id])],
+        })
+        visible = self.env['bxi.ptm.meeting'].with_user(parent_user).search([])
+        self.assertIn(meeting_own.id, visible.ids)
+        self.assertNotIn(meeting_other.id, visible.ids)
+
+    def test_ptm_meeting_teacher_sees_only_mapped_classes(self):
+        other_course = self.env['op.course'].create({'name': 'Unmapped Class', 'code': 'PTM-UC'})
+        teacher_user = mail_new_test_user(
+            self.env, login='ptm_teacher', groups='openeducat_core.group_op_faculty', password='PtmTeacher1!')
+        teacher = self.env['op.faculty'].create({
+            'first_name': 'Ptm', 'last_name': 'Teacher', 'birth_date': '1985-01-01', 'gender': 'male',
+            'user_id': teacher_user.id,
+        })
+        self.env['bxi.subject.mapping'].create({
+            'subject_id': self.subject.id, 'class_id': self.course.id,
+            'teacher_id': teacher.id, 'curriculum_id': self.curriculum.id,
+        })
+        meeting_mapped = self.env['bxi.ptm.meeting'].create({
+            'name': 'Mapped Class PTM',
+            'start_datetime': '2026-09-15 10:30:00', 'end_datetime': '2026-09-15 11:30:00',
+            'venue': 'Main Hall', 'class_ids': [(6, 0, [self.course.id])],
+        })
+        meeting_unmapped = self.env['bxi.ptm.meeting'].create({
+            'name': 'Unmapped Class PTM',
+            'start_datetime': '2026-09-16 10:30:00', 'end_datetime': '2026-09-16 11:30:00',
+            'venue': 'Main Hall', 'class_ids': [(6, 0, [other_course.id])],
+        })
+        visible = self.env['bxi.ptm.meeting'].with_user(teacher_user).search([])
+        self.assertIn(meeting_mapped.id, visible.ids)
+        self.assertNotIn(meeting_unmapped.id, visible.ids)
 
     # --- op.media inherited curriculum_id ---
 

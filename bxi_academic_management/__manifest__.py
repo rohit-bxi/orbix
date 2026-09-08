@@ -2,7 +2,7 @@
 
 {
     'name': 'Academic Management',
-    'version': '19.0.1.0.0',
+    'version': '19.0.2.0.0',
     'category': 'Education',
     'summary': 'Curriculum boards, class assignment, smart books and subject-teacher mapping',
     'description': """
@@ -25,6 +25,7 @@
         'security/academic_management_groups.xml',
         'security/ir.model.access.csv',
         'security/academic_management_security.xml',
+        'data/mail_template_data.xml',
         'views/board_views.xml',
         'views/curriculum_views.xml',
         'views/media_curriculum_views.xml',
