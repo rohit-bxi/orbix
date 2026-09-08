@@ -4,39 +4,80 @@
         <t t-call="web.html_container">
             <t t-foreach="docs" t-as="o">
                 <t t-call="web.external_layout">
-                    <div class="page">
-                        <h2><span t-field="o.name"/></h2>
-                        <table class="table table-sm">
+                    <div class="page" style="font-family: Arial, Helvetica, sans-serif; color:#1f2937;">
+                        <style>
+                            .qp-title{text-align:center;font-size:22px;font-weight:700;margin:0 0 2px 0;color:#111827;}
+                            .qp-subtitle{text-align:center;font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:#6b7280;margin-bottom:14px;}
+                            .qp-rule{border:none;border-top:2px solid #1f2937;margin:6px 0 16px 0;}
+                            .qp-info{width:100%;border-collapse:collapse;margin-bottom:10px;font-size:11px;}
+                            .qp-info td{border:1px solid #d1d5db;padding:6px 10px;}
+                            .qp-info td.qp-label{background:#f3f4f6;font-weight:700;width:16%;color:#374151;}
+                            .qp-info td.qp-value{width:34%;}
+                            .qp-instructions{font-size:10px;font-style:italic;color:#6b7280;margin-bottom:18px;}
+                            .qp-question{page-break-inside:avoid;margin-top:16px;padding-bottom:10px;border-bottom:1px solid #e5e7eb;}
+                            .qp-question-head{display:flex;justify-content:space-between;align-items:flex-start;font-size:12.5px;}
+                            .qp-qnum{font-weight:700;color:#111827;}
+                            .qp-marks{white-space:nowrap;font-size:9.5px;font-weight:700;color:#374151;background:#f3f4f6;border:1px solid #d1d5db;border-radius:10px;padding:2px 9px;margin-left:10px;}
+                            .qp-options{margin-top:10px;overflow:auto;}
+                            .qp-option{width:48%;float:left;margin-bottom:8px;font-size:11.5px;}
+                            .qp-option:nth-child(odd){clear:left;}
+                            .qp-option-label{display:inline-block;width:18px;height:18px;line-height:16px;text-align:center;border:1.5px solid #374151;border-radius:50%;font-size:9.5px;font-weight:700;margin-right:6px;}
+                            .qp-answer-line{height:24px;border-bottom:1px solid #9ca3af;margin-top:8px;}
+                        </style>
+
+                        <div class="qp-title"><span t-field="o.name"/></div>
+                        <div class="qp-subtitle">Question Paper</div>
+                        <hr class="qp-rule"/>
+
+                        <table class="qp-info">
                             <tr>
-                                <td><strong>Class</strong></td>
-                                <td><span t-field="o.class_id.name"/></td>
-                                <td><strong>Subject</strong></td>
-                                <td><span t-field="o.subject_id.name"/></td>
+                                <td class="qp-label">Class</td>
+                                <td class="qp-value"><span t-field="o.class_id.name"/></td>
+                                <td class="qp-label">Subject</td>
+                                <td class="qp-value"><span t-field="o.subject_id.name"/></td>
                             </tr>
                             <tr>
-                                <td><strong>Duration</strong></td>
-                                <td><span t-field="o.duration"/> minutes</td>
-                                <td><strong>Total Marks</strong></td>
-                                <td><span t-field="o.total_marks"/></td>
+                                <td class="qp-label">Duration</td>
+                                <td class="qp-value"><span t-field="o.duration"/> minutes</td>
+                                <td class="qp-label">Total Marks</td>
+                                <td class="qp-value"><span t-field="o.total_marks"/></td>
                             </tr>
                         </table>
+                        <div class="qp-instructions">
+                            Instructions: Answer all questions. Write your answers clearly in the space provided.
+                        </div>
 
                         <t t-foreach="o.question_ids" t-as="question">
-                            <div style="margin-top:14px;">
-                                <strong>
-                                    Q<span t-esc="question_index + 1"/>.
-                                    <span t-field="question.question_text"/>
-                                    (<span t-field="question.marks"/> marks)
-                                </strong>
+                            <div class="qp-question">
+                                <div class="qp-question-head">
+                                    <div>
+                                        <span class="qp-qnum">Q<span t-esc="question_index + 1"/>.</span>
+                                        <span t-field="question.question_text"/>
+                                    </div>
+                                    <span class="qp-marks">
+                                        <span t-field="question.marks"/> mark<t t-if="question.marks != 1">s</t>
+                                    </span>
+                                </div>
+
                                 <t t-if="question.question_type == 'mcq'">
-                                    <ul>
+                                    <div class="qp-options">
                                         <t t-foreach="question.option_ids" t-as="option">
-                                            <li>
-                                                <span t-field="option.label"/>.
+                                            <div class="qp-option">
+                                                <span class="qp-option-label"><span t-field="option.label"/></span>
                                                 <span t-field="option.option_text"/>
-                                            </li>
+                                            </div>
                                         </t>
-                                    </ul>
+                                    </div>
+                                </t>
+                                <t t-elif="question.question_type == 'short_answer'">
+                                    <t t-foreach="range(3)" t-as="answer_line">
+                                        <div class="qp-answer-line"/>
+                                    </t>
+                                </t>
+                                <t t-else="">
+                                    <t t-foreach="range(8)" t-as="answer_line">
+                                        <div class="qp-answer-line"/>
+                                    </t>
                                 </t>
                             </div>
                         </t>
