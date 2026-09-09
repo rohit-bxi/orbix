@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="bxi_assessment_hub.AssessmentDashboard">
+        <div class="o_assessment_dashboard h-100 overflow-auto p-3">
+            <div class="o_assessment_dashboard_header mb-4">
+                <h2 class="mb-1">Assessments &amp; Exams Dashboard</h2>
+                <div class="text-muted">Monitor exam planning and evaluation status</div>
+            </div>
+
+            <!-- KPI cards -->
+            <div class="row g-3 mb-4">
+                <t t-foreach="kpiDefs" t-as="def" t-key="def.key">
+                    <div class="col-6 col-lg-3">
+                        <div t-attf-class="o_assessment_kpi_card o_assessment_kpi_card_{{def.color}}">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div t-attf-class="o_assessment_kpi_icon o_assessment_kpi_icon_{{def.color}}">
+                                    <i t-attf-class="fa {{def.icon}}"/>
+                                </div>
+                            </div>
+                            <div class="o_assessment_kpi_value" t-esc="state.kpis[def.key]"/>
+                            <div class="o_assessment_kpi_label" t-esc="def.label"/>
+                        </div>
+                    </div>
+                </t>
+            </div>
+
+            <!-- Quick actions -->
+            <div class="o_assessment_quick_actions mb-4">
+                <div class="fw-semibold mb-2">Quick Actions</div>
+                <div class="d-flex flex-wrap gap-2">
+                    <t t-foreach="quickActions" t-as="qa" t-key="qa.label">
+                        <button type="button" class="btn o_assessment_quick_action_btn"
+                                t-on-click="() => this.runAction(qa.action)">
+                            <i class="fa fa-plus me-1"/><t t-esc="qa.label"/>
+                        </button>
+                    </t>
+                </div>
+            </div>
+
+            <!-- Nav tiles -->
+            <div class="row g-3 mb-4">
+                <t t-foreach="navTiles" t-as="tile" t-key="tile.label">
+                    <div class="col-6 col-md-4">
+                        <div class="o_assessment_nav_tile" t-on-click="() => this.runAction(tile.action)">
+                            <div class="o_assessment_nav_tile_icon"><i t-attf-class="fa {{tile.icon}}"/></div>
+                            <div class="fw-semibold" t-esc="tile.label"/>
+                        </div>
+                    </div>
+                </t>
+            </div>
+
+            <!-- Alerts -->
+            <div class="mb-4">
+                <div class="fw-semibold mb-2">Alerts</div>
+                <div t-if="state.alerts.pending_evaluations and state.alerts.pending_evaluations.count"
+                     class="o_assessment_alert o_assessment_alert_warning mb-2">
+                    <i class="fa fa-exclamation-triangle me-2"/>
+                    <strong><t t-esc="state.alerts.pending_evaluations.count"/> Pending Evaluations</strong>
+                    <div class="small" t-esc="state.alerts.pending_evaluations.subjects.join(' and ') + ' exams awaiting marks entry'"/>
+                </div>
+                <div t-if="state.alerts.upcoming_exams and state.alerts.upcoming_exams.count"
+                     class="o_assessment_alert o_assessment_alert_info mb-2">
+                    <i class="fa fa-info-circle me-2"/>
+                    <strong><t t-esc="state.alerts.upcoming_exams.count"/> Upcoming Exams</strong>
+                    <div class="small" t-esc="'Scheduled for next week - ' + state.alerts.upcoming_exams.classes.join(' and ')"/>
+                </div>
+                <div t-if="state.alerts.unlinked_exams and state.alerts.unlinked_exams.count"
+                     class="o_assessment_alert o_assessment_alert_danger mb-2">
+                    <i class="fa fa-times-circle me-2"/>
+                    <strong><t t-esc="state.alerts.unlinked_exams.count"/> Unlinked Exams</strong>
+                    <div class="small">Exams not linked to syllabus structure</div>
+                </div>
+            </div>
+
+            <!-- Recent Exams -->
+            <div class="o_assessment_dashboard_panel mb-4">
+                <div class="o_assessment_dashboard_panel_header">Recent Exams</div>
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Exam Name</th><th>Class</th><th>Subject</th><th>Date</th><th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr t-if="!state.recentExams.length"><td colspan="5" class="text-muted">No exams found.</td></tr>
+                        <tr t-foreach="state.recentExams" t-as="exam" t-key="exam.id">
+                            <td t-esc="exam.exam_name"/>
+                            <td t-esc="exam.class"/>
+                            <td t-esc="exam.subject"/>
+                            <td t-esc="exam.date"/>
+                            <td><span t-attf-class="badge o_assessment_badge_{{exam.status}}" t-esc="statusLabels[exam.status]"/></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Performance by Class -->
+            <div class="o_assessment_dashboard_panel">
+                <div class="o_assessment_dashboard_panel_header">Performance by Class</div>
+                <div class="o_assessment_chart_container p-3">
+                    <canvas t-ref="performanceChart"/>
+                </div>
+            </div>
+        </div>
+    </t>
+
+</templates>
