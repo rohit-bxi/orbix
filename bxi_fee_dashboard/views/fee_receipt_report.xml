@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="report_fee_receipt">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <div class="text-center mb-4">
+                            <h2>Fee Receipt</h2>
+                            <div class="text-muted" t-esc="doc.name"/>
+                        </div>
+                        <table class="table table-sm">
+                            <tr>
+                                <td><strong>Student</strong></td>
+                                <td t-esc="doc.student_id.name"/>
+                                <td><strong>Admission No.</strong></td>
+                                <td t-esc="doc.student_id.gr_no"/>
+                            </tr>
+                            <tr>
+                                <td><strong>Fee Structure</strong></td>
+                                <td t-esc="doc.structure_id.name"/>
+                                <td><strong>Submit Date</strong></td>
+                                <td t-esc="doc.date"/>
+                            </tr>
+                            <tr>
+                                <td><strong>Payment Mode</strong></td>
+                                <td t-esc="dict(doc._fields['payment_mode'].selection).get(doc.payment_mode, '-')"/>
+                                <td><strong>Status</strong></td>
+                                <td t-esc="dict(doc._fields['collection_status'].selection).get(doc.collection_status)"/>
+                            </tr>
+                        </table>
+                        <table class="table table-bordered mt-4">
+                            <thead style="background-color:#eeeeee;">
+                                <tr>
+                                    <th>Description</th>
+                                    <th class="text-end">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Fee Amount</td>
+                                    <td class="text-end" t-esc="doc.after_discount_amount"/>
+                                </tr>
+                                <tr t-if="doc.late_fee_amount">
+                                    <td>Late Fee</td>
+                                    <td class="text-end" t-esc="doc.late_fee_amount"/>
+                                </tr>
+                                <tr t-if="doc.waiver_amount">
+                                    <td>Waiver / Exemption</td>
+                                    <td class="text-end" t-esc="-doc.waiver_amount"/>
+                                </tr>
+                                <tr>
+                                    <td><strong>Total Payable</strong></td>
+                                    <td class="text-end"><strong t-esc="doc.total_payable"/></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Amount Paid</strong></td>
+                                    <td class="text-end"><strong t-esc="doc.amount_paid"/></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Balance Due</strong></td>
+                                    <td class="text-end"><strong t-esc="doc.amount_pending"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <record id="action_report_fee_receipt" model="ir.actions.report">
+        <field name="name">Fee Receipt</field>
+        <field name="model">op.student.fees.details</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">bxi_fee_dashboard.report_fee_receipt</field>
+        <field name="report_file">bxi_fee_dashboard.report_fee_receipt</field>
+        <field name="print_report_name">'Fee Receipt - %s' % (object.student_id.name)</field>
+        <field name="binding_model_id" ref="openeducat_fees.model_op_student_fees_details"/>
+        <field name="binding_type">report</field>
+    </record>
+</odoo>

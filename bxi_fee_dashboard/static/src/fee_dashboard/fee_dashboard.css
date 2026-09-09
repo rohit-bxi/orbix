@@ -1,0 +1,135 @@
+.o_fee_dashboard {
+    background: #f5f6fa;
+}
+
+.o_fee_kpi_card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 16px 18px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    height: 100%;
+}
+
+.o_fee_kpi_icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+}
+
+.o_fee_kpi_icon_blue { background: #e0e7ff; color: #4f46e5; }
+.o_fee_kpi_icon_purple { background: #ede9fe; color: #7c5cff; }
+.o_fee_kpi_icon_green { background: #dcfce7; color: #16a34a; }
+.o_fee_kpi_icon_orange { background: #fef3c7; color: #f59e0b; }
+.o_fee_kpi_icon_pink { background: #fce7f3; color: #ec4899; }
+.o_fee_kpi_icon_red { background: #fee2e2; color: #dc2626; }
+
+.o_fee_kpi_change {
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.o_fee_kpi_value {
+    font-size: 24px;
+    font-weight: 700;
+    margin-top: 10px;
+}
+
+.o_fee_kpi_label {
+    color: #6b7280;
+    font-size: 13px;
+}
+
+.o_fee_tile {
+    background: linear-gradient(135deg, #4f46e5 0%, #7c5cff 100%);
+    border-radius: 14px;
+    padding: 22px 16px;
+    color: #fff;
+    text-align: center;
+    cursor: pointer;
+    height: 100%;
+    transition: transform 0.15s ease;
+}
+
+.o_fee_tile:hover {
+    transform: translateY(-2px);
+}
+
+.o_fee_tile_icon {
+    width: 44px;
+    height: 44px;
+    margin: 0 auto 10px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+}
+
+.o_fee_tile_label {
+    font-weight: 600;
+}
+
+.o_fee_dashboard_panel {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.o_fee_dashboard_panel_header {
+    font-weight: 600;
+    padding: 14px 16px;
+    border-bottom: 1px solid #eef0f4;
+}
+
+.o_fee_quick_action {
+    border: none;
+    border-radius: 10px;
+    padding: 16px 10px;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.o_fee_quick_action i {
+    font-size: 18px;
+}
+
+.o_fee_quick_action_blue { background: #4f46e5; }
+.o_fee_quick_action_orange { background: #f59e0b; }
+.o_fee_quick_action_green { background: #16a34a; }
+
+.o_fee_chart_container {
+    height: 280px;
+    position: relative;
+}
+
+.o_fee_chart_container_lg {
+    height: 320px;
+    position: relative;
+}
+
+.o_fee_activity_row {
+    padding: 10px 0;
+    border-bottom: 1px solid #f1f2f6;
+}
+
+.o_fee_activity_row:last-child {
+    border-bottom: none;
+}
+
+.o_fee_badge_success { background: #dcfce7; color: #16a34a; }
+.o_fee_badge_warning { background: #fef3c7; color: #b45309; }
+.o_fee_badge_danger { background: #fee2e2; color: #dc2626; }
+.o_fee_badge_info { background: #e0e7ff; color: #4f46e5; }
+
+.o_fee_dashboard [class^="o_fee_badge_"] {
+    text-transform: capitalize;
+}
