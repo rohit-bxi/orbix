@@ -11,4 +11,5 @@ class ResConfigSettings(models.TransientModel):
         string='AI API Key', config_parameter='bxi_assessment_hub.anthropic_api_key')
     bxi_ai_model = fields.Char(
         string='AI Model', config_parameter='bxi_assessment_hub.anthropic_model',
-        help='Anthropic model id used for AI question generation and auto-grading, e.g. claude-sonnet-5.')
+        help='OpenRouter model id used for AI question generation and auto-grading, '
+             'e.g. anthropic/claude-sonnet-5.')

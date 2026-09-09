@@ -8,13 +8,13 @@
             <xpath expr="//form" position="inside">
                 <app string="Assessments &amp; Exams" name="bxi_assessment_hub"
                      logo="/bxi_assessment_hub/static/description/icon.png">
-                    <block title="AI Provider (Anthropic)"
+                    <block title="AI Provider (OpenRouter)"
                            help="Used to generate AI assignment questions and to auto-grade short/long answer submissions.">
                         <setting id="bxi_ai_api_key" string="API Key">
                             <field name="bxi_ai_api_key" password="True"/>
                         </setting>
                         <setting id="bxi_ai_model" string="Model">
-                            <field name="bxi_ai_model" placeholder="claude-sonnet-5"/>
+                            <field name="bxi_ai_model" placeholder="anthropic/claude-sonnet-5"/>
                         </setting>
                     </block>
                 </app>

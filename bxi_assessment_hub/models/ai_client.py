@@ -3,6 +3,7 @@
 # License OPL-1 (Odoo Proprietary License v1.0, see LICENSE file for full text).
 import json
 import logging
+import re
 
 import requests
 
@@ -11,14 +12,13 @@ from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
 
-ANTHROPIC_MESSAGES_URL = 'https://api.anthropic.com/v1/messages'
-ANTHROPIC_VERSION = '2023-06-01'
-DEFAULT_MODEL = 'claude-sonnet-5'
+OPENROUTER_CHAT_URL = 'https://openrouter.ai/api/v1/chat/completions'
+DEFAULT_MODEL = 'anthropic/claude-sonnet-5'
 QUESTION_TYPES = ('mcq', 'short_answer', 'long_answer')
 
 
 class BxiAiClient(models.AbstractModel):
-    """Thin wrapper around Anthropic's Messages API: generates exam
+    """Thin wrapper around OpenRouter's chat-completions API: generates exam
     questions for the AI Assignment flow and grades a student's free-text
     answer for the Auto-Grading flow.
 
@@ -28,12 +28,13 @@ class BxiAiClient(models.AbstractModel):
     raised as UserError with a clear message rather than swallowed.
     """
     _name = 'bxi.ai.client'
-    _description = 'AI Assessment Client (Anthropic)'
+    _description = 'AI Assessment Client (OpenRouter)'
 
     def _get_config(self):
         ICP = self.env['ir.config_parameter'].sudo()
+        api_key = (ICP.get_param('bxi_assessment_hub.anthropic_api_key') or '').strip()
         return {
-            'api_key': ICP.get_param('bxi_assessment_hub.anthropic_api_key'),
+            'api_key': api_key,
             'model': ICP.get_param('bxi_assessment_hub.anthropic_model') or DEFAULT_MODEL,
         }
 
@@ -43,10 +44,9 @@ class BxiAiClient(models.AbstractModel):
             raise UserError(_('AI is not configured. Add an API key under Settings > Assessments & Exams.'))
         try:
             response = requests.post(
-                ANTHROPIC_MESSAGES_URL,
+                OPENROUTER_CHAT_URL,
                 headers={
-                    'x-api-key': config['api_key'],
-                    'anthropic-version': ANTHROPIC_VERSION,
+                    'Authorization': 'Bearer %s' % config['api_key'],
                     'content-type': 'application/json',
                 },
                 json={
@@ -57,33 +57,80 @@ class BxiAiClient(models.AbstractModel):
                 timeout=60,
             )
         except requests.RequestException:
-            _logger.exception('Anthropic API request failed.')
+            _logger.exception('OpenRouter API request failed.')
             raise UserError(_('Could not reach the AI service. Please try again.'))
 
         if response.status_code >= 400:
-            _logger.error('Anthropic API error %s: %s', response.status_code, response.text)
+            _logger.error('OpenRouter API error %s: %s', response.status_code, response.text)
+            detail = self._extract_error_message(response)
+            if detail:
+                raise UserError(
+                    _('The AI service returned an error (%(code)s): %(detail)s') % {
+                        'code': response.status_code, 'detail': detail,
+                    })
             raise UserError(_('The AI service returned an error (%s). Please try again.') % response.status_code)
 
         try:
-            text = response.json()['content'][0]['text']
+            choice = response.json()['choices'][0]
+            message = choice['message']
         except (KeyError, IndexError, ValueError):
-            _logger.exception('Unexpected Anthropic API response shape: %s', response.text)
+            _logger.exception('Unexpected OpenRouter API response shape: %s', response.text)
             raise UserError(_('The AI service returned an unexpected response.'))
 
-        return self._extract_json(text)
+        # Some (especially free-tier reasoning) models leave "content" empty
+        # and put their actual output under "reasoning" instead.
+        text = message.get('content') or message.get('reasoning')
+        if not text:
+            _logger.error('OpenRouter response had no usable content: %s', response.text)
+            raise UserError(_('The AI service returned an empty response. Please try again.'))
+
+        try:
+            return self._extract_json(text)
+        except UserError:
+            if choice.get('finish_reason') in ('length', 'max_tokens'):
+                raise UserError(_(
+                    'The AI response was cut off before it finished (too long for the '
+                    'configured limit). Try requesting fewer questions at a time.'))
+            raise
+
+    @staticmethod
+    def _extract_error_message(response):
+        try:
+            error = response.json().get('error')
+        except ValueError:
+            return False
+        if isinstance(error, dict):
+            return error.get('message') or False
+        if isinstance(error, str):
+            return error
+        return False
 
     @staticmethod
     def _extract_json(text):
         text = text.strip()
-        if text.startswith('```'):
-            text = text.strip('`')
-            if text.lower().startswith('json'):
-                text = text[4:]
-        try:
-            return json.loads(text)
-        except ValueError:
-            _logger.error('Could not parse JSON from AI response: %s', text)
-            raise UserError(_('The AI service returned a response that could not be understood.'))
+
+        candidates = [text]
+        fenced = re.search(r'```(?:json)?\s*(.*?)\s*```', text, re.DOTALL | re.IGNORECASE)
+        if fenced:
+            candidates.append(fenced.group(1).strip())
+
+        # Some (especially free/weaker) models wrap the JSON in commentary
+        # instead of returning it alone despite being asked to; fall back to
+        # the outermost {...} or [...] span found anywhere in the text.
+        for open_char, close_char in (('[', ']'), ('{', '}')):
+            start = text.find(open_char)
+            end = text.rfind(close_char)
+            if start != -1 and end != -1 and end > start:
+                candidates.append(text[start:end + 1])
+
+        for candidate in candidates:
+            try:
+                return json.loads(candidate)
+            except ValueError:
+                continue
+
+        _logger.error('Could not parse JSON from AI response: %s', text)
+        raise UserError(_('The AI service returned a response that could not be understood.'))
 
     def generate_questions(self, course_name, subject_name, topic, difficulty, count):
         prompt = (
@@ -103,7 +150,10 @@ class BxiAiClient(models.AbstractModel):
             'count': count, 'course': course_name, 'subject': subject_name,
             'topic': topic, 'difficulty': difficulty,
         }
-        data = self._call(prompt)
+        # Each question (esp. mcq with 4 options, or long_answer with keyword
+        # lists) can run several hundred tokens; scale the budget with count
+        # so larger requests don't get cut off mid-response.
+        data = self._call(prompt, max_tokens=min(8000, 300 * count + 800))
         if not isinstance(data, list) or not data:
             raise UserError(_('The AI service did not return any questions. Please try again.'))
 
