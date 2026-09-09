@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_bxi_academic_dashboard_coordinator,academic.dashboard.coordinator,model_bxi_academic_dashboard,bxi_academic_management.group_academic_coordinator,1,0,0,0
+access_bxi_academic_dashboard_manager,academic.dashboard.manager,model_bxi_academic_dashboard,bxi_academic_management.group_academic_manager,1,0,0,0
