@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) 2026 BXI Technology Pvt. Ltd. All Rights Reserved.
 # License OPL-1 (Odoo Proprietary License v1.0, see LICENSE file for full text).
+from markupsafe import Markup
+
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
+from odoo.tools import html_escape
 
 
 class BxiAssessmentSubmission(models.Model):
@@ -77,5 +80,9 @@ class BxiAssessmentSubmission(models.Model):
                     errors.append(str(exc))
             submission.status = 'auto_graded'
             if errors:
-                submission.message_post(
-                    body=_('Auto-grading completed with issues:<br/>%s') % '<br/>'.join(errors))
+                unique_errors = list(dict.fromkeys(errors))
+                body = Markup('%s<br/>%s') % (
+                    _('Auto-grading completed with issues:'),
+                    Markup('<br/>').join(html_escape(error) for error in unique_errors),
+                )
+                submission.message_post(body=body)
