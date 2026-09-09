@@ -4,6 +4,7 @@
 import json
 import logging
 import re
+import time
 
 import requests
 
@@ -15,6 +16,40 @@ _logger = logging.getLogger(__name__)
 OPENROUTER_CHAT_URL = 'https://openrouter.ai/api/v1/chat/completions'
 DEFAULT_MODEL = 'anthropic/claude-sonnet-5'
 QUESTION_TYPES = ('mcq', 'short_answer', 'long_answer')
+MAX_QUESTIONS_PER_REQUEST = 5
+# Weaker/free models don't always ignore instructions because a request was
+# too big - sometimes a retry with the identical prompt simply succeeds
+# where the previous (stochastic) generation didn't. Try a couple of times
+# at each batch size before shrinking or giving up.
+MAX_ATTEMPTS_PER_BATCH_SIZE = 2
+CONNECT_TIMEOUT_SECONDS = 10
+CHUNK_READ_TIMEOUT_SECONDS = 30
+# A hard wall-clock cap on the whole call, kept safely under Odoo's default
+# 120s worker real-time limit: requests' own `timeout` only resets on each
+# byte received, so a slowly-trickling (but never fully silent) response can
+# otherwise run indefinitely and get the whole worker killed/reloaded by
+# Odoo's watchdog instead of failing cleanly here.
+CALL_HARD_DEADLINE_SECONDS = 90
+
+
+class BxiAiContentError(UserError):
+    """Raised for failures caused by the AI's output itself (truncated,
+    empty, or unparseable) rather than transport/auth/billing failures.
+    Callers that can retry with a smaller request (e.g. fewer questions
+    per call) catch this specifically instead of UserError in general, so
+    a systemic failure (bad key, no credit, network down) still aborts
+    immediately instead of being retried pointlessly.
+    """
+
+
+class BxiAiTimeoutError(BxiAiContentError):
+    """A BxiAiContentError specifically caused by exceeding our own hard
+    wall-clock deadline. Retrying at the same batch size would most likely
+    just waste another full timeout interval for the same result, so
+    callers should shrink the batch immediately instead of retrying
+    unchanged first (unlike other content errors, where a fresh sample at
+    the same size often just succeeds).
+    """
 
 
 class BxiAiClient(models.AbstractModel):
@@ -54,15 +89,32 @@ class BxiAiClient(models.AbstractModel):
                     'max_tokens': max_tokens,
                     'messages': [{'role': 'user', 'content': prompt}],
                 },
-                timeout=60,
+                timeout=(CONNECT_TIMEOUT_SECONDS, CHUNK_READ_TIMEOUT_SECONDS),
+                stream=True,
             )
+            body = self._read_with_hard_deadline(response, CALL_HARD_DEADLINE_SECONDS)
+        except requests.exceptions.Timeout:
+            # A slow-but-otherwise-working response (free/shared model under
+            # load) is exactly the kind of failure a smaller request tends
+            # to fix, so let callers retry/shrink instead of aborting for
+            # good - unlike a real connection failure, where retrying with
+            # a smaller request wouldn't help.
+            _logger.warning('OpenRouter request timed out after %ds.', CALL_HARD_DEADLINE_SECONDS)
+            raise BxiAiTimeoutError(_(
+                'The AI service took too long to respond. Please try again.'))
         except requests.RequestException:
             _logger.exception('OpenRouter API request failed.')
             raise UserError(_('Could not reach the AI service. Please try again.'))
 
+        try:
+            payload = json.loads(body)
+        except ValueError:
+            _logger.error('OpenRouter returned a non-JSON response (status %s): %s', response.status_code, body)
+            raise UserError(_('The AI service returned an unexpected response.'))
+
         if response.status_code >= 400:
-            _logger.error('OpenRouter API error %s: %s', response.status_code, response.text)
-            detail = self._extract_error_message(response)
+            _logger.error('OpenRouter API error %s: %s', response.status_code, body)
+            detail = self._extract_error_message(payload)
             if detail:
                 raise UserError(
                     _('The AI service returned an error (%(code)s): %(detail)s') % {
@@ -71,34 +123,48 @@ class BxiAiClient(models.AbstractModel):
             raise UserError(_('The AI service returned an error (%s). Please try again.') % response.status_code)
 
         try:
-            choice = response.json()['choices'][0]
+            choice = payload['choices'][0]
             message = choice['message']
-        except (KeyError, IndexError, ValueError):
-            _logger.exception('Unexpected OpenRouter API response shape: %s', response.text)
+        except (KeyError, IndexError, TypeError):
+            _logger.exception('Unexpected OpenRouter API response shape: %s', body)
             raise UserError(_('The AI service returned an unexpected response.'))
 
         # Some (especially free-tier reasoning) models leave "content" empty
         # and put their actual output under "reasoning" instead.
         text = message.get('content') or message.get('reasoning')
         if not text:
-            _logger.error('OpenRouter response had no usable content: %s', response.text)
-            raise UserError(_('The AI service returned an empty response. Please try again.'))
+            _logger.error('OpenRouter response had no usable content: %s', body)
+            raise BxiAiContentError(_('The AI service returned an empty response. Please try again.'))
 
         try:
             return self._extract_json(text)
         except UserError:
             if choice.get('finish_reason') in ('length', 'max_tokens'):
-                raise UserError(_(
+                raise BxiAiContentError(_(
                     'The AI response was cut off before it finished (too long for the '
-                    'configured limit). Try requesting fewer questions at a time.'))
+                    'configured limit). Please try again.'))
             raise
 
     @staticmethod
-    def _extract_error_message(response):
-        try:
-            error = response.json().get('error')
-        except ValueError:
-            return False
+    def _read_with_hard_deadline(response, seconds):
+        """Read response.iter_content() but abort once `seconds` of total
+        wall-clock time have passed, regardless of how the server paces its
+        chunks. `timeout=` on the request only bounds the gap between
+        reads, not the call as a whole, so a response that keeps trickling
+        (but never goes fully silent) can otherwise run unbounded.
+        """
+        deadline = time.monotonic() + seconds
+        chunks = bytearray()
+        for chunk in response.iter_content(chunk_size=8192):
+            chunks.extend(chunk)
+            if time.monotonic() > deadline:
+                raise requests.exceptions.Timeout(
+                    'Response exceeded the %ds hard time limit before finishing.' % seconds)
+        return chunks.decode('utf-8', errors='replace')
+
+    @staticmethod
+    def _extract_error_message(payload):
+        error = payload.get('error') if isinstance(payload, dict) else None
         if isinstance(error, dict):
             return error.get('message') or False
         if isinstance(error, str):
@@ -129,11 +195,117 @@ class BxiAiClient(models.AbstractModel):
             except ValueError:
                 continue
 
-        _logger.error('Could not parse JSON from AI response: %s', text)
-        raise UserError(_('The AI service returned a response that could not be understood.'))
+        # The model may have been cut off mid-response (hit its output-length
+        # limit) before finishing. Rather than discard everything, recover
+        # whichever complete array items (or object fields) it did finish.
+        salvaged = BxiAiClient._salvage_json_array(text)
+        if salvaged:
+            _logger.warning(
+                'AI response was truncated; salvaged %d complete item(s) from it instead of failing.',
+                len(salvaged))
+            return salvaged
 
-    def generate_questions(self, course_name, subject_name, topic, difficulty, count):
-        prompt = (
+        salvaged_object = BxiAiClient._salvage_json_object(text)
+        if salvaged_object:
+            _logger.warning('AI response was truncated; salvaged a partial object from it instead of failing.')
+            return salvaged_object
+
+        _logger.error('Could not parse JSON from AI response: %s', text)
+        raise BxiAiContentError(_('The AI service returned a response that could not be understood.'))
+
+    @staticmethod
+    def _salvage_json_array(text):
+        """Given text starting with a JSON array that may be truncated
+        partway through an element, return the complete leading elements
+        (parsed), or None if not even one complete element could be found.
+        """
+        start = text.find('[')
+        if start == -1:
+            return None
+        text = text[start:]
+
+        depth = 0
+        in_string = False
+        escape = False
+        last_complete_end = None
+        for i, char in enumerate(text):
+            if in_string:
+                if escape:
+                    escape = False
+                elif char == '\\':
+                    escape = True
+                elif char == '"':
+                    in_string = False
+                continue
+            if char == '"':
+                in_string = True
+            elif char in '[{':
+                depth += 1
+            elif char in ']}':
+                depth -= 1
+                if depth == 1 and char == '}':
+                    last_complete_end = i
+
+        if last_complete_end is None:
+            return None
+        try:
+            return json.loads(text[:last_complete_end + 1] + ']')
+        except ValueError:
+            return None
+
+    @staticmethod
+    def _salvage_json_object(text):
+        """Given text starting with a JSON object that was truncated
+        partway through (e.g. cut off mid-string in a trailing field, as
+        happens to grade_answer's "rationale" text), close the open string
+        and brackets and try to parse what's left. Returns None if the text
+        wasn't actually a truncated object (already balanced, so a normal
+        json.loads would have succeeded) or still can't be repaired.
+        """
+        start = text.find('{')
+        if start == -1:
+            return None
+        array_start = text.find('[')
+        if array_start != -1 and array_start < start:
+            # The top-level structure is actually an array (e.g. a
+            # truncated question list) - this "{" just belongs to its
+            # first, incomplete element, not a standalone object.
+            return None
+        text = text[start:]
+
+        stack = []
+        in_string = False
+        escape = False
+        for char in text:
+            if in_string:
+                if escape:
+                    escape = False
+                elif char == '\\':
+                    escape = True
+                elif char == '"':
+                    in_string = False
+                continue
+            if char == '"':
+                in_string = True
+            elif char in '{[':
+                stack.append('}' if char == '{' else ']')
+            elif char in '}]':
+                if stack:
+                    stack.pop()
+                if not stack:
+                    return None  # already balanced; not actually truncated
+
+        if not stack:
+            return None
+        repaired = text + ('"' if in_string else '') + ''.join(reversed(stack))
+        try:
+            return json.loads(repaired)
+        except ValueError:
+            return None
+
+    @staticmethod
+    def _build_question_prompt(course_name, subject_name, topic, difficulty, count):
+        return (
             'You are helping a school teacher create an exam. Generate exactly %(count)d exam '
             'questions for class "%(course)s", subject "%(subject)s", on the topic "%(topic)s", '
             'at %(difficulty)s difficulty.\n\n'
@@ -150,12 +322,11 @@ class BxiAiClient(models.AbstractModel):
             'count': count, 'course': course_name, 'subject': subject_name,
             'topic': topic, 'difficulty': difficulty,
         }
-        # Each question (esp. mcq with 4 options, or long_answer with keyword
-        # lists) can run several hundred tokens; scale the budget with count
-        # so larger requests don't get cut off mid-response.
-        data = self._call(prompt, max_tokens=min(8000, 300 * count + 800))
-        if not isinstance(data, list) or not data:
-            raise UserError(_('The AI service did not return any questions. Please try again.'))
+
+    @staticmethod
+    def _parse_question_rows(data):
+        if not isinstance(data, list):
+            return []
 
         rows = []
         for item in data:
@@ -185,6 +356,42 @@ class BxiAiClient(models.AbstractModel):
                     continue
                 entry['options'] = options
             rows.append(entry)
+        return rows
+
+    def generate_questions(self, course_name, subject_name, topic, difficulty, count):
+        rows = []
+        remaining = count
+        batch_size = min(remaining, MAX_QUESTIONS_PER_REQUEST)
+        attempts_at_size = 0
+        while remaining > 0:
+            want = min(remaining, batch_size)
+            prompt = self._build_question_prompt(course_name, subject_name, topic, difficulty, want)
+            try:
+                # Each question (esp. mcq with 4 options, or long_answer with
+                # keyword lists) can run several hundred tokens; scale the
+                # budget with the batch size so it doesn't get cut off.
+                data = self._call(prompt, max_tokens=min(8000, 300 * want + 800))
+            except BxiAiContentError as exc:
+                # A timeout at this batch size will likely just time out
+                # again identically, so shrink right away instead of
+                # burning another full timeout on an unchanged retry.
+                attempts_at_size += 1
+                if not isinstance(exc, BxiAiTimeoutError) and attempts_at_size < MAX_ATTEMPTS_PER_BATCH_SIZE:
+                    continue  # AI output is stochastic; a plain retry often just works
+                attempts_at_size = 0
+                if batch_size > 1:
+                    # The model (esp. a free/weaker one) couldn't reliably
+                    # produce this many questions in one response; ask for
+                    # fewer at a time instead of giving up entirely.
+                    batch_size = max(1, batch_size // 2)
+                    continue
+                _logger.warning(
+                    'Giving up on the remaining %d question(s) after repeated AI failures.', remaining)
+                break
+
+            attempts_at_size = 0
+            rows.extend(self._parse_question_rows(data))
+            remaining -= want
 
         if not rows:
             raise UserError(_(
@@ -206,7 +413,19 @@ class BxiAiClient(models.AbstractModel):
             'max_marks': max_marks, 'strictness': strictness, 'question': question_text,
             'reference': sample_answer_keywords or '(none provided)', 'answer': student_answer,
         }
-        data = self._call(prompt, max_tokens=500)
+        # 500 tokens is enough for the JSON itself, but some (especially
+        # free-tier reasoning) models spend a chunk of the budget on hidden
+        # reasoning before ever emitting the answer; give it more headroom.
+        data = None
+        for attempt in range(MAX_ATTEMPTS_PER_BATCH_SIZE):
+            try:
+                data = self._call(prompt, max_tokens=1200)
+                break
+            except BxiAiContentError as exc:
+                # Grading has no smaller batch to fall back to, so a timeout
+                # would just recur identically - don't waste time retrying it.
+                if isinstance(exc, BxiAiTimeoutError) or attempt + 1 >= MAX_ATTEMPTS_PER_BATCH_SIZE:
+                    raise
         if not isinstance(data, dict) or 'awarded_marks' not in data:
             raise UserError(_('The AI service response could not be understood as a grade.'))
         try:
