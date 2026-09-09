@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="bxi_academic_dashboard.AcademicDashboard">
+        <div class="o_academic_dashboard h-100 overflow-auto p-3">
+            <div class="o_academic_dashboard_header mb-4">
+                <h2 class="mb-1">Curriculum Management</h2>
+                <div class="text-muted">Manage curriculum boards and assignments</div>
+            </div>
+
+            <!-- KPI cards -->
+            <div class="row g-3 mb-3">
+                <t t-foreach="kpiDefs" t-as="def" t-key="def.key">
+                    <div class="col-6 col-lg-3">
+                        <div class="o_academic_kpi_card">
+                            <div t-attf-class="o_academic_kpi_icon o_academic_kpi_icon_{{def.color}}">
+                                <i t-attf-class="fa {{def.icon}}"/>
+                            </div>
+                            <div class="o_academic_kpi_value" t-esc="state.kpis[def.key]"/>
+                            <div class="o_academic_kpi_label" t-esc="def.label"/>
+                        </div>
+                    </div>
+                </t>
+            </div>
+
+            <!-- Quick nav tiles -->
+            <div class="row g-3 mb-4">
+                <div class="col-6 col-lg-4">
+                    <div class="o_academic_nav_tile" t-on-click="() => this.openAction('bxi_academic_management.action_smart_book')">
+                        <div class="o_academic_nav_tile_icon"><i class="fa fa-book"/></div>
+                        <div>
+                            <div class="fw-semibold">Smart Books</div>
+                            <div class="text-muted small">Manage book mappings</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-4">
+                    <div class="o_academic_nav_tile" t-on-click="() => this.openAction('bxi_academic_management.action_subject_mapping')">
+                        <div class="o_academic_nav_tile_icon"><i class="fa fa-users"/></div>
+                        <div>
+                            <div class="fw-semibold">Subject Mapping</div>
+                            <div class="text-muted small">Map subjects to teachers</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-lg-4">
+                    <div class="o_academic_highlight_tile">
+                        <div class="text-white-50">Active Curriculums</div>
+                        <div class="o_academic_highlight_value" t-esc="state.kpis.active_curriculums"/>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="o_academic_tabs mb-3">
+                <t t-foreach="tabs" t-as="tab" t-key="tab.key">
+                    <button type="button"
+                            t-attf-class="o_academic_tab_pill {{state.activeTab === tab.key ? 'active' : ''}}"
+                            t-on-click="() => this.setTab(tab.key)" t-esc="tab.label"/>
+                </t>
+            </div>
+
+            <div t-if="state.activeTab === 'curriculum'" class="mb-3">
+                <div class="o_academic_search">
+                    <i class="fa fa-search"/>
+                    <input type="text" class="form-control" placeholder="Search by curriculum name, board or class"
+                           t-model="state.searchTerm"/>
+                </div>
+            </div>
+
+            <!-- Curriculum tab -->
+            <div t-if="state.activeTab === 'curriculum'">
+                <div t-if="!filteredCurricula.length" class="text-muted">No curriculum found.</div>
+                <div t-foreach="filteredCurricula" t-as="curriculum" t-key="curriculum.id" class="o_academic_curriculum_card mb-3">
+                    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+                        <div>
+                            <h5 class="mb-0" t-esc="curriculum.name"/>
+                            <div class="text-muted small" t-esc="curriculum.board"/>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <span t-attf-class="badge o_academic_badge_{{curriculum.approval_status}}"
+                                  t-esc="approvalLabels[curriculum.approval_status]"/>
+                            <span t-if="curriculum.locked" class="badge o_academic_badge_locked">Locked</span>
+                        </div>
+                    </div>
+                    <div class="row g-3 mt-2">
+                        <div class="col-12 col-md-3">
+                            <div class="text-muted small">Assigned Classes</div>
+                            <span t-if="!curriculum.classes.length" class="text-muted">-</span>
+                            <span t-foreach="curriculum.classes" t-as="cls" t-key="cls" class="badge o_academic_tag me-1" t-esc="cls"/>
+                        </div>
+                        <div class="col-12 col-md-3">
+                            <div class="text-muted small">Mapped Subjects</div>
+                            <span t-if="!curriculum.subjects.length" class="text-muted">-</span>
+                            <span t-foreach="curriculum.subjects" t-as="subject" t-key="subject" class="badge o_academic_tag me-1" t-esc="subject"/>
+                        </div>
+                        <div class="col-12 col-md-3">
+                            <div class="text-muted small">Mapped Projects</div>
+                            <span t-if="!curriculum.projects.length" class="text-muted">-</span>
+                            <span t-foreach="curriculum.projects" t-as="project" t-key="project" class="badge o_academic_tag me-1" t-esc="project"/>
+                        </div>
+                        <div class="col-12 col-md-3">
+                            <div class="text-muted small">Created</div>
+                            <div t-esc="curriculum.created"/>
+                        </div>
+                    </div>
+                    <div class="o_academic_card_actions mt-3">
+                        <button type="button" class="btn btn-sm btn-link" t-on-click="() => this.openCurriculum(curriculum.id)">
+                            <i class="fa fa-pencil me-1"/>Edit
+                        </button>
+                        <button type="button" class="btn btn-sm btn-link"
+                                t-on-click="() => this.openCurriculumFormAction(curriculum.id, 'action_open_assign_classes')">
+                            <i class="fa fa-users me-1"/>Assign Classes
+                        </button>
+                        <button type="button" class="btn btn-sm btn-link"
+                                t-on-click="() => this.openCurriculumFormAction(curriculum.id, 'action_open_map_projects')">
+                            <i class="fa fa-flask me-1"/>Map Projects
+                        </button>
+                        <button type="button" class="btn btn-sm btn-link"
+                                t-on-click="() => this.callCurriculumAction(curriculum.id, 'action_toggle_lock')">
+                            <i class="fa fa-lock me-1"/><t t-esc="curriculum.locked ? 'Unlock' : 'Lock'"/>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lesson Plan tab -->
+            <div t-if="state.activeTab === 'lesson_plan'" class="o_academic_dashboard_panel">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Topic</th><th>Teacher</th><th>Subject</th><th>Class</th><th>Date</th><th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr t-if="!state.lessonPlans.length"><td colspan="6" class="text-muted">No lesson plans found.</td></tr>
+                        <tr t-foreach="state.lessonPlans" t-as="plan" t-key="plan.id">
+                            <td t-esc="plan.topic"/>
+                            <td t-esc="plan.teacher"/>
+                            <td t-esc="plan.subject"/>
+                            <td t-esc="plan.class"/>
+                            <td t-esc="plan.start_date"/>
+                            <td><span t-attf-class="badge o_academic_badge_{{plan.state}}" t-esc="lessonStateLabels[plan.state]"/></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Academic Calendar tab -->
+            <div t-if="state.activeTab === 'calendar'" class="o_academic_dashboard_panel p-3">
+                <div t-if="!state.calendarEvents.length" class="text-muted">No upcoming events.</div>
+                <div t-foreach="state.calendarEvents" t-as="event" t-key="event_index"
+                     class="o_academic_event_row d-flex justify-content-between align-items-center">
+                    <div>
+                        <span t-attf-class="badge me-2 {{event.type === 'ptm' ? 'o_academic_badge_ptm' : 'o_academic_badge_holiday'}}"
+                              t-esc="event.type === 'ptm' ? 'PTM' : 'Holiday'"/>
+                        <span class="fw-semibold" t-esc="event.title"/>
+                        <span t-if="event.detail" class="text-muted small ms-2" t-esc="event.detail"/>
+                    </div>
+                    <div class="text-muted small" t-esc="event.date"/>
+                </div>
+            </div>
+        </div>
+    </t>
+
+</templates>

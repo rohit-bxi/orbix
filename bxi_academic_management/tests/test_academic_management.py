@@ -65,6 +65,37 @@ class TestAcademicManagement(TransactionCase):
         self.assertEqual(action['res_id'], self.curriculum.id)
         self.assertEqual(len(self.curriculum.class_ids), 2)
 
+    def test_curriculum_default_approval_status(self):
+        self.assertEqual(self.curriculum.approval_status, 'draft')
+        self.assertFalse(self.curriculum.locked)
+
+    def test_curriculum_approve_reject_reset(self):
+        self.curriculum.action_approve()
+        self.assertEqual(self.curriculum.approval_status, 'approved')
+        self.curriculum.action_reject()
+        self.assertEqual(self.curriculum.approval_status, 'rejected')
+        self.curriculum.action_reset_to_draft()
+        self.assertEqual(self.curriculum.approval_status, 'draft')
+
+    def test_curriculum_toggle_lock(self):
+        self.curriculum.action_toggle_lock()
+        self.assertTrue(self.curriculum.locked)
+        self.curriculum.action_toggle_lock()
+        self.assertFalse(self.curriculum.locked)
+
+    def test_curriculum_map_projects_action(self):
+        project = self.env['bxi.curriculum.project'].create({'name': 'Science Fair'})
+        self.curriculum.project_ids = [(6, 0, [project.id])]
+        action = self.curriculum.action_open_map_projects()
+        self.assertEqual(action['res_model'], 'bxi.curriculum')
+        self.assertEqual(action['res_id'], self.curriculum.id)
+        self.assertIn(project, self.curriculum.project_ids)
+
+    def test_curriculum_project_unique_name(self):
+        self.env['bxi.curriculum.project'].create({'name': 'Math Olympiad'})
+        with self.assertRaises(Exception):
+            self.env['bxi.curriculum.project'].create({'name': 'Math Olympiad'})
+
     # --- bxi.subject.mapping ---
 
     def test_subject_mapping_display_name_computed(self):

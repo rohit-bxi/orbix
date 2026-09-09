@@ -2,6 +2,8 @@
 <odoo>
     <menuitem id="menu_assessment_hub_root" name="Assessments &amp; Exams" sequence="75"
               web_icon="bxi_assessment_hub,static/description/icon.png"/>
+    <menuitem id="menu_assessment_dashboard" name="Dashboard" parent="menu_assessment_hub_root"
+              action="action_assessment_dashboard" sequence="5"/>
     <menuitem id="menu_exam" name="Digital Exam Management" parent="menu_assessment_hub_root"
               action="action_exam" sequence="10"/>
     <menuitem id="menu_ai_assignment" name="AI Assignment" parent="menu_assessment_hub_root"

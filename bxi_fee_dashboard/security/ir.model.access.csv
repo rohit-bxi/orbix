@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_bxi_fee_dashboard_admin,fee.dashboard.admin,model_bxi_fee_dashboard,openeducat_fees.group_op_fees_admin,1,0,0,0
+access_bxi_fee_dashboard_user,fee.dashboard.user,model_bxi_fee_dashboard,openeducat_fees.group_openeducat_fees_user,1,0,0,0

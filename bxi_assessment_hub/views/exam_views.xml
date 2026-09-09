@@ -96,6 +96,7 @@
                             <field name="class_id" options="{'no_create': True, 'no_create_edit': True}"/>
                             <field name="subject_id" options="{'no_create': True, 'no_create_edit': True}"/>
                             <field name="teacher_id" options="{'no_create': True, 'no_create_edit': True}"/>
+                            <field name="curriculum_id" options="{'no_create': True, 'no_create_edit': True}"/>
                             <field name="duration"/>
                         </group>
                         <group string="Summary">
@@ -129,11 +130,13 @@
                 <filter string="Published" name="published" domain="[('state', '=', 'published')]"/>
                 <separator/>
                 <filter string="My Exams" name="my_exams" domain="[('teacher_id.user_id', '=', uid)]"/>
+                <filter string="Unlinked to Curriculum" name="unlinked_curriculum" domain="[('curriculum_id', '=', False)]"/>
                 <group name="group_by">
                     <filter string="Status" name="group_state" context="{'group_by': 'state'}"/>
                     <filter string="Class" name="group_class" context="{'group_by': 'class_id'}"/>
                     <filter string="Subject" name="group_subject" context="{'group_by': 'subject_id'}"/>
                     <filter string="Teacher" name="group_teacher" context="{'group_by': 'teacher_id'}"/>
+                    <filter string="Curriculum" name="group_curriculum" context="{'group_by': 'curriculum_id'}"/>
                 </group>
             </search>
         </field>

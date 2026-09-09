@@ -8,3 +8,4 @@ from . import test_ai_assignment_generate_wizard
 from . import test_assessment_session
 from . import test_assessment_submission
 from . import test_assessment_autograde_wizard
+from . import test_assessment_dashboard

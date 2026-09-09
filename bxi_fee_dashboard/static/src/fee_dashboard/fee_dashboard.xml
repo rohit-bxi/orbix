@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="bxi_fee_dashboard.FeeDashboard">
+        <div class="o_fee_dashboard h-100 overflow-auto p-3">
+            <div class="o_fee_dashboard_header mb-4">
+                <h2 class="mb-1">Fee Structure Setup</h2>
+                <div class="text-muted">Manage fee collection, payments, scholarships, refunds, receipts, and financial tracking from a unified platform.</div>
+            </div>
+
+            <!-- KPI cards -->
+            <div class="row g-3 mb-4">
+                <t t-foreach="kpiDefs" t-as="def" t-key="def.key">
+                    <div class="col-12 col-sm-6 col-lg-3">
+                        <div class="o_fee_kpi_card">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div t-attf-class="o_fee_kpi_icon o_fee_kpi_icon_{{def.color}}">
+                                    <i t-attf-class="fa {{def.icon}}"/>
+                                </div>
+                                <span t-if="kpiChange(def) !== null and kpiChange(def) !== undefined"
+                                      t-attf-class="o_fee_kpi_change {{kpiChange(def) >= 0 ? 'text-success' : 'text-danger'}}">
+                                    <i t-attf-class="fa {{kpiChange(def) >= 0 ? 'fa-arrow-up' : 'fa-arrow-down'}}"/>
+                                    <t t-esc="Math.abs(kpiChange(def))"/>%
+                                </span>
+                            </div>
+                            <div class="o_fee_kpi_value" t-esc="formatKpi(def)"/>
+                            <div class="o_fee_kpi_label" t-esc="def.label"/>
+                        </div>
+                    </div>
+                </t>
+            </div>
+
+            <!-- Module tiles -->
+            <div class="row g-3 mb-4">
+                <t t-foreach="tileDefs" t-as="tile" t-key="tile.label">
+                    <div class="col-6 col-md-3">
+                        <div class="o_fee_tile" t-on-click="() => this.openAction(tile.action)">
+                            <div class="o_fee_tile_icon"><i t-attf-class="fa {{tile.icon}}"/></div>
+                            <div class="o_fee_tile_label" t-esc="tile.label"/>
+                        </div>
+                    </div>
+                </t>
+            </div>
+
+            <!-- Quick actions -->
+            <div class="o_fee_dashboard_panel mb-4">
+                <div class="o_fee_dashboard_panel_header">Quick Actions</div>
+                <div class="row g-3 p-3">
+                    <t t-foreach="quickActionDefs" t-as="qa" t-key="qa.label">
+                        <div class="col-6 col-md-4 col-lg-2">
+                            <button type="button" t-attf-class="o_fee_quick_action o_fee_quick_action_{{qa.color}} w-100"
+                                    t-on-click="() => this.openAction(qa.action)">
+                                <i t-attf-class="fa {{qa.icon}} mb-1"/>
+                                <div t-esc="qa.label"/>
+                            </button>
+                        </div>
+                    </t>
+                </div>
+            </div>
+
+            <!-- Charts row 1 -->
+            <div class="row g-3 mb-4">
+                <div class="col-12 col-lg-6">
+                    <div class="o_fee_dashboard_panel h-100">
+                        <div class="o_fee_dashboard_panel_header">Online vs Offline Payments</div>
+                        <div class="o_fee_chart_container p-3">
+                            <canvas t-ref="onlineVsOffline"/>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-lg-6">
+                    <div class="o_fee_dashboard_panel h-100">
+                        <div class="o_fee_dashboard_panel_header">Recent Activity</div>
+                        <div class="p-3">
+                            <div t-if="!state.recentActivity.length" class="text-muted">No recent activity</div>
+                            <div t-foreach="state.recentActivity" t-as="activity" t-key="activity_index"
+                                 class="o_fee_activity_row d-flex justify-content-between align-items-start">
+                                <div>
+                                    <div class="fw-semibold" t-esc="activity.title"/>
+                                    <div class="text-muted small" t-esc="activity.user"/>
+                                    <div class="text-muted small" t-esc="activity.date"/>
+                                </div>
+                                <span t-attf-class="badge o_fee_badge_{{activity.kind}}" t-esc="activity.kind"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Monthly trend -->
+            <div class="o_fee_dashboard_panel mb-4">
+                <div class="o_fee_dashboard_panel_header">Monthly Collection Trend</div>
+                <div class="o_fee_chart_container_lg p-3">
+                    <canvas t-ref="monthlyTrend"/>
+                </div>
+            </div>
+
+            <!-- Charts row 2 -->
+            <div class="row g-3">
+                <div class="col-12 col-lg-6">
+                    <div class="o_fee_dashboard_panel h-100">
+                        <div class="o_fee_dashboard_panel_header">Scholarship Distribution</div>
+                        <div class="o_fee_chart_container p-3">
+                            <canvas t-ref="scholarshipDistribution"/>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-lg-6">
+                    <div class="o_fee_dashboard_panel h-100">
+                        <div class="o_fee_dashboard_panel_header">Refund Trends</div>
+                        <div class="o_fee_chart_container p-3">
+                            <canvas t-ref="refundTrends"/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+
+</templates>

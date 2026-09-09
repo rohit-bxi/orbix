@@ -35,14 +35,25 @@ class OpStudentFeesDetails(models.Model):
         related='fees_line_id.fees_id', store=True, index=True)
     payment_mode = fields.Selection(PAYMENT_MODES, string='Payment Mode', copy=False)
 
-    amount_paid = fields.Monetary(compute='_compute_payment_amounts', store=True, currency_field='currency_id')
-    late_fee_amount = fields.Monetary(compute='_compute_payment_amounts', store=True, currency_field='currency_id')
+    # OpenEduCat declares currency_id as a non-stored compute. A Monetary
+    # field can only offer a pivot/graph "sum" aggregator when its currency
+    # field is itself stored (Odoo needs it in the SQL GROUP BY to know
+    # which currency each summed total is in) - storing it here is what
+    # makes amount_paid/amount_pending usable as pivot measures.
+    currency_id = fields.Many2one(store=True)
+
+    amount_paid = fields.Monetary(
+        compute='_compute_payment_amounts', store=True, currency_field='currency_id', aggregator='sum')
+    late_fee_amount = fields.Monetary(
+        compute='_compute_payment_amounts', store=True, currency_field='currency_id', aggregator='sum')
     waiver_ids = fields.One2many('op.student.fee.waiver', 'detail_id', string='Fee Waivers')
     waiver_amount = fields.Monetary(
-        compute='_compute_payment_amounts', store=True, currency_field='currency_id',
+        compute='_compute_payment_amounts', store=True, currency_field='currency_id', aggregator='sum',
         help='Sum of approved fee-exemption/scholarship waivers applied to this line.')
-    total_payable = fields.Monetary(compute='_compute_payment_amounts', store=True, currency_field='currency_id')
-    amount_pending = fields.Monetary(compute='_compute_payment_amounts', store=True, currency_field='currency_id')
+    total_payable = fields.Monetary(
+        compute='_compute_payment_amounts', store=True, currency_field='currency_id', aggregator='sum')
+    amount_pending = fields.Monetary(
+        compute='_compute_payment_amounts', store=True, currency_field='currency_id', aggregator='sum')
     days_overdue = fields.Integer(compute='_compute_payment_amounts', store=True)
     collection_status = fields.Selection(
         COLLECTION_STATUSES, compute='_compute_payment_amounts', store=True, default='pending')

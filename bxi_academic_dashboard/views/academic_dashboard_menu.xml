@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_academic_dashboard" name="Dashboard"
+              parent="bxi_academic_management.menu_academic_management_root"
+              action="action_academic_dashboard" sequence="5"
+              groups="bxi_academic_management.group_academic_coordinator,bxi_academic_management.group_academic_manager"/>
+</odoo>

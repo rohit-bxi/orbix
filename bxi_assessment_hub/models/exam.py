@@ -14,6 +14,10 @@ class BxiExam(models.Model):
     name = fields.Char(string='Exam Title', required=True, tracking=True)
     class_id = fields.Many2one('op.course', string='Class', required=True, tracking=True)
     subject_id = fields.Many2one('op.subject', string='Subject', required=True, tracking=True)
+    curriculum_id = fields.Many2one(
+        'bxi.curriculum', string='Curriculum', tracking=True,
+        help='Links this exam back to a curriculum/syllabus structure. Left blank when an exam '
+             'is authored ad hoc, outside any curriculum.')
     teacher_id = fields.Many2one(
         'op.faculty', string='Teacher', tracking=True,
         default=lambda self: self.env['op.faculty'].search(

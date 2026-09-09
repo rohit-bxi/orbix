@@ -2,13 +2,15 @@
 
 {
     'name': 'Academic Management',
-    'version': '19.0.2.0.0',
+    'version': '19.0.3.0.0',
     'category': 'Education',
     'summary': 'Curriculum boards, class assignment, smart books and subject-teacher mapping',
     'description': """
         Academic Management
         ====================
-        - Curriculum: define curriculum boards (e.g. CBSE, ICSE, State Board) and assign Classes to them
+        - Curriculum: define curriculum boards (e.g. CBSE, ICSE, State Board), assign Classes to
+          them, map Projects, and take a curriculum through a draft/approved/rejected review with
+          an optional lock that freezes its Board and Assigned Classes
         - Smart Book: curriculum-linked books, built on the existing Library media model
         - Subject Mapping: map Subject + Class + Curriculum to a Teacher
         - Event: schedule Parent-Teacher Meetings for one or more Classes

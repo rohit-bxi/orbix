@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_assessment_dashboard" model="ir.actions.client">
+        <field name="name">Dashboard</field>
+        <field name="tag">bxi_assessment_dashboard_client_action</field>
+        <field name="target">current</field>
+    </record>
+
+    <record id="action_exam_published" model="ir.actions.act_window">
+        <field name="name">Digital Exams</field>
+        <field name="res_model">bxi.exam</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="domain">[('state', '=', 'published')]</field>
+        <field name="search_view_id" ref="view_exam_search"/>
+    </record>
+</odoo>

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_fee_dashboard" model="ir.actions.client">
+        <field name="name">Dashboard</field>
+        <field name="tag">bxi_fee_dashboard_client_action</field>
+        <field name="target">current</field>
+    </record>
+
+    <record id="view_fee_payment_report_pivot" model="ir.ui.view">
+        <field name="name">op.student.fees.details.bxi.payment.report.pivot</field>
+        <field name="model">op.student.fees.details</field>
+        <field name="arch" type="xml">
+            <pivot string="Payment Report">
+                <field name="collection_status" type="row"/>
+                <field name="payment_mode" type="col"/>
+                <field name="amount_paid" type="measure"/>
+                <field name="amount_pending" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="action_fee_payment_report" model="ir.actions.act_window">
+        <field name="name">Payment Report</field>
+        <field name="res_model">op.student.fees.details</field>
+        <field name="view_mode">pivot,graph,list</field>
+        <field name="domain">[('state', '!=', 'cancel')]</field>
+        <field name="search_view_id" ref="bxi_fee_management.view_student_fees_details_search"/>
+        <field name="context">{'search_default_group_status': 1}</field>
+    </record>
+
+    <record id="action_fee_payment_report_view_pivot" model="ir.actions.act_window.view">
+        <field name="act_window_id" ref="action_fee_payment_report"/>
+        <field name="sequence" eval="10"/>
+        <field name="view_mode">pivot</field>
+        <field name="view_id" ref="view_fee_payment_report_pivot"/>
+    </record>
+
+    <record id="action_fee_receipt_generator" model="ir.actions.act_window">
+        <field name="name">Receipt Generator</field>
+        <field name="res_model">op.student.fees.details</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('amount_paid', '&gt;', 0)]</field>
+        <field name="search_view_id" ref="bxi_fee_management.view_student_fees_details_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Select a paid fee line, then use Print - Fee Receipt.</p>
+        </field>
+    </record>
+</odoo>

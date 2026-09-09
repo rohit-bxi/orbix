@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_fee_dashboard" name="Dashboard"
+              parent="bxi_fee_management.menu_fee_management_root"
+              action="action_fee_dashboard" sequence="5"
+              groups="openeducat_fees.group_op_fees_admin"/>
+
+    <menuitem id="menu_fee_payment_report" name="Payment Report"
+              parent="bxi_fee_management.menu_fee_management_root"
+              action="action_fee_payment_report" sequence="25"
+              groups="openeducat_fees.group_op_fees_admin"/>
+
+    <menuitem id="menu_fee_receipt_generator" name="Receipt Generator"
+              parent="bxi_fee_management.menu_fee_management_root"
+              action="action_fee_receipt_generator" sequence="27"
+              groups="openeducat_fees.group_openeducat_fees_user"/>
+</odoo>

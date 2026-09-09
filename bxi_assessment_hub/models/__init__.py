@@ -9,3 +9,4 @@ from . import res_config_settings
 from . import assessment_submission_answer
 from . import assessment_submission
 from . import assessment_session
+from . import assessment_dashboard

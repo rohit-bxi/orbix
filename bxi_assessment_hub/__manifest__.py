@@ -4,7 +4,7 @@
 
 {
     'name': 'Assessments & Exams',
-    'version': '19.0.1.0.0',
+    'version': '19.0.2.0.0',
     'category': 'Education',
     'summary': 'Digital exam authoring, AI-generated assignments and auto-grading for teachers',
     'description': """
@@ -13,7 +13,8 @@
         - Digital Exam Management: teachers author exams made of short answer, long
           answer and multiple choice questions. Each question carries its own marks
           and, for short/long answer questions, a sample answer/keyword reference
-          that will be used later to auto-grade student responses.
+          that will be used later to auto-grade student responses. An exam can
+          optionally be linked back to a Curriculum.
         - MCQ questions are authored with answer options and exactly one option
           marked correct.
         - Question import from Excel (structured) or Word/PDF (a documented
@@ -27,6 +28,9 @@
           answers are graded by AI against the question's sample answer/keywords.
           Submissions can be manually re-evaluated with a logged marks adjustment
           and reason.
+        - Dashboard: KPIs, alerts and a Recent Exams / Performance by Class overview,
+          scoped by the same rules as everywhere else (teachers see their own exams,
+          coordinators/managers see all).
     """,
     'author': 'BXI Technology Pvt. Ltd.',
     'maintainer': 'BXI Technology Pvt. Ltd.',
@@ -51,8 +55,14 @@
         'views/assessment_submission_views.xml',
         'views/assessment_session_views.xml',
         'views/exam_views.xml',
+        'views/assessment_dashboard_actions.xml',
         'views/exam_menu.xml',
     ],
+    'assets': {
+        'web.assets_backend': [
+            'bxi_assessment_hub/static/src/assessment_dashboard/**/*',
+        ],
+    },
     'external_dependencies': {
         'python': ['openpyxl', 'python-docx', 'PyPDF2'],
     },
