@@ -23,6 +23,10 @@
         - Printable scholarship report (PDF).
         - Smart button on the Student form; list/search filterable by
           Class, Section, Scholarship and Approval Status.
+        - Scholarship Statistics & Analytics dashboard: KPIs, budget
+          utilization, type/class distribution and monthly disbursement
+          trend, all computed live from program budgets and approved
+          awards.
     """,
     'author': 'BXI Technology Pvt. Ltd.',
     'maintainer': 'BXI Technology Pvt. Ltd.',
@@ -46,8 +50,14 @@
         'wizard/scholarship_remove_wizard_views.xml',
         'report/scholarship_report.xml',
         'report/scholarship_report_template.xml',
+        'views/scholarship_dashboard_actions.xml',
         'views/scholarship_menu.xml',
     ],
+    'assets': {
+        'web.assets_backend': [
+            'bxi_school_scholarship/static/src/scholarship_dashboard/**/*',
+        ],
+    },
     'installable': True,
     'application': True,
     'license': 'OPL-1',

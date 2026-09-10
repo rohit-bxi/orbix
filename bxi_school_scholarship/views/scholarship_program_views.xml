@@ -10,6 +10,10 @@
                 <field name="default_coverage_type"/>
                 <field name="default_coverage_percentage"/>
                 <field name="default_max_amount_limit"/>
+                <field name="budget_amount"/>
+                <field name="recipient_count"/>
+                <field name="amount_disbursed"/>
+                <field name="budget_utilization" string="Utilization (%)"/>
             </list>
         </field>
     </record>
@@ -35,6 +39,14 @@
                             <field name="default_fixed_amount" invisible="default_coverage_type != 'fixed_amount'"/>
                             <field name="default_max_amount_limit"/>
                             <field name="currency_id" invisible="1"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Budget">
+                            <field name="budget_amount"/>
+                            <field name="amount_disbursed"/>
+                            <field name="budget_utilization" string="Utilization (%)"/>
+                            <field name="recipient_count"/>
                         </group>
                     </group>
                     <group>
