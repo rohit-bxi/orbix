@@ -8,3 +8,5 @@ access_student_scholarship_fee_line_manager,student.scholarship.fee.line.manager
 access_student_scholarship_fee_line_staff,student.scholarship.fee.line.staff,model_bxi_student_scholarship_fee_line,group_scholarship_staff,1,1,1,1
 access_student_scholarship_fee_line_self,student.scholarship.fee.line.self,model_bxi_student_scholarship_fee_line,base.group_user,1,0,0,0
 access_scholarship_remove_wizard_staff,scholarship.remove.wizard.staff,model_bxi_scholarship_remove_wizard,group_scholarship_staff,1,1,1,1
+access_scholarship_dashboard_manager,scholarship.dashboard.manager,model_bxi_scholarship_dashboard,group_scholarship_manager,1,0,0,0
+access_scholarship_dashboard_staff,scholarship.dashboard.staff,model_bxi_scholarship_dashboard,group_scholarship_staff,1,0,0,0

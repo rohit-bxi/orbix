@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <odoo>
     <menuitem id="menu_scholarship_root" name="Scholarships" sequence="72" web_icon="bxi_school_scholarship,static/description/icon.png"/>
+    <menuitem id="menu_scholarship_dashboard" name="Dashboard" parent="menu_scholarship_root" action="action_scholarship_dashboard" sequence="5"/>
     <menuitem id="menu_scholarship_student" name="Scholarships" parent="menu_scholarship_root" action="action_student_scholarship" sequence="10"/>
 
     <menuitem id="menu_scholarship_config" name="Configuration" parent="menu_scholarship_root" sequence="90" groups="group_scholarship_manager"/>
