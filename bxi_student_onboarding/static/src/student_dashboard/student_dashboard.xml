@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="bxi_student_onboarding.BxiStudentDashboard">
+        <div class="o_student_dashboard h-100 overflow-auto p-3">
+            <div class="o_student_dashboard_header mb-4">
+                <h2 class="mb-1">Student Information Dashboard</h2>
+                <div class="text-muted">Enrollment, onboarding pipeline and student demographics at a glance.</div>
+            </div>
+
+            <!-- KPI cards -->
+            <div class="row g-3 mb-4">
+                <t t-foreach="kpiDefs" t-as="def" t-key="def.key">
+                    <div class="col-12 col-sm-6 col-lg-3">
+                        <div class="o_student_kpi_card">
+                            <div t-attf-class="o_student_kpi_icon o_student_kpi_icon_{{def.color}}">
+                                <i t-attf-class="fa {{def.icon}}"/>
+                            </div>
+                            <div class="o_student_kpi_value" t-esc="formatKpi(def)"/>
+                            <div class="o_student_kpi_label" t-esc="def.label"/>
+                        </div>
+                    </div>
+                </t>
+            </div>
+
+            <!-- Recent Students -->
+            <div class="o_student_dashboard_panel mb-4">
+                <div class="o_student_dashboard_panel_header d-flex justify-content-between align-items-center">
+                    <span>Recent Students</span>
+                    <button type="button" class="btn btn-primary btn-sm" t-on-click="viewAllStudents">View All</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table o_student_table mb-0">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Course / Batch</th>
+                                <th>Gender</th>
+                                <th>Admission Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-if="!state.studentList.length">
+                                <td colspan="6" class="text-muted text-center py-3">No students found</td>
+                            </tr>
+                            <tr t-foreach="state.studentList" t-as="row" t-key="row.id">
+                                <td t-esc="row.name"/>
+                                <td t-esc="row.course_batch"/>
+                                <td t-esc="row.gender"/>
+                                <td t-esc="row.admission_date"/>
+                                <td>
+                                    <span t-attf-class="badge {{statusBadgeClass(row.enrollment_status)}}" t-esc="row.enrollment_status_label"/>
+                                </td>
+                                <td>
+                                    <a href="#" class="o_student_row_action" t-on-click.prevent="() => this.openStudent(row.id)" title="View">
+                                        <i class="fa fa-eye"/>
+                                    </a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Charts row 1 -->
+            <div class="row g-3 mb-4">
+                <div class="col-12 col-lg-6">
+                    <div class="o_student_dashboard_panel h-100">
+                        <div class="o_student_dashboard_panel_header">Enrollment Status Distribution</div>
+                        <div class="o_student_chart_container p-3">
+                            <canvas t-ref="enrollmentStatusDistribution"/>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-lg-6">
+                    <div class="o_student_dashboard_panel h-100">
+                        <div class="o_student_dashboard_panel_header">Gender Distribution</div>
+                        <div class="o_student_chart_container p-3">
+                            <canvas t-ref="genderDistribution"/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Course-wise Students -->
+            <div class="o_student_dashboard_panel mb-4">
+                <div class="o_student_dashboard_panel_header">Course-wise Student Count</div>
+                <div class="o_student_chart_container_lg p-3">
+                    <canvas t-ref="courseWiseDistribution"/>
+                </div>
+            </div>
+
+            <!-- Onboarding Pipeline -->
+            <div class="o_student_dashboard_panel mb-4">
+                <div class="o_student_dashboard_panel_header d-flex justify-content-between align-items-center">
+                    <span>Onboarding Pipeline</span>
+                    <button type="button" class="btn btn-primary btn-sm" t-on-click="viewAllOnboarding">View All</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table o_student_table mb-0">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Admission No.</th>
+                                <th>Class</th>
+                                <th>Step</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-if="!state.onboardingPipeline.length">
+                                <td colspan="5" class="text-muted text-center py-3">No onboarding in progress</td>
+                            </tr>
+                            <tr t-foreach="state.onboardingPipeline" t-as="row" t-key="row.id">
+                                <td t-esc="row.full_name"/>
+                                <td t-esc="row.admission_number"/>
+                                <td t-esc="row.course"/>
+                                <td>
+                                    <span t-attf-class="badge {{onboardingBadgeClass(row.state)}}" t-esc="row.state_label"/>
+                                </td>
+                                <td>
+                                    <a href="#" class="o_student_row_action" t-on-click.prevent="() => this.openOnboarding(row.id)" title="Continue">
+                                        <i class="fa fa-arrow-right"/>
+                                    </a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Monthly Admission Trend -->
+            <div class="o_student_dashboard_panel mb-4">
+                <div class="o_student_dashboard_panel_header">Monthly Admission Trend</div>
+                <div class="o_student_chart_container_lg p-3">
+                    <canvas t-ref="monthlyTrend"/>
+                </div>
+            </div>
+
+            <!-- Secondary stats -->
+            <div class="row g-3 mb-4">
+                <t t-foreach="statDefs" t-as="def" t-key="def.key">
+                    <div class="col-12 col-md-4">
+                        <div class="o_student_kpi_card">
+                            <div class="o_student_kpi_value" t-esc="formatStat(def)"/>
+                            <div class="o_student_kpi_label" t-esc="def.label"/>
+                        </div>
+                    </div>
+                </t>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="o_student_dashboard_panel mb-4">
+                <div class="o_student_dashboard_panel_header">Recent Activity</div>
+                <div class="p-3">
+                    <div t-if="!state.recentActivity.length" class="text-muted">No recent activity</div>
+                    <div t-foreach="state.recentActivity" t-as="activity" t-key="activity_index"
+                         class="o_student_activity_row d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="fw-semibold" t-esc="activity.title"/>
+                            <div class="text-muted small" t-esc="activity.date"/>
+                        </div>
+                        <span t-attf-class="badge {{activityBadgeClass(activity.kind)}}" t-esc="activity.kind"/>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+
+</templates>

@@ -29,8 +29,14 @@
         'data/ir_sequence_data.xml',
         'views/student_onboarding_views.xml',
         'views/student_view.xml',
+        'views/student_dashboard_actions.xml',
         'menu/student_onboarding_menu.xml',
     ],
+    'assets': {
+        'web.assets_backend': [
+            'bxi_student_onboarding/static/src/student_dashboard/**/*',
+        ],
+    },
     'installable': True,
     'application': False,
     'license': 'OPL-1',
