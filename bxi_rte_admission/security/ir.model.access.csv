@@ -25,3 +25,4 @@ access_rte_grievance_admin,rte.grievance.admin,model_rte_grievance,group_rte_adm
 access_rte_grievance_district_officer,rte.grievance.district.officer,model_rte_grievance,group_rte_district_officer,1,1,0,0
 access_rte_grievance_coordinator,rte.grievance.coordinator,model_rte_grievance,group_rte_school_coordinator,1,1,0,0
 access_rte_grievance_portal,rte.grievance.portal,model_rte_grievance,base.group_portal,1,0,1,0
+access_rte_dashboard_coordinator,rte.dashboard.coordinator,model_bxi_rte_dashboard,group_rte_school_coordinator,1,0,0,0

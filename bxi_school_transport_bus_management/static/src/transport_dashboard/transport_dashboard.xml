@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="bxi_school_transport_bus_management.TransportDashboard">
+        <div class="o_transport_dashboard h-100 overflow-auto p-3">
+            <div class="o_transport_dashboard_header mb-4">
+                <h2 class="mb-1">Transport / Bus Management Dashboard</h2>
+                <div class="text-muted">Overview of buses, routes, seat occupancy and student transport registrations.</div>
+            </div>
+
+            <!-- KPI cards -->
+            <div class="row g-3 mb-4">
+                <t t-foreach="kpiDefs" t-as="def" t-key="def.key">
+                    <div class="col-12 col-sm-6 col-lg-3">
+                        <div class="o_transport_kpi_card">
+                            <div t-attf-class="o_transport_kpi_icon o_transport_kpi_icon_{{def.color}}">
+                                <i t-attf-class="fa {{def.icon}}"/>
+                            </div>
+                            <div class="o_transport_kpi_value" t-esc="formatKpi(def)"/>
+                            <div class="o_transport_kpi_label" t-esc="def.label"/>
+                        </div>
+                    </div>
+                </t>
+            </div>
+
+            <!-- Recent Transport Registrations -->
+            <div class="o_transport_dashboard_panel mb-4">
+                <div class="o_transport_dashboard_panel_header d-flex justify-content-between align-items-center">
+                    <span>Recent Transport Registrations</span>
+                    <button type="button" class="btn btn-primary btn-sm" t-on-click="viewAllRegistrations">View All</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table o_transport_table mb-0">
+                        <thead>
+                            <tr>
+                                <th>Student Name</th>
+                                <th>Route</th>
+                                <th>Stop</th>
+                                <th>Fee</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-if="!state.registrationList.length">
+                                <td colspan="6" class="text-muted text-center py-3">No transport registrations found</td>
+                            </tr>
+                            <tr t-foreach="state.registrationList" t-as="row" t-key="row.id">
+                                <td t-esc="row.student_name"/>
+                                <td t-esc="row.route_name"/>
+                                <td t-esc="row.stop_name"/>
+                                <td t-esc="formatAmount(row.fee_amount)"/>
+                                <td>
+                                    <span t-attf-class="badge {{statusBadgeClass(row.state)}}" t-esc="stateLabel(row.state)"/>
+                                </td>
+                                <td>
+                                    <a href="#" class="o_transport_row_action" t-on-click.prevent="() => this.openRecord(row.id)" title="View">
+                                        <i class="fa fa-eye"/>
+                                    </a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Charts row 1 -->
+            <div class="row g-3 mb-4">
+                <div class="col-12 col-lg-6">
+                    <div class="o_transport_dashboard_panel h-100">
+                        <div class="o_transport_dashboard_panel_header">Registration Status Distribution</div>
+                        <div class="o_transport_chart_container p-3">
+                            <canvas t-ref="statusDistribution"/>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-lg-6">
+                    <div class="o_transport_dashboard_panel h-100">
+                        <div class="o_transport_dashboard_panel_header">Seat Capacity Allocation</div>
+                        <div class="p-3">
+                            <t t-set="seats" t-value="state.chartsData.seat_allocation"/>
+                            <t t-if="seats">
+                                <div class="o_transport_seat_row">
+                                    <div class="d-flex justify-content-between">
+                                        <span>Total Capacity (Active Routes)</span>
+                                        <span class="fw-semibold" t-esc="seats.total_capacity"/>
+                                    </div>
+                                    <div class="o_transport_progress"><div class="o_transport_progress_bar o_transport_progress_blue" style="width: 100%"/></div>
+                                </div>
+                                <div class="o_transport_seat_row">
+                                    <div class="d-flex justify-content-between">
+                                        <span>Seats Filled</span>
+                                        <span class="fw-semibold" t-esc="seats.seats_filled"/>
+                                    </div>
+                                    <div class="o_transport_progress">
+                                        <div class="o_transport_progress_bar o_transport_progress_green"
+                                             t-attf-style="width: {{seats.total_capacity ? (seats.seats_filled / seats.total_capacity * 100) : 0}}%"/>
+                                    </div>
+                                </div>
+                                <div class="o_transport_seat_row">
+                                    <div class="d-flex justify-content-between">
+                                        <span>Seats Available</span>
+                                        <span class="fw-semibold" t-esc="seats.seats_remaining"/>
+                                    </div>
+                                    <div class="o_transport_progress">
+                                        <div class="o_transport_progress_bar o_transport_progress_orange"
+                                             t-attf-style="width: {{seats.total_capacity ? (seats.seats_remaining / seats.total_capacity * 100) : 0}}%"/>
+                                    </div>
+                                </div>
+                            </t>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Route-wise Registrations -->
+            <div class="o_transport_dashboard_panel mb-4">
+                <div class="o_transport_dashboard_panel_header">Route-wise Registrations</div>
+                <div class="o_transport_chart_container_lg p-3">
+                    <canvas t-ref="routeWiseRegistrations"/>
+                </div>
+            </div>
+
+            <!-- Top Routes by Occupancy -->
+            <div class="o_transport_dashboard_panel mb-4">
+                <div class="o_transport_dashboard_panel_header">Top Routes by Occupancy</div>
+                <div class="table-responsive">
+                    <table class="table o_transport_table mb-0">
+                        <thead>
+                            <tr>
+                                <th>Route</th>
+                                <th>Capacity</th>
+                                <th>Registrations</th>
+                                <th>Utilization</th>
+                                <th>Occupancy</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-if="!state.topRoutes.length">
+                                <td colspan="5" class="text-muted text-center py-3">No active routes found</td>
+                            </tr>
+                            <tr t-foreach="state.topRoutes" t-as="route" t-key="route.name">
+                                <td t-esc="route.name"/>
+                                <td t-esc="route.capacity"/>
+                                <td t-esc="route.registrations"/>
+                                <td><t t-esc="route.utilization"/>%</td>
+                                <td>
+                                    <div class="o_transport_progress">
+                                        <div class="o_transport_progress_bar o_transport_progress_green"
+                                             t-attf-style="width: {{Math.min(route.utilization, 100)}}%"/>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Monthly Registration Trend -->
+            <div class="o_transport_dashboard_panel mb-4">
+                <div class="o_transport_dashboard_panel_header">Monthly Registration Trend</div>
+                <div class="o_transport_chart_container_lg p-3">
+                    <canvas t-ref="monthlyTrend"/>
+                </div>
+            </div>
+
+            <!-- Secondary stats -->
+            <div class="row g-3 mb-4">
+                <t t-foreach="statDefs" t-as="def" t-key="def.key">
+                    <div class="col-12 col-md-4">
+                        <div class="o_transport_kpi_card">
+                            <div class="o_transport_kpi_value" t-esc="formatStat(def)"/>
+                            <div class="o_transport_kpi_label" t-esc="def.label"/>
+                        </div>
+                    </div>
+                </t>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="o_transport_dashboard_panel mb-4">
+                <div class="o_transport_dashboard_panel_header">Recent Activity</div>
+                <div class="p-3">
+                    <div t-if="!state.recentActivity.length" class="text-muted">No recent activity</div>
+                    <div t-foreach="state.recentActivity" t-as="activity" t-key="activity_index"
+                         class="o_transport_activity_row d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="fw-semibold" t-esc="activity.title"/>
+                            <div class="text-muted small" t-esc="activity.date"/>
+                        </div>
+                        <span t-attf-class="badge {{activityBadgeClass(activity.kind)}}" t-esc="activity.kind"/>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+
+</templates>

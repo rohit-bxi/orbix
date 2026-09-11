@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <odoo>
     <menuitem id="menu_uniform_root" name="Uniform" sequence="71" web_icon="bxi_uniform_management,static/description/icon.png"/>
+    <menuitem id="menu_uniform_dashboard" name="Dashboard" parent="menu_uniform_root" action="action_uniform_dashboard" sequence="5"/>
     <menuitem id="menu_uniform_order" name="Orders" parent="menu_uniform_root" action="action_uniform_order" sequence="10"/>
     <menuitem id="menu_uniform_exchange_wizard" name="Size Exchange" parent="menu_uniform_root" action="action_uniform_exchange_wizard" sequence="20"/>
     <menuitem id="menu_uniform_catalog" name="Catalog" parent="menu_uniform_root" action="action_uniform_catalog" sequence="30"/>

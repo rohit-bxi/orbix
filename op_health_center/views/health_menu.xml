@@ -2,6 +2,9 @@
 <odoo>
     <menuitem id="menu_health_root" name="Health Center" sequence="65" web_icon="op_health_center,static/description/icon.png"/>
 
+    <menuitem id="menu_health_dashboard_root" name="Dashboard" parent="menu_health_root"
+              action="action_bxi_health_dashboard" sequence="5"/>
+
     <menuitem id="menu_health_clinic" name="Clinic" parent="menu_health_root" sequence="10"/>
     <menuitem id="menu_health_visit" name="Visits" parent="menu_health_clinic" action="action_health_visit" sequence="10"/>
 

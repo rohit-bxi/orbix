@@ -12,6 +12,7 @@ calling, instead of building its own auth or response shape.
 
 from functools import wraps
 
+from odoo.exceptions import AccessError, UserError
 from odoo.http import request
 
 
@@ -37,6 +38,27 @@ def parse_int(value, field_name):
     except (TypeError, ValueError):
         return None, api_error(
             '%s must be a number.' % field_name, status=400, code='invalid_%s' % field_name)
+
+
+def call_action(record, method_name, **kwargs):
+    """Call an `action_*` transition method on `record`, translating the
+    exceptions those methods already raise for an illegal transition or a
+    permission problem into the standard API error envelope, instead of
+    every controller re-implementing the same try/except.
+
+    Returns (result, None) on success or (None, api_error(...)) on failure -
+    callers should `return error` immediately when the second item isn't
+    None, the same way `parse_int` is used.
+    """
+    try:
+        return getattr(record, method_name)(**kwargs), None
+    except AccessError as exc:
+        # AccessError subclasses UserError in this Odoo version, so this
+        # branch must come first - otherwise every AccessError would match
+        # `except UserError` below and get reported as 400 instead of 403.
+        return None, api_error(str(exc), status=403, code='forbidden')
+    except UserError as exc:
+        return None, api_error(str(exc), status=400, code='invalid_transition')
 
 
 def require_auth(func):

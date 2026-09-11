@@ -4,6 +4,10 @@
               sequence="35" web_icon="bxi_rte_admission,static/description/icon.png"
               groups="bxi_rte_admission.group_rte_school_coordinator"/>
 
+    <menuitem id="menu_rte_admission_dashboard" name="Dashboard"
+              parent="menu_rte_admission_root"
+              action="action_rte_dashboard" sequence="5"/>
+
     <menuitem id="menu_rte_admission_applications" name="Applications"
               parent="menu_rte_admission_root"
               action="act_open_op_admission_rte_view" sequence="10"/>

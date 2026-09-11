@@ -9,3 +9,4 @@ access_transport_registration_manager,transport.registration.manager,model_bxi_t
 access_transport_registration_staff,transport.registration.staff,model_bxi_transport_registration,group_transport_staff,1,1,1,0
 access_transport_registration_self,transport.registration.self,model_bxi_transport_registration,base.group_user,1,0,0,0
 access_transport_bulk_registration_wizard,transport.bulk.registration.wizard,model_bxi_transport_bulk_registration_wizard,group_transport_staff,1,1,1,1
+access_transport_dashboard_staff,transport.dashboard.staff,model_bxi_transport_dashboard,group_transport_staff,1,0,0,0

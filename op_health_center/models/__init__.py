@@ -8,3 +8,4 @@ from . import health_profile_mixin
 from . import student_health
 from . import faculty_health
 from . import health_dashboard
+from . import bxi_health_dashboard

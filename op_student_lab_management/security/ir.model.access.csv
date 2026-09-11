@@ -13,3 +13,5 @@ access_lab_experiment_result_admin,lab.experiment.result.admin,model_lab_experim
 access_lab_experiment_result_instructor,lab.experiment.result.instructor,model_lab_experiment_result,group_lab_instructor,1,1,1,0
 access_lab_equipment_issue_admin,lab.equipment.issue.admin,model_lab_equipment_issue,group_lab_admin,1,1,1,1
 access_lab_equipment_issue_instructor,lab.equipment.issue.instructor,model_lab_equipment_issue,group_lab_instructor,1,1,1,0
+access_lab_dashboard_admin,lab.dashboard.admin,model_lab_dashboard,group_lab_admin,1,0,0,0
+access_lab_dashboard_instructor,lab.dashboard.instructor,model_lab_dashboard,group_lab_instructor,1,0,0,0

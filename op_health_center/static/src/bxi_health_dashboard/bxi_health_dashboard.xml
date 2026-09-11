@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="op_health_center.BxiHealthDashboard">
+        <div class="o_health2_dashboard h-100 overflow-auto p-3">
+            <div class="o_health2_dashboard_header mb-4">
+                <h2 class="mb-1">Health Center Dashboard</h2>
+                <div class="text-muted">Clinic visits, vaccinations, checkups and medical alerts at a glance.</div>
+            </div>
+
+            <!-- KPI cards -->
+            <div class="row g-3 mb-4">
+                <t t-foreach="kpiDefs" t-as="def" t-key="def.key">
+                    <div class="col-12 col-sm-6 col-lg-3">
+                        <div class="o_health2_kpi_card">
+                            <div t-attf-class="o_health2_kpi_icon o_health2_kpi_icon_{{def.color}}">
+                                <i t-attf-class="fa {{def.icon}}"/>
+                            </div>
+                            <div class="o_health2_kpi_value" t-esc="formatKpi(def)"/>
+                            <div class="o_health2_kpi_label" t-esc="def.label"/>
+                        </div>
+                    </div>
+                </t>
+            </div>
+
+            <!-- Recent Visits -->
+            <div class="o_health2_dashboard_panel mb-4">
+                <div class="o_health2_dashboard_panel_header d-flex justify-content-between align-items-center">
+                    <span>Recent Visits</span>
+                    <button type="button" class="btn btn-primary btn-sm" t-on-click="viewAllVisits">View All</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table o_health2_table mb-0">
+                        <thead>
+                            <tr>
+                                <th>Patient</th>
+                                <th>Visit Type</th>
+                                <th>Visit Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-if="!state.visitList.length">
+                                <td colspan="5" class="text-muted text-center py-3">No health visits found</td>
+                            </tr>
+                            <tr t-foreach="state.visitList" t-as="row" t-key="row.id">
+                                <td t-esc="row.patient_name"/>
+                                <td t-esc="row.visit_type"/>
+                                <td t-esc="row.visit_datetime"/>
+                                <td>
+                                    <span t-attf-class="badge {{statusBadgeClass(row.state)}}" t-esc="stateLabel(row.state)"/>
+                                </td>
+                                <td>
+                                    <a href="#" class="o_health2_row_action" t-on-click.prevent="() => this.openRecord(row.id)" title="View">
+                                        <i class="fa fa-eye"/>
+                                    </a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Charts row 1 -->
+            <div class="row g-3 mb-4">
+                <div class="col-12 col-lg-6">
+                    <div class="o_health2_dashboard_panel h-100">
+                        <div class="o_health2_dashboard_panel_header">Visit Status Distribution</div>
+                        <div class="o_health2_chart_container p-3">
+                            <canvas t-ref="visitStatusDistribution"/>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-lg-6">
+                    <div class="o_health2_dashboard_panel h-100">
+                        <div class="o_health2_dashboard_panel_header">Vaccination Status</div>
+                        <div class="p-3">
+                            <t t-set="vac" t-value="state.chartsData.vaccination_status"/>
+                            <t t-if="vac">
+                                <div class="o_health2_stat_row">
+                                    <div class="d-flex justify-content-between">
+                                        <span>Completed</span>
+                                        <span class="fw-semibold" t-esc="vac.completed"/>
+                                    </div>
+                                    <div class="o_health2_progress">
+                                        <div class="o_health2_progress_bar o_health2_progress_green"
+                                             t-attf-style="width: {{vac.total ? (vac.completed / vac.total * 100) : 0}}%"/>
+                                    </div>
+                                </div>
+                                <div class="o_health2_stat_row">
+                                    <div class="d-flex justify-content-between">
+                                        <span>Scheduled</span>
+                                        <span class="fw-semibold" t-esc="vac.scheduled"/>
+                                    </div>
+                                    <div class="o_health2_progress">
+                                        <div class="o_health2_progress_bar o_health2_progress_orange"
+                                             t-attf-style="width: {{vac.total ? (vac.scheduled / vac.total * 100) : 0}}%"/>
+                                    </div>
+                                </div>
+                                <div class="o_health2_stat_row">
+                                    <div class="d-flex justify-content-between">
+                                        <span>Missed</span>
+                                        <span class="fw-semibold" t-esc="vac.missed"/>
+                                    </div>
+                                    <div class="o_health2_progress">
+                                        <div class="o_health2_progress_bar o_health2_progress_red"
+                                             t-attf-style="width: {{vac.total ? (vac.missed / vac.total * 100) : 0}}%"/>
+                                    </div>
+                                </div>
+                            </t>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Vaccines Administered -->
+            <div class="o_health2_dashboard_panel mb-4">
+                <div class="o_health2_dashboard_panel_header">Top Vaccines Administered</div>
+                <div class="table-responsive">
+                    <table class="table o_health2_table mb-0">
+                        <thead>
+                            <tr>
+                                <th>Vaccine</th>
+                                <th>Administered</th>
+                                <th>Pending</th>
+                                <th>Completion</th>
+                                <th>Progress</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-if="!state.topVaccines.length">
+                                <td colspan="5" class="text-muted text-center py-3">No vaccination records found</td>
+                            </tr>
+                            <tr t-foreach="state.topVaccines" t-as="vaccine" t-key="vaccine.name">
+                                <td t-esc="vaccine.name"/>
+                                <td t-esc="vaccine.administered"/>
+                                <td t-esc="vaccine.pending"/>
+                                <td><t t-esc="vaccine.completion_rate"/>%</td>
+                                <td>
+                                    <div class="o_health2_progress">
+                                        <div class="o_health2_progress_bar o_health2_progress_green"
+                                             t-attf-style="width: {{Math.min(vaccine.completion_rate, 100)}}%"/>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Checkup Fitness Distribution -->
+            <div class="o_health2_dashboard_panel mb-4">
+                <div class="o_health2_dashboard_panel_header">Checkup Fitness Distribution</div>
+                <div class="o_health2_chart_container_lg p-3">
+                    <canvas t-ref="fitnessDistribution"/>
+                </div>
+            </div>
+
+            <!-- Monthly Visit Trend -->
+            <div class="o_health2_dashboard_panel mb-4">
+                <div class="o_health2_dashboard_panel_header">Monthly Visit Trend</div>
+                <div class="o_health2_chart_container_lg p-3">
+                    <canvas t-ref="monthlyTrend"/>
+                </div>
+            </div>
+
+            <!-- Secondary stats -->
+            <div class="row g-3 mb-4">
+                <t t-foreach="statDefs" t-as="def" t-key="def.key">
+                    <div class="col-12 col-md-4">
+                        <div class="o_health2_kpi_card">
+                            <div class="o_health2_kpi_value" t-esc="formatStat(def)"/>
+                            <div class="o_health2_kpi_label" t-esc="def.label"/>
+                        </div>
+                    </div>
+                </t>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="o_health2_dashboard_panel mb-4">
+                <div class="o_health2_dashboard_panel_header">Recent Activity</div>
+                <div class="p-3">
+                    <div t-if="!state.recentActivity.length" class="text-muted">No recent activity</div>
+                    <div t-foreach="state.recentActivity" t-as="activity" t-key="activity_index"
+                         class="o_health2_activity_row d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="fw-semibold" t-esc="activity.title"/>
+                            <div class="text-muted small" t-esc="activity.date"/>
+                        </div>
+                        <span t-attf-class="badge {{activityBadgeClass(activity.kind)}}" t-esc="activity.kind"/>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+
+</templates>

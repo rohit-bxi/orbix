@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="bxi_rte_admission.RteDashboard">
+        <div class="o_rte_dashboard h-100 overflow-auto p-3">
+            <div class="o_rte_dashboard_header mb-4">
+                <h2 class="mb-1">RTE Admission Dashboard</h2>
+                <div class="text-muted">Overview of RTE Section 12(1)(c) applications, seat allocation and lottery activity.</div>
+            </div>
+
+            <!-- KPI cards -->
+            <div class="row g-3 mb-4">
+                <t t-foreach="kpiDefs" t-as="def" t-key="def.key">
+                    <div class="col-12 col-sm-6 col-lg-3">
+                        <div class="o_rte_kpi_card">
+                            <div t-attf-class="o_rte_kpi_icon o_rte_kpi_icon_{{def.color}}">
+                                <i t-attf-class="fa {{def.icon}}"/>
+                            </div>
+                            <div class="o_rte_kpi_value" t-esc="formatKpi(def)"/>
+                            <div class="o_rte_kpi_label" t-esc="def.label"/>
+                        </div>
+                    </div>
+                </t>
+            </div>
+
+            <!-- RTE Application List -->
+            <div class="o_rte_dashboard_panel mb-4">
+                <div class="o_rte_dashboard_panel_header d-flex justify-content-between align-items-center">
+                    <span>Recent RTE Applications</span>
+                    <button type="button" class="btn btn-primary btn-sm" t-on-click="viewAllApplications">View All</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table o_rte_table mb-0">
+                        <thead>
+                            <tr>
+                                <th>Student Name</th>
+                                <th>Course</th>
+                                <th>Category</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-if="!state.applicationList.length">
+                                <td colspan="5" class="text-muted text-center py-3">No RTE applications found</td>
+                            </tr>
+                            <tr t-foreach="state.applicationList" t-as="row" t-key="row.id">
+                                <td t-esc="row.student_name"/>
+                                <td t-esc="row.course_name"/>
+                                <td t-esc="row.category"/>
+                                <td>
+                                    <span t-attf-class="badge {{statusBadgeClass(row.rte_state)}}" t-esc="stateLabel(row.rte_state)"/>
+                                </td>
+                                <td>
+                                    <a href="#" class="o_rte_row_action" t-on-click.prevent="() => this.openRecord(row.id)" title="View">
+                                        <i class="fa fa-eye"/>
+                                    </a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Charts row 1 -->
+            <div class="row g-3 mb-4">
+                <div class="col-12 col-lg-6">
+                    <div class="o_rte_dashboard_panel h-100">
+                        <div class="o_rte_dashboard_panel_header">Application Status Distribution</div>
+                        <div class="o_rte_chart_container p-3">
+                            <canvas t-ref="statusDistribution"/>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-lg-6">
+                    <div class="o_rte_dashboard_panel h-100">
+                        <div class="o_rte_dashboard_panel_header">Seat Allocation</div>
+                        <div class="p-3">
+                            <t t-set="seats" t-value="state.chartsData.seat_allocation"/>
+                            <t t-if="seats">
+                                <div class="o_rte_seat_row">
+                                    <div class="d-flex justify-content-between">
+                                        <span>Total Seats Reserved</span>
+                                        <span class="fw-semibold" t-esc="seats.total_seats"/>
+                                    </div>
+                                    <div class="o_rte_progress"><div class="o_rte_progress_bar o_rte_progress_blue" style="width: 100%"/></div>
+                                </div>
+                                <div class="o_rte_seat_row">
+                                    <div class="d-flex justify-content-between">
+                                        <span>Seats Filled</span>
+                                        <span class="fw-semibold" t-esc="seats.seats_filled"/>
+                                    </div>
+                                    <div class="o_rte_progress">
+                                        <div class="o_rte_progress_bar o_rte_progress_green"
+                                             t-attf-style="width: {{seats.total_seats ? (seats.seats_filled / seats.total_seats * 100) : 0}}%"/>
+                                    </div>
+                                </div>
+                                <div class="o_rte_seat_row">
+                                    <div class="d-flex justify-content-between">
+                                        <span>Seats Remaining</span>
+                                        <span class="fw-semibold" t-esc="seats.seats_remaining"/>
+                                    </div>
+                                    <div class="o_rte_progress">
+                                        <div class="o_rte_progress_bar o_rte_progress_orange"
+                                             t-attf-style="width: {{seats.total_seats ? (seats.seats_remaining / seats.total_seats * 100) : 0}}%"/>
+                                    </div>
+                                </div>
+                            </t>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Category-wise Applicants -->
+            <div class="o_rte_dashboard_panel mb-4">
+                <div class="o_rte_dashboard_panel_header">Category-wise Applicants</div>
+                <div class="o_rte_chart_container_lg p-3">
+                    <canvas t-ref="categoryDistribution"/>
+                </div>
+            </div>
+
+            <!-- Top Courses by RTE Demand -->
+            <div class="o_rte_dashboard_panel mb-4">
+                <div class="o_rte_dashboard_panel_header">Top Courses by RTE Demand</div>
+                <div class="table-responsive">
+                    <table class="table o_rte_table mb-0">
+                        <thead>
+                            <tr>
+                                <th>Course</th>
+                                <th>Seats</th>
+                                <th>Applicants</th>
+                                <th>Utilization</th>
+                                <th>Demand</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-if="!state.topCourses.length">
+                                <td colspan="5" class="text-muted text-center py-3">No RTE-active courses found</td>
+                            </tr>
+                            <tr t-foreach="state.topCourses" t-as="course" t-key="course.name">
+                                <td t-esc="course.name"/>
+                                <td t-esc="course.seats"/>
+                                <td t-esc="course.applicants"/>
+                                <td><t t-esc="course.utilization"/>%</td>
+                                <td>
+                                    <div class="o_rte_progress">
+                                        <div class="o_rte_progress_bar o_rte_progress_green"
+                                             t-attf-style="width: {{Math.min(course.utilization, 100)}}%"/>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Monthly Application Trend -->
+            <div class="o_rte_dashboard_panel mb-4">
+                <div class="o_rte_dashboard_panel_header">Monthly Application Trend</div>
+                <div class="o_rte_chart_container_lg p-3">
+                    <canvas t-ref="monthlyTrend"/>
+                </div>
+            </div>
+
+            <!-- Secondary stats -->
+            <div class="row g-3 mb-4">
+                <t t-foreach="statDefs" t-as="def" t-key="def.key">
+                    <div class="col-12 col-md-4">
+                        <div class="o_rte_kpi_card">
+                            <div class="o_rte_kpi_value" t-esc="formatStat(def)"/>
+                            <div class="o_rte_kpi_label" t-esc="def.label"/>
+                        </div>
+                    </div>
+                </t>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="o_rte_dashboard_panel mb-4">
+                <div class="o_rte_dashboard_panel_header">Recent Activity</div>
+                <div class="p-3">
+                    <div t-if="!state.recentActivity.length" class="text-muted">No recent activity</div>
+                    <div t-foreach="state.recentActivity" t-as="activity" t-key="activity_index"
+                         class="o_rte_activity_row d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="fw-semibold" t-esc="activity.title"/>
+                            <div class="text-muted small" t-esc="activity.date"/>
+                        </div>
+                        <span t-attf-class="badge {{activityBadgeClass(activity.kind)}}" t-esc="activity.kind"/>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+
+</templates>

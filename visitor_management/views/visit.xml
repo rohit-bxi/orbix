@@ -176,6 +176,7 @@
     </record>
     <!-- Menu Sections -->
     <menuitem id="visitor_root" name="Visitor Management" sequence="1" web_icon="visitor_management,static/description/icon.png"/>
+    <menuitem id="menu_visitor_dashboard" name="Dashboard" parent="visitor_management.visitor_root" action="action_visitor_dashboard" sequence="1"/>
     <menuitem id="visit" name="Check-In Visitor" parent="visitor_management.visitor_root" action="action_visit" sequence="2"/>
     <menuitem id="checkout" name="Check-Out" parent="visitor_management.visitor_root" action="action_visit_checkout" sequence="3"/>
 </odoo>

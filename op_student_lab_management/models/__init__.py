@@ -5,3 +5,4 @@ from . import lab_attendance
 from . import lab_experiment
 from . import lab_experiment_result
 from . import lab_equipment_issue
+from . import lab_dashboard

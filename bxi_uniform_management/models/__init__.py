@@ -10,3 +10,4 @@ from . import uniform_order
 from . import uniform_order_line
 from . import student_uniform
 from . import faculty_uniform
+from . import uniform_dashboard

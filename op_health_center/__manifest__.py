@@ -39,11 +39,13 @@
         'reports/health_certificate_report.xml',
         'reports/health_certificate_template.xml',
         'reports/health_visit_report.xml',
+        'views/bxi_health_dashboard_actions.xml',
         'views/health_menu.xml',
     ],
     'assets': {
         'web.assets_backend': [
             'op_health_center/static/src/scss/health_dashboard.scss',
+            'op_health_center/static/src/bxi_health_dashboard/**/*',
         ],
     },
     'installable': True,
