@@ -43,6 +43,7 @@
         'security/ir.model.access.csv',
         'data/sequence.xml',
         'data/mail_template.xml',
+        'views/visitor_dashboard.xml',
         'views/visit.xml',
         'views/visitor.xml',
         'views/visitor_category.xml',
@@ -51,6 +52,11 @@
         "reports/daily_visitor_report.xml"
 
     ],
+    'assets': {
+        'web.assets_backend': [
+            'visitor_management/static/src/bxi_visitor_dashboard/**/*',
+        ],
+    },
     'images': ['static/description/banner.png'],
     'license': 'AGPL-3',
     'installable': True,

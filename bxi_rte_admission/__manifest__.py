@@ -54,9 +54,15 @@
         'views/portal_templates.xml',
         'wizard/rte_document_verify_wizard_views.xml',
         'wizard/rte_lottery_wizard_views.xml',
+        'views/rte_dashboard_actions.xml',
         'views/rte_menus.xml',
         'report/rte_allotment_letter.xml',
     ],
+    'assets': {
+        'web.assets_backend': [
+            'bxi_rte_admission/static/src/rte_dashboard/**/*',
+        ],
+    },
     'installable': True,
     'application': False,
     'license': 'OPL-1',

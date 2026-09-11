@@ -2,6 +2,8 @@
 <odoo>
     <menuitem id="menu_lab_root" name="Lab Management" sequence="60" web_icon="op_student_lab_management,static/description/icon.png"/>
 
+    <menuitem id="menu_lab_dashboard" name="Dashboard" parent="menu_lab_root" action="action_lab_dashboard" sequence="5"/>
+
     <menuitem id="menu_lab_sessions" name="Sessions" parent="menu_lab_root" sequence="10"/>
     <menuitem id="menu_lab_session_action" action="action_lab_session" parent="menu_lab_sessions" sequence="1"/>
     <menuitem id="menu_lab_attendance_action" name="Attendance" action="action_lab_attendance" parent="menu_lab_sessions" sequence="2"/>

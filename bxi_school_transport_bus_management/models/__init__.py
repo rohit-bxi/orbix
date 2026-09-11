@@ -7,3 +7,4 @@ from . import transport_route
 from . import transport_route_stop
 from . import transport_registration
 from . import student_transport
+from . import transport_dashboard

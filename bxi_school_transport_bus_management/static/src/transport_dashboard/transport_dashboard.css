@@ -1,0 +1,126 @@
+.o_transport_dashboard {
+    background: #f5f6fa;
+}
+
+.o_transport_kpi_card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 16px 18px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    height: 100%;
+}
+
+.o_transport_kpi_icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    margin-bottom: 10px;
+}
+
+.o_transport_kpi_icon_blue { background: #e0e7ff; color: #4f46e5; }
+.o_transport_kpi_icon_purple { background: #ede9fe; color: #7c5cff; }
+.o_transport_kpi_icon_green { background: #dcfce7; color: #16a34a; }
+.o_transport_kpi_icon_orange { background: #fef3c7; color: #f59e0b; }
+
+.o_transport_kpi_value {
+    font-size: 24px;
+    font-weight: 700;
+}
+
+.o_transport_kpi_label {
+    color: #6b7280;
+    font-size: 13px;
+}
+
+.o_transport_dashboard_panel {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.o_transport_dashboard_panel_header {
+    font-weight: 600;
+    padding: 14px 16px;
+    border-bottom: 1px solid #eef0f4;
+}
+
+.o_transport_chart_container {
+    height: 280px;
+    position: relative;
+}
+
+.o_transport_chart_container_lg {
+    height: 320px;
+    position: relative;
+}
+
+.o_transport_table th {
+    color: #6b7280;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    border-bottom: 1px solid #eef0f4;
+    padding: 10px 16px;
+}
+
+.o_transport_table td {
+    padding: 12px 16px;
+    vertical-align: middle;
+    border-bottom: 1px solid #f1f2f6;
+}
+
+.o_transport_row_action {
+    color: #6b7280;
+    margin-right: 10px;
+}
+
+.o_transport_row_action:hover {
+    color: #4f46e5;
+}
+
+.o_transport_seat_row {
+    margin-bottom: 16px;
+}
+
+.o_transport_seat_row:last-child {
+    margin-bottom: 0;
+}
+
+.o_transport_progress {
+    height: 8px;
+    border-radius: 4px;
+    background: #eef0f4;
+    margin-top: 6px;
+    overflow: hidden;
+}
+
+.o_transport_progress_bar {
+    height: 100%;
+    border-radius: 4px;
+}
+
+.o_transport_progress_blue { background: #4f46e5; }
+.o_transport_progress_green { background: #16a34a; }
+.o_transport_progress_orange { background: #f59e0b; }
+
+.o_transport_activity_row {
+    padding: 10px 0;
+    border-bottom: 1px solid #f1f2f6;
+}
+
+.o_transport_activity_row:last-child {
+    border-bottom: none;
+}
+
+.o_transport_badge_success { background: #dcfce7; color: #16a34a; }
+.o_transport_badge_warning { background: #fef3c7; color: #b45309; }
+.o_transport_badge_danger { background: #fee2e2; color: #dc2626; }
+.o_transport_badge_info { background: #e0e7ff; color: #4f46e5; }
+
+.o_transport_dashboard [class^="o_transport_badge_"] {
+    text-transform: capitalize;
+}

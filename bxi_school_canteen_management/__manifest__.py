@@ -41,8 +41,14 @@
         'reports/canteen_wallet_statement_report.xml',
         'views/student_canteen_views.xml',
         'views/faculty_canteen_views.xml',
+        'views/canteen_dashboard_actions.xml',
         'views/canteen_menu.xml',
     ],
+    'assets': {
+        'web.assets_backend': [
+            'bxi_school_canteen_management/static/src/canteen_dashboard/**/*',
+        ],
+    },
     'installable': True,
     'application': True,
     'license': 'OPL-1',

@@ -41,8 +41,14 @@
         'wizard/uniform_exchange_wizard_views.xml',
         'views/student_uniform_views.xml',
         'views/faculty_uniform_views.xml',
+        'views/uniform_dashboard_actions.xml',
         'views/uniform_menu.xml',
     ],
+    'assets': {
+        'web.assets_backend': [
+            'bxi_uniform_management/static/src/uniform_dashboard/**/*',
+        ],
+    },
     'installable': True,
     'application': True,
     'license': 'OPL-1',

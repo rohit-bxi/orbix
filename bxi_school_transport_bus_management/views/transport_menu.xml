@@ -2,6 +2,8 @@
 <odoo>
     <menuitem id="menu_transport_root" name="Transport" sequence="75"
               web_icon="bxi_school_transport_bus_management,static/description/icon.png"/>
+    <menuitem id="menu_transport_dashboard" name="Dashboard" parent="menu_transport_root"
+              action="action_transport_dashboard" sequence="1"/>
     <menuitem id="menu_transport_vehicle" name="Buses" parent="menu_transport_root"
               action="action_transport_bus_vehicle" sequence="5"/>
     <menuitem id="menu_transport_route" name="Bus Routes" parent="menu_transport_root"

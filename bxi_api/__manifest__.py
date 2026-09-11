@@ -2,7 +2,7 @@
 
 {
     'name': 'Orbix API',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.1.0',
     'category': 'Education',
     'summary': 'Token-authenticated REST API layer for the Orbix mobile app',
     'description': """

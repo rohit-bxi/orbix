@@ -14,3 +14,4 @@ access_uniform_order_line_manager,uniform.order.line.manager,model_bxi_uniform_o
 access_uniform_order_line_staff,uniform.order.line.staff,model_bxi_uniform_order_line,group_uniform_staff,1,1,1,1
 access_uniform_order_line_self,uniform.order.line.self,model_bxi_uniform_order_line,base.group_user,1,0,0,0
 access_uniform_exchange_wizard_staff,uniform.exchange.wizard.staff,model_bxi_uniform_exchange_wizard,group_uniform_staff,1,1,1,1
+access_uniform_dashboard_staff,uniform.dashboard.staff,model_bxi_uniform_dashboard,group_uniform_staff,1,0,0,0

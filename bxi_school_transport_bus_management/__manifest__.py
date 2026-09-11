@@ -39,8 +39,14 @@
         'views/student_transport_views.xml',
         'wizard/transport_bulk_registration_wizard.xml',
         'reports/transport_route_manifest_report.xml',
+        'views/transport_dashboard_actions.xml',
         'views/transport_menu.xml',
     ],
+    'assets': {
+        'web.assets_backend': [
+            'bxi_school_transport_bus_management/static/src/transport_dashboard/**/*',
+        ],
+    },
     'installable': True,
     'application': True,
     'license': 'OPL-1',

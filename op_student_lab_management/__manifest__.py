@@ -29,10 +29,16 @@
         'views/lab_attendance_views.xml',
         'views/lab_experiment_views.xml',
         'views/lab_equipment_issue_views.xml',
+        'views/lab_dashboard_actions.xml',
         'views/lab_menu.xml',
         'report/lab_attendance_sheet_report.xml',
         'report/lab_utilization_report.xml',
     ],
+    'assets': {
+        'web.assets_backend': [
+            'op_student_lab_management/static/src/lab_dashboard/**/*',
+        ],
+    },
     'installable': True,
     'application': True,
     'license': 'LGPL-3',

@@ -14,3 +14,4 @@ access_health_checkup_back_office,health.checkup.back_office,model_op_health_che
 access_health_dashboard_staff,health.dashboard.staff,model_op_health_dashboard,group_health_staff,1,1,1,1
 access_health_certificate_wizard_staff,health.certificate.wizard.staff,model_op_health_certificate_wizard,group_health_staff,1,1,1,1
 access_health_visit_report_wizard_staff,health.visit.report.wizard.staff,model_op_health_visit_report_wizard,group_health_staff,1,1,1,1
+access_bxi_health_dashboard_staff,bxi.health.dashboard.staff,model_bxi_health_dashboard,group_health_staff,1,0,0,0

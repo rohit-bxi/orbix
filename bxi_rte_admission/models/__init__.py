@@ -12,3 +12,4 @@ from . import rte_lottery_result
 from . import rte_lottery_batch
 from . import rte_reimbursement_claim
 from . import rte_grievance
+from . import rte_dashboard

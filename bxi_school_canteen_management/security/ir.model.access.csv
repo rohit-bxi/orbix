@@ -14,3 +14,4 @@ access_canteen_order_line_self,canteen.order.line.self,model_bxi_canteen_order_l
 access_canteen_topup_wizard_staff,canteen.wallet.topup.wizard.staff,model_bxi_canteen_wallet_topup_wizard,group_canteen_staff,1,1,1,1
 access_canteen_sales_wizard_staff,canteen.sales.report.wizard.staff,model_bxi_canteen_sales_report_wizard,group_canteen_staff,1,1,1,1
 access_canteen_statement_wizard_staff,canteen.wallet.statement.wizard.staff,model_bxi_canteen_wallet_statement_wizard,group_canteen_staff,1,1,1,1
+access_canteen_dashboard_staff,canteen.dashboard.staff,model_bxi_canteen_dashboard,group_canteen_staff,1,0,0,0

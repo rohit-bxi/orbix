@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <odoo>
     <menuitem id="menu_canteen_root" name="Canteen" sequence="70" web_icon="bxi_school_canteen_management,static/description/icon.png"/>
+    <menuitem id="menu_canteen_dashboard" name="Dashboard" parent="menu_canteen_root" action="action_canteen_dashboard" sequence="5"/>
     <menuitem id="menu_canteen_order" name="Kitchen Display" parent="menu_canteen_root" action="action_canteen_order" sequence="10"/>
     <menuitem id="menu_canteen_wallet" name="Wallets" parent="menu_canteen_root" action="action_canteen_wallet" sequence="20"/>
     <menuitem id="menu_canteen_topup_wizard" name="Top Up Wallet" parent="menu_canteen_root" action="action_canteen_wallet_topup_wizard" sequence="25"/>

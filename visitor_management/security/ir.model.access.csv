@@ -6,3 +6,4 @@ access_visitor_data_management,access.visitor.data.management,model_visitor_data
 access_visit_data_management,access.visit.data.management,model_visit_data,group_visitor_management,1,1,1,1
 access_visitor_category,access.visitor.category,model_visitor_category,,1,0,0,0
 access_visitor_category_management,access.visitor.category.management,model_visitor_category,group_visitor_management,1,1,1,1
+access_bxi_visitor_dashboard,access.bxi.visitor.dashboard,model_bxi_visitor_dashboard,,1,0,0,0
