@@ -1,0 +1,10 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_op_attendance_line_portal,op.attendance.line portal read,openeducat_attendance.model_op_attendance_line,base.group_portal,1,0,0,0
+access_op_session_portal,op.session portal read,openeducat_timetable.model_op_session,base.group_portal,1,0,0,0
+access_op_marksheet_line_portal,op.marksheet.line portal read,openeducat_exam.model_op_marksheet_line,base.group_portal,1,0,0,0
+access_op_result_line_portal,op.result.line portal read,openeducat_exam.model_op_result_line,base.group_portal,1,0,0,0
+access_op_media_movement_portal,op.media.movement portal read,openeducat_library.model_op_media_movement,base.group_portal,1,0,0,0
+access_op_media_portal,op.media portal read,openeducat_library.model_op_media,base.group_portal,1,0,0,0
+access_op_student_fees_details_portal,op.student.fees.details portal read,openeducat_fees.model_op_student_fees_details,base.group_portal,1,0,0,0
+access_op_marksheet_register_portal,op.marksheet.register portal read,openeducat_exam.model_op_marksheet_register,base.group_portal,1,0,0,0
+access_op_exam_portal,op.exam portal read,openeducat_exam.model_op_exam,base.group_portal,1,0,0,0
