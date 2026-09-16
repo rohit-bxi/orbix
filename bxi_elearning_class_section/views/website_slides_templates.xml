@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Desktop filter bar: add Class / Section dropdown after the tag groups -->
+    <template id="courses_search_bar_class_section" inherit_id="website_slides.courses_search_bar">
+        <xpath expr="//div[@id='navbarTagGroups']" position="after">
+            <div id="navbarClassSections" class="d-none d-lg-block" t-if="elearning_classes">
+                <ul class="list-unstyled d-flex flex-wrap gap-2 mb-0">
+                    <li class="dropdown">
+                        <a t-att-class="'btn btn-light dropdown-toggle %s' % ('active' if search_class else '')"
+                            href="#" role="button" data-bs-toggle="dropdown"
+                            aria-haspopup="true" aria-expanded="false">
+                            <t t-out="search_class.name if search_class else 'Class'"/>
+                        </a>
+                        <div class="dropdown-menu">
+                            <a class="dropdown-item" href="/slides?prevent_redirect=True">All Classes</a>
+                            <t t-foreach="elearning_classes" t-as="elearning_class">
+                                <a t-att-class="'dropdown-item %s' % ('active' if elearning_class == search_class else '')"
+                                    t-attf-href="/slides?class_id=#{elearning_class.id}&amp;prevent_redirect=True"
+                                    t-out="elearning_class.name"/>
+                            </t>
+                        </div>
+                    </li>
+                    <li class="dropdown" t-if="search_class and search_class.section_ids">
+                        <a t-att-class="'btn btn-light dropdown-toggle %s' % ('active' if search_section else '')"
+                            href="#" role="button" data-bs-toggle="dropdown"
+                            aria-haspopup="true" aria-expanded="false">
+                            <t t-out="search_section.name if search_section else 'Section'"/>
+                        </a>
+                        <div class="dropdown-menu">
+                            <a t-attf-href="/slides?class_id=#{search_class.id}&amp;prevent_redirect=True" class="dropdown-item">All Sections</a>
+                            <t t-foreach="search_class.section_ids" t-as="section">
+                                <a t-att-class="'dropdown-item %s' % ('active' if section == search_section else '')"
+                                    t-attf-href="/slides?class_id=#{search_class.id}&amp;section_id=#{section.id}&amp;prevent_redirect=True"
+                                    t-out="section.name"/>
+                            </t>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </xpath>
+    </template>
+
+    <!-- Course card (grid listing): show the Class / Section this course belongs to -->
+    <template id="course_card_class_section" inherit_id="website_slides.course_card">
+        <xpath expr="//h3[hasclass('card-title')]" position="after">
+            <div t-if="channel.class_id or channel.section_id" class="small text-muted mb-1">
+                <t t-out="channel.class_id.name"/>
+                <t t-if="channel.class_id and channel.section_id"> - </t>
+                <t t-out="channel.section_id.name"/>
+            </div>
+        </xpath>
+    </template>
+
+    <!-- Course detail page sidebar: show the Class / Section this course belongs to -->
+    <template id="course_sidebar_class_section" inherit_id="website_slides.course_sidebar">
+        <xpath expr="//table[hasclass('table')]/tr[1]" position="before">
+            <tr t-if="channel.class_id">
+                <th class="border-top-0">Class</th>
+                <td class="border-top-0 text-break">
+                    <a t-attf-href="/slides?class_id=#{channel.class_id.id}&amp;prevent_redirect=True" t-out="channel.class_id.name"/>
+                </td>
+            </tr>
+            <tr t-if="channel.section_id">
+                <th class="border-top-0">Section</th>
+                <td class="border-top-0 text-break">
+                    <a t-attf-href="/slides?class_id=#{channel.class_id.id}&amp;section_id=#{channel.section_id.id}&amp;prevent_redirect=True" t-out="channel.section_id.name"/>
+                </td>
+            </tr>
+        </xpath>
+    </template>
+
+    <!-- Mobile off-canvas filters: add Class / Section accordion -->
+    <template id="courses_home_offcanvas_class_section" inherit_id="website_slides.courses_home">
+        <xpath expr="//div[@id='o_wslides_index_offcanvas']//div[hasclass('accordion-flush')]" position="inside">
+            <div class="accordion-item" t-if="elearning_classes">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#o_wslides_offcanvas_class_section"
+                        aria-expanded="false">
+                        Class / Section
+                    </button>
+                </h2>
+                <div id="o_wslides_offcanvas_class_section" class="accordion-collapse collapse">
+                    <div class="accordion-body pt-0">
+                        <ul class="list-group list-group-flush">
+                            <li t-foreach="elearning_classes" t-as="elearning_class" class="list-group-item border-0 px-0">
+                                <a t-attf-href="/slides?class_id=#{elearning_class.id}&amp;prevent_redirect=True"
+                                    t-att-class="'text-reset %s' % ('fw-bold' if elearning_class == search_class else '')"
+                                    t-out="elearning_class.name"/>
+                                <ul t-if="elearning_class == search_class" class="list-unstyled ms-3 mt-1">
+                                    <li t-foreach="elearning_class.section_ids" t-as="section">
+                                        <a t-attf-href="/slides?class_id=#{elearning_class.id}&amp;section_id=#{section.id}&amp;prevent_redirect=True"
+                                            t-att-class="'text-reset %s' % ('fw-bold' if section == search_section else '')"
+                                            t-out="section.name"/>
+                                    </li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </xpath>
+    </template>
+</odoo>

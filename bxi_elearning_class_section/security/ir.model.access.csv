@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_elearning_class_public,elearning.class.public,model_elearning_class,,1,0,0,0
+access_elearning_section_public,elearning.section.public,model_elearning_section,,1,0,0,0
+access_elearning_class_slide_officer,elearning.class.slide.officer,model_elearning_class,website_slides.group_website_slides_officer,1,1,1,1
+access_elearning_section_slide_officer,elearning.section.slide.officer,model_elearning_section,website_slides.group_website_slides_officer,1,1,1,1

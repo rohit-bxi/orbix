@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_slide_channel_form_class_section" model="ir.ui.view">
+        <field name="name">slide.channel.view.form.class.section</field>
+        <field name="model">slide.channel</field>
+        <field name="inherit_id" ref="website_slides.view_slide_channel_form"/>
+        <field name="arch" type="xml">
+            <field name="tag_ids" position="before">
+                <field name="class_id" placeholder="Class"/>
+                <field name="section_id" placeholder="Section"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="slide_channel_view_tree_class_section" model="ir.ui.view">
+        <field name="name">slide.channel.view.list.class.section</field>
+        <field name="model">slide.channel</field>
+        <field name="inherit_id" ref="website_slides.slide_channel_view_tree"/>
+        <field name="arch" type="xml">
+            <field name="channel_type" position="after">
+                <field name="class_id" optional="show"/>
+                <field name="section_id" optional="show"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="slide_channel_view_search_class_section" model="ir.ui.view">
+        <field name="name">slide.channel.view.search.class.section</field>
+        <field name="model">slide.channel</field>
+        <field name="inherit_id" ref="website_slides.slide_channel_view_search"/>
+        <field name="arch" type="xml">
+            <field name="tag_ids" position="after">
+                <field name="class_id" string="Class"/>
+                <field name="section_id" string="Section"/>
+            </field>
+            <filter name="filter_published" position="after">
+                <separator/>
+                <filter string="Class" name="groupby_class" context="{'group_by': 'class_id'}"/>
+                <filter string="Section" name="groupby_section" context="{'group_by': 'section_id'}"/>
+            </filter>
+        </field>
+    </record>
+</odoo>
