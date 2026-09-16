@@ -19,9 +19,9 @@ class TestMigrationBackfill(common.TransactionCase):
         super().setUp()
         # Dynamically import the migration module — it lives outside
         # the Python addon path so a normal `import` won't find it.
-        migration_path = Path(
-            '/home/rohit/19.0/addons/openeducat_erp/'
-            'openeducat_timetable/migrations/19.0.1.1.0/post-migrate.py'
+        migration_path = (
+            Path(__file__).resolve().parents[1]
+            / 'migrations' / '19.0.1.1.0' / 'post-migrate.py'
         )
         spec = util.spec_from_file_location(
             'op_timetable_migration', migration_path,
@@ -29,14 +29,31 @@ class TestMigrationBackfill(common.TransactionCase):
         self.migration_module = util.module_from_spec(spec)
         spec.loader.exec_module(self.migration_module)
 
-        self.course = self.env.ref(
-            'openeducat_core.op_course_2', raise_if_not_found=False)
-        self.batch = self.env.ref(
-            'openeducat_core.op_batch_1', raise_if_not_found=False)
-        self.faculty = self.env.ref(
-            'openeducat_core.op_faculty_1', raise_if_not_found=False)
-        self.subject = self.env.ref(
-            'openeducat_core.op_subject_1', raise_if_not_found=False)
+        self.course = self.env['op.course'].create({
+            'name': 'Backfill Course', 'code': 'MGB',
+        })
+        self.subject = self.env['op.subject'].create({
+            'name': 'Backfill Subject', 'code': 'MGBS',
+        })
+        self.course.subject_ids = [(6, 0, [self.subject.id])]
+        self.batch = self.env['op.batch'].create({
+            'name': 'Backfill Batch', 'code': 'MGBB',
+            'course_id': self.course.id,
+            'start_date': '2026-06-01', 'end_date': '2027-05-31',
+        })
+        self.faculty = self.env['op.faculty'].create({
+            'first_name': 'Backfill', 'last_name': 'Faculty',
+            'gender': 'male', 'birth_date': '1985-01-01',
+        })
+        self.student = self.env['op.student'].create({
+            'first_name': 'Backfill', 'last_name': 'Student',
+            'gr_no': 'MGB-STU-001', 'gender': 'm',
+        })
+        self.env['op.student.course'].create({
+            'student_id': self.student.id,
+            'course_id': self.course.id,
+            'batch_id': self.batch.id,
+        })
 
     def _make_session(self, **overrides):
         vals = {
@@ -51,12 +68,8 @@ class TestMigrationBackfill(common.TransactionCase):
         return self.env['op.session'].create(vals)
 
     def test_backfill_populates_batch_sessions(self):
-        if not self.batch:
-            self.skipTest("No demo batch")
         enrolled = self.env['op.student.course'].search(
             [('batch_id', '=', self.batch.id)]).mapped('student_id')
-        if not enrolled:
-            self.skipTest("Demo batch has no enrolled students")
         # Regression guard: session with batch_id but empty
         # student_ids should end up populated.
         session = self._make_session()
@@ -83,8 +96,6 @@ class TestMigrationBackfill(common.TransactionCase):
         # Regression guard: running twice must not duplicate rows —
         # ON CONFLICT DO NOTHING (raw SQL variant) or Odoo's own
         # M2M semantics (`(6, 0, ids)` = replace) both handle this.
-        if not self.batch:
-            self.skipTest("No demo batch")
         session = self._make_session()
         self.migration_module.migrate(self.env.cr, '19.0.1.0')
         session.invalidate_recordset(['student_ids'])

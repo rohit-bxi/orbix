@@ -12,7 +12,9 @@ class TestLessonPlan(TransactionCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.course = cls.env['op.course'].create({'name': 'Class 8', 'code': 'C8'})
-        cls.subject = cls.env['op.subject'].create({'name': 'Science', 'code': 'SCI'})
+        cls.subject = cls.env['op.subject'].search(
+            [('code', '=', 'SCI')], limit=1
+        ) or cls.env['op.subject'].create({'name': 'Science', 'code': 'SCI'})
         cls.teacher = cls.env['op.faculty'].create({
             'first_name': 'Nisha', 'last_name': 'Verma',
             'birth_date': '1987-04-04', 'gender': 'female',

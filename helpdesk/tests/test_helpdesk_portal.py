@@ -2,10 +2,12 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 from odoo.addons.mail.tests.common import mail_new_test_user
+from odoo.tests import tagged
 from odoo.tests.common import HttpCase
 from .common import HelpdeskCommon
 
 
+@tagged('post_install', '-at_install')
 class TestHelpdeskPortal(HttpCase, HelpdeskCommon):
     def test_customer_closure(self):
         self.test_team.allow_portal_ticket_closing = True

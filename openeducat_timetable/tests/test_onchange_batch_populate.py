@@ -7,7 +7,7 @@ Regression guards:
 
 from datetime import datetime
 
-from odoo.tests.common import Form
+from odoo.tests import Form
 
 from .common import SessionFixtureCase
 
@@ -46,6 +46,9 @@ class TestOnchangeBatchPopulate(SessionFixtureCase):
         session.student_ids = [(6, 0, self.students.ids)]
         self.assertTrue(session.student_ids)
         # Now simulate the onchange by unsetting batch and re-running.
+        # batch_id is a required field, so it can't be left empty when
+        # the form saves — restore it before exiting the context and
+        # only assert on the transient onchange result.
         with Form(session) as form:
             form.batch_id = self.env['op.batch']
             # After onchange, student_ids should be empty.
@@ -53,3 +56,4 @@ class TestOnchangeBatchPopulate(SessionFixtureCase):
                 form.student_ids,
                 "Clearing batch should clear student_ids",
             )
+            form.batch_id = self.batch

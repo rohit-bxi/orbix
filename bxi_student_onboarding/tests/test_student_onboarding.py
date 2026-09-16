@@ -23,7 +23,7 @@ class TestStudentOnboarding(TransactionCase):
             'start_date': '2026-06-01', 'end_date': '2027-05-31',
         })
         cls.relationship = cls.env['op.parent.relationship'].create({
-            'name': 'Father',
+            'name': 'Onboarding Guardian',
         })
         cls.other_student = cls.env['op.student'].create({
             'first_name': 'Sibling', 'last_name': 'Roe',
@@ -87,6 +87,7 @@ class TestStudentOnboarding(TransactionCase):
     def test_next_from_academic_info_succeeds_when_filled(self):
         onboarding = self.env['bxi.student.onboarding'].create(
             self._basic_info_vals())
+        onboarding.action_next()
         onboarding.write(self._academic_vals())
         onboarding.action_next()
         self.assertEqual(onboarding.state, 'documents')
@@ -94,6 +95,7 @@ class TestStudentOnboarding(TransactionCase):
     def test_action_back_moves_to_previous_step(self):
         onboarding = self.env['bxi.student.onboarding'].create(
             self._basic_info_vals())
+        onboarding.action_next()
         onboarding.write(self._academic_vals())
         onboarding.action_next()
         self.assertEqual(onboarding.state, 'documents')

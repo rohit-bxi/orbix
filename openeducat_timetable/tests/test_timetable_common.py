@@ -29,3 +29,25 @@ class TestTimetableCommon(common.TransactionCase):
         self.generate_timetable = self.env['generate.time.table']
         self.wizard_session = self.env['gen.time.table.line']
         self.timetable_report = self.env['time.table.report']
+
+        # Self-contained fixtures — don't rely on demo data being
+        # installed (it isn't, in a --test-enable-only run).
+        self.course = self.env['op.course'].create({
+            'name': 'TT Common Course', 'code': 'TTCC',
+        })
+        self.subject = self.env['op.subject'].create({
+            'name': 'TT Common Subject', 'code': 'TTCS',
+        })
+        self.course.subject_ids = [(6, 0, [self.subject.id])]
+        self.batch = self.env['op.batch'].create({
+            'name': 'TT Common Batch', 'code': 'TTCB',
+            'course_id': self.course.id,
+            'start_date': '2026-06-01', 'end_date': '2027-05-31',
+        })
+        self.faculty = self.op_faculty.create({
+            'first_name': 'TT Common', 'last_name': 'Faculty',
+            'gender': 'male', 'birth_date': '1985-01-01',
+        })
+        self.timing = self.op_timing.create({
+            'name': 'TT Common Slot', 'hour': '9', 'minute': '00', 'am_pm': 'am',
+        })

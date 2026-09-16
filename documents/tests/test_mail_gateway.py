@@ -8,11 +8,18 @@ from odoo import Command, fields, tools
 from odoo.addons.mail.tests.common import MailCommon
 from odoo.addons.test_mail.data.test_mail_data import MAIL_EML_ATTACHMENT, MAIL_NO_BODY, MAIL_TEMPLATE, MAIL_TEMPLATE_EXTRA_HTML
 from odoo.exceptions import AccessError, ValidationError
-from odoo.tests import new_test_user
+from odoo.tests import new_test_user, tagged
 from odoo.tests.common import RecordCapturer
 from odoo.tools import mute_logger
 
 
+# MailCommon.setUpClass unconditionally calls _activate_multi_company(), which creates a
+# res.company and thus copies existing payment.provider templates (including ones with
+# codes added by other modules, e.g. payment_custom's 'custom'). Running at_install (the
+# default) can execute before every installed module has finished patching that selection
+# field depending on load order, so this needs the full registry from post_install (same
+# fix as elsewhere in this session).
+@tagged('post_install', '-at_install')
 class TestMailGateway(MailCommon):
     """Test document creation/update on incoming mail.
 

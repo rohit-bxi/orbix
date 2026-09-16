@@ -13,8 +13,15 @@ class TestBxiParentTeacherMessaging(HttpCase):
     def setUpClass(cls):
         super().setUpClass()
 
+        cls.course = cls.env['op.course'].create({'name': 'Msg Course', 'code': 'MSGC'})
+
         cls.student = cls.env['op.student'].create({
             'first_name': 'Msg', 'last_name': 'Kid', 'gr_no': 'MSG-001', 'gender': 'm',
+            # Enrolled (default state 'running') so this student has a
+            # current class - the messaging controller only allows a
+            # thread with a teacher who actually teaches that class
+            # (via bxi.subject.mapping), never an arbitrary op.faculty id.
+            'course_detail_ids': [(0, 0, {'course_id': cls.course.id})],
         })
         cls.other_student = cls.env['op.student'].create({
             'first_name': 'Msg', 'last_name': 'Other', 'gr_no': 'MSG-002', 'gender': 'f',
@@ -39,6 +46,16 @@ class TestBxiParentTeacherMessaging(HttpCase):
         cls.teacher = cls.env['op.faculty'].create({
             'first_name': 'Msg', 'last_name': 'Teacher', 'birth_date': '1985-01-01', 'gender': 'female',
             'user_id': cls.teacher_user.id,
+        })
+
+        board = cls.env['bxi.board'].create({'name': 'Msg Board'})
+        curriculum = cls.env['bxi.curriculum'].create({
+            'name': 'Msg Curriculum', 'board_id': board.id, 'description': 'Test curriculum',
+        })
+        subject = cls.env['op.subject'].create({'name': 'Msg Subject', 'code': 'MSGS'})
+        cls.env['bxi.subject.mapping'].create({
+            'subject_id': subject.id, 'class_id': cls.course.id,
+            'teacher_id': cls.teacher.id, 'curriculum_id': curriculum.id,
         })
 
     def _headers(self, login, password):

@@ -21,6 +21,7 @@
 from .test_parent_common import TestParentCommon
 from odoo.exceptions import ValidationError, AccessError
 from odoo.tests import tagged
+from odoo.tools import mute_logger
 
 
 @tagged('post_install', '-at_install')
@@ -87,7 +88,7 @@ class TestParentRelation(TestParentCommon):
         self.assertEqual(rel.name, 'Brother')
 
     def test_02_unique_name(self):
-        with self.assertRaises(Exception):
+        with mute_logger('odoo.sql_db'), self.assertRaises(Exception):
             self.op_parent_relationship.create({'name': 'Test Father'})
 
     def test_03_relation_search(self):

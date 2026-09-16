@@ -19,11 +19,39 @@
 ###############################################################################
 
 
-from odoo.tests import TransactionCase
+from odoo.tests import TransactionCase, tagged
 
 
+# Creating an op.course triggers rte_gender_restriction (a required field with a
+# default that bxi_rte_admission adds to op.course via model inheritance); running
+# at_install (the default) can execute before that patch is applied depending on
+# module load order, so this needs the full registry from post_install (same fix
+# used for the same reason elsewhere in this session, e.g. openeducat_admission).
+@tagged('post_install', '-at_install')
 class TestAssignmentCommon(TransactionCase):
     def setUp(self):
         super(TestAssignmentCommon, self).setUp()
         self.op_assignment = self.env['op.assignment']
         self.op_assignment_subline = self.env['op.assignment.sub.line']
+
+        # These tests used to reference openeducat_core/openeducat_assignment demo
+        # data (op_course_4, op_batch_3, op_subject_10, op_faculty_2, op_student_9,
+        # openeducat_assignment.op_assignment_1) directly, but demo data is not
+        # guaranteed to be loaded, so build fixtures here instead.
+        self.assignment_type = self.env['grading.assignment.type'].create({
+            'name': 'Assignment Type Fixture', 'code': 'ASG-TYPE1',
+        })
+        self.course = self.env['op.course'].create({'name': 'Assignment Course', 'code': 'ASG-C1'})
+        self.batch = self.env['op.batch'].create({
+            'name': 'Assignment Batch', 'code': 'ASG-B1', 'course_id': self.course.id,
+            'start_date': '2026-01-01', 'end_date': '2026-12-31',
+        })
+        self.subject = self.env['op.subject'].create({'name': 'Assignment Subject', 'code': 'ASG-S1'})
+        self.faculty = self.env['op.faculty'].create({
+            'first_name': 'Assignment', 'last_name': 'Faculty',
+            'birth_date': '1985-01-01', 'gender': 'male',
+        })
+        self.student = self.env['op.student'].create({
+            'first_name': 'Assignment', 'last_name': 'Student',
+            'gr_no': 'ASG-S001', 'gender': 'm',
+        })

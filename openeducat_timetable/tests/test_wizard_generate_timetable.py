@@ -19,25 +19,38 @@ class TestWizardStudentIds(common.TransactionCase):
 
     def setUp(self):
         super().setUp()
-        self.course = self.env.ref(
-            'openeducat_core.op_course_2', raise_if_not_found=False)
-        self.batch = self.env.ref(
-            'openeducat_core.op_batch_1', raise_if_not_found=False)
-        self.faculty = self.env.ref(
-            'openeducat_core.op_faculty_1', raise_if_not_found=False)
-        self.subject = self.env.ref(
-            'openeducat_core.op_subject_1', raise_if_not_found=False)
-        self.timing = self.env.ref(
-            'openeducat_timetable.op_timing_1', raise_if_not_found=False)
+        self.course = self.env['op.course'].create({
+            'name': 'Wizard Course', 'code': 'WGT',
+        })
+        self.subject = self.env['op.subject'].create({
+            'name': 'Wizard Subject', 'code': 'WGTS',
+        })
+        self.course.subject_ids = [(6, 0, [self.subject.id])]
+        self.batch = self.env['op.batch'].create({
+            'name': 'Wizard Batch', 'code': 'WGTB',
+            'course_id': self.course.id,
+            'start_date': '2026-06-01', 'end_date': '2027-05-31',
+        })
+        self.faculty = self.env['op.faculty'].create({
+            'first_name': 'Wizard', 'last_name': 'Faculty',
+            'gender': 'male', 'birth_date': '1985-01-01',
+        })
+        self.timing = self.env['op.timing'].create({
+            'name': 'Wizard Slot', 'hour': '9', 'minute': '00', 'am_pm': 'am',
+        })
+        self.student = self.env['op.student'].create({
+            'first_name': 'Wizard', 'last_name': 'Student',
+            'gr_no': 'WGT-STU-001', 'gender': 'm',
+        })
+        self.env['op.student.course'].create({
+            'student_id': self.student.id,
+            'course_id': self.course.id,
+            'batch_id': self.batch.id,
+        })
 
     def test_generated_sessions_have_student_ids(self):
-        if not (self.course and self.batch and self.faculty
-                and self.subject):
-            self.skipTest("Missing demo records")
         enrolled = self.env['op.student.course'].search(
             [('batch_id', '=', self.batch.id)])
-        if not enrolled:
-            self.skipTest("No enrollments on demo batch — nothing to backfill")
         expected_students = enrolled.mapped('student_id')
 
         # Same weekday all year — pick tomorrow so day-of-week matches.

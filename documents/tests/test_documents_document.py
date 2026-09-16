@@ -11,7 +11,7 @@ from unittest.mock import patch
 from odoo import http
 from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.tests.common import new_test_user
-from odoo.tests import users
+from odoo.tests import tagged, users
 from odoo.tools import mute_logger
 
 from .test_documents_common import TransactionCaseDocuments, GIF, TEXT, WEBP
@@ -345,30 +345,6 @@ class TestCaseDocuments(TransactionCaseDocuments):
         # test extension when filename is changed (i.e. name is edited or file is replaced)
         document.name = 'test.png'
         self.assertEqual(document.file_extension, 'png', "extension must be updated on change in filename")
-
-    def test_restricted_folder_multi_company(self):
-        """
-        Tests the behavior of a restricted folder in a multi-company environment
-        """
-
-        company_a = self.env.company
-        company_b = self.env['res.company'].create({'name': 'Company B'})
-
-        user_b = self.env['res.users'].create({
-            'name': 'User of company B',
-            'login': 'user_b',
-            'group_ids': [(6, 0, [self.ref('documents.group_documents_manager')])],
-            'company_id': company_b.id,
-            'company_ids': [(6, 0, [company_b.id])]
-        })
-
-        self.folder_a.company_id = company_a
-        self.assertEqual(self.folder_a.display_name, 'folder A',
-                         "The parent folder's name should not be hidden")
-        self.assertEqual(self.folder_a.with_user(user_b).display_name, 'Restricted',
-                         "The parent folder's name should be hidden")
-        self.assertEqual(self.folder_a_a.display_name, "folder A - A",
-                         "The parent folder name should not be included in the name")
 
     def test_unlink_attachments_with_documents(self):
         """
@@ -865,3 +841,36 @@ class TestCaseDocuments(TransactionCaseDocuments):
         self.assertEqual(doc.res_name, "Test Partner")
         partner.unlink()
         self.assertFalse(doc.res_name)
+
+
+# res.company creation copies existing payment.provider templates (including ones with
+# codes added by other modules, e.g. payment_custom's 'custom'). Running at_install (the
+# default) can execute before every installed module has finished patching that selection
+# field depending on load order, so this one needs the full registry from post_install
+# (same fix as TestHelpdeskMultyCompany in the helpdesk module's tests).
+@tagged('post_install', '-at_install')
+class TestCaseDocumentsMultiCompany(TransactionCaseDocuments):
+
+    def test_restricted_folder_multi_company(self):
+        """
+        Tests the behavior of a restricted folder in a multi-company environment
+        """
+
+        company_a = self.env.company
+        company_b = self.env['res.company'].create({'name': 'Company B'})
+
+        user_b = self.env['res.users'].create({
+            'name': 'User of company B',
+            'login': 'user_b',
+            'group_ids': [(6, 0, [self.ref('documents.group_documents_manager')])],
+            'company_id': company_b.id,
+            'company_ids': [(6, 0, [company_b.id])]
+        })
+
+        self.folder_a.company_id = company_a
+        self.assertEqual(self.folder_a.display_name, 'folder A',
+                         "The parent folder's name should not be hidden")
+        self.assertEqual(self.folder_a.with_user(user_b).display_name, 'Restricted',
+                         "The parent folder's name should be hidden")
+        self.assertEqual(self.folder_a_a.display_name, "folder A - A",
+                         "The parent folder name should not be included in the name")

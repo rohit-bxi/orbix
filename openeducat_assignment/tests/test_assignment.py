@@ -68,22 +68,21 @@ class TestAssignmentSubline(TestAssignmentCommon):
             'name': "LRTP - 001 - Asg - 009",
             'state': "draft",
             'marks': 50,
-            'assignment_type':
-                self.env.ref('openeducat_assignment.op_assignment_1').id,
+            'assignment_type': self.assignment_type.id,
             'issued_date': time.strftime('%Y-%m-01'),
-            'course_id': self.env.ref('openeducat_core.op_course_4').id,
-            'batch_id': self.env.ref('openeducat_core.op_batch_3').id,
-            'subject_id': self.env.ref('openeducat_core.op_subject_10').id,
-            'faculty_id': self.env.ref('openeducat_core.op_faculty_2').id,
+            'course_id': self.course.id,
+            'batch_id': self.batch.id,
+            'subject_id': self.subject.id,
+            'faculty_id': self.faculty.id,
             'submission_date': time.strftime('%Y-%m-01'),
-            'allocation_ids': self.env.ref("openeducat_core.op_student_9"),
+            'allocation_ids': self.student,
             'description': 'Please answer the following questions briefly:'
                            ' - 1. What are the different types of land',
         })
         assignment_subline1 = self.op_assignment_subline.create({
             'assignment_id': assignment.id,
             'state': "draft",
-            'student_id': self.env.ref("openeducat_core.op_student_9").id,
+            'student_id': self.student.id,
             'description': 'The answers of the questions are placed here',
         })
         assignment_subline1.unlink()

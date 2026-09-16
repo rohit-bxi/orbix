@@ -22,6 +22,7 @@ from .test_exam_common import TestExamCommon
 from odoo.exceptions import ValidationError
 from odoo.tests import tagged
 from odoo import fields
+from odoo.tools import mute_logger
 import datetime
 
 @tagged('post_install', '-at_install')
@@ -35,7 +36,8 @@ class TestExamType(TestExamCommon):
 
     def test_02_type_unique_code(self):
         self.op_exam_type.create({'name': 'T1', 'code': 'CODE1'})
-        with self.assertRaises(Exception):
+        with mute_logger('odoo.sql_db'), \
+                self.assertRaises(Exception), self.env.cr.savepoint():
              self.op_exam_type.create({'name': 'T2', 'code': 'CODE1'})
 
     def test_03_type_search(self):

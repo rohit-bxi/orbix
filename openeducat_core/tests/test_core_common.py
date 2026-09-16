@@ -36,3 +36,30 @@ class TestCoreCommon(TransactionCase):
         self.employ_wizard = self.env['wizard.op.faculty.employee']
         self.faculty_user_wizard = self.env['wizard.op.faculty']
         self.studnet_wizard = self.env['wizard.op.student']
+
+        # These tests used to reference openeducat_core demo data (op_student_1,
+        # op_faculty_1, op_course_1, op_batch_1, op_res_partner_14/30) directly, but
+        # demo data is not guaranteed to be loaded, so build fixtures here instead.
+        self.partner_for_faculty = self.env['res.partner'].create({
+            'name': 'Core Faculty Partner Fixture', 'email': 'core.faculty.partner@example.com',
+        })
+        self.partner_for_student = self.env['res.partner'].create({
+            'name': 'Core Student Partner Fixture', 'email': 'core.student.partner@example.com',
+        })
+        self.course_1 = self.op_course.create({'name': 'Core Course 1', 'code': 'CORE-C1'})
+        self.batch_1 = self.op_batch.create({
+            'name': 'Core Batch 1', 'code': 'CORE-B1', 'course_id': self.course_1.id,
+            'start_date': '2026-01-01', 'end_date': '2026-12-31',
+        })
+        self.faculty_1 = self.op_faculty.create({
+            'first_name': 'Core', 'last_name': 'Faculty One',
+            'birth_date': '1985-01-01', 'gender': 'male',
+        })
+        self.student_1 = self.op_student.create({
+            'first_name': 'Core', 'last_name': 'Student One',
+            'gr_no': 'CORE-S1', 'gender': 'm', 'email': 'core.student.one@example.com',
+        })
+        self.env['op.student.course'].create({
+            'student_id': self.student_1.id, 'course_id': self.course_1.id,
+            'batch_id': self.batch_1.id, 'state': 'running',
+        })

@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) 2026 BXI Technology Pvt. Ltd. All Rights Reserved.
 # License OPL-1 (Odoo Proprietary License v1.0, see LICENSE file for full text).
+from psycopg2 import IntegrityError
+
 from odoo.exceptions import ValidationError
 from odoo.tests.common import TransactionCase, tagged
+from odoo.tools import mute_logger
 
 from odoo.addons.mail.tests.common import mail_new_test_user
 
@@ -13,16 +16,19 @@ class TestAcademicManagement(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.board = cls.env['bxi.board'].create({'name': 'CBSE'})
+        # bxi.board.name and op.subject.code are unique; this shared dev DB may already
+        # have real "CBSE"/"MATH" rows from earlier use, so reuse them instead of
+        # assuming they're free.
+        cls.board = cls.env['bxi.board'].search([('name', '=', 'CBSE')], limit=1) \
+            or cls.env['bxi.board'].create({'name': 'CBSE'})
         cls.course = cls.env['op.course'].create({
             'name': 'Class 10', 'code': 'C10',
         })
         cls.course_2 = cls.env['op.course'].create({
             'name': 'Class 9', 'code': 'C9',
         })
-        cls.subject = cls.env['op.subject'].create({
-            'name': 'Mathematics', 'code': 'MATH',
-        })
+        cls.subject = cls.env['op.subject'].search([('code', '=', 'MATH')], limit=1) \
+            or cls.env['op.subject'].create({'name': 'Mathematics', 'code': 'MATH'})
         cls.teacher = cls.env['op.faculty'].create({
             'first_name': 'Amit', 'last_name': 'Kumar',
             'birth_date': '1985-01-01', 'gender': 'male',
@@ -36,21 +42,24 @@ class TestAcademicManagement(TransactionCase):
     # --- bxi.board ---
 
     def test_board_unique_name(self):
-        with self.assertRaises(Exception):
-            self.env['bxi.board'].create({'name': 'CBSE'})
+        with mute_logger('odoo.sql_db'), self.assertRaises(IntegrityError):
+            with self.env.cr.savepoint():
+                self.env['bxi.board'].create({'name': 'CBSE'})
 
     # --- bxi.curriculum ---
 
     def test_curriculum_unique_name_board(self):
-        with self.assertRaises(Exception):
-            self.env['bxi.curriculum'].create({
-                'name': 'Main Curriculum',
-                'board_id': self.board.id,
-                'description': 'Duplicate',
-            })
+        with mute_logger('odoo.sql_db'), self.assertRaises(IntegrityError):
+            with self.env.cr.savepoint():
+                self.env['bxi.curriculum'].create({
+                    'name': 'Main Curriculum',
+                    'board_id': self.board.id,
+                    'description': 'Duplicate',
+                })
 
     def test_curriculum_same_name_different_board_allowed(self):
-        other_board = self.env['bxi.board'].create({'name': 'ICSE'})
+        other_board = self.env['bxi.board'].search([('name', '=', 'ICSE')], limit=1) \
+            or self.env['bxi.board'].create({'name': 'ICSE'})
         curriculum = self.env['bxi.curriculum'].create({
             'name': 'Main Curriculum',
             'board_id': other_board.id,
@@ -93,8 +102,9 @@ class TestAcademicManagement(TransactionCase):
 
     def test_curriculum_project_unique_name(self):
         self.env['bxi.curriculum.project'].create({'name': 'Math Olympiad'})
-        with self.assertRaises(Exception):
-            self.env['bxi.curriculum.project'].create({'name': 'Math Olympiad'})
+        with mute_logger('odoo.sql_db'), self.assertRaises(IntegrityError):
+            with self.env.cr.savepoint():
+                self.env['bxi.curriculum.project'].create({'name': 'Math Olympiad'})
 
     # --- bxi.subject.mapping ---
 
@@ -115,13 +125,14 @@ class TestAcademicManagement(TransactionCase):
             'teacher_id': self.teacher.id,
             'curriculum_id': self.curriculum.id,
         })
-        with self.assertRaises(Exception):
-            self.env['bxi.subject.mapping'].create({
-                'subject_id': self.subject.id,
-                'class_id': self.course.id,
-                'teacher_id': self.teacher.id,
-                'curriculum_id': self.curriculum.id,
-            })
+        with mute_logger('odoo.sql_db'), self.assertRaises(IntegrityError):
+            with self.env.cr.savepoint():
+                self.env['bxi.subject.mapping'].create({
+                    'subject_id': self.subject.id,
+                    'class_id': self.course.id,
+                    'teacher_id': self.teacher.id,
+                    'curriculum_id': self.curriculum.id,
+                })
 
     def test_subject_mapping_same_subject_different_class_allowed(self):
         mapping_1 = self.env['bxi.subject.mapping'].create({

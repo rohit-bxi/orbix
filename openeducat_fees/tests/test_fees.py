@@ -31,7 +31,7 @@ class TestStudentFees(TestFeesCommon):
 
     def test_01_fees_record_creation(self):
         """Test creating a student fees record directly"""
-        student = self.env.ref('openeducat_core.op_student_1')
+        student = self.student
         fee = self.op_student_fees.create({
             'student_id': student.id,
             'amount': 5000.0,
@@ -45,7 +45,7 @@ class TestStudentFees(TestFeesCommon):
 
     def test_02_fees_discount_computation(self):
         """Test that after_discount_amount is correctly computed"""
-        student = self.env.ref('openeducat_core.op_student_1')
+        student = self.student
         fee = self.op_student_fees.create({
             'student_id': student.id,
             'amount': 10000.0,
@@ -58,7 +58,7 @@ class TestStudentFees(TestFeesCommon):
 
     def test_03_fees_action_get_invoice_no_invoice(self):
         """Test action_get_invoice returns True when no invoice exists"""
-        student = self.env.ref('openeducat_core.op_student_1')
+        student = self.student
         fee = self.op_student_fees.create({
             'student_id': student.id,
             'amount': 500.0,
@@ -69,7 +69,7 @@ class TestStudentFees(TestFeesCommon):
 
     def test_04_fees_action_get_invoice_with_invoice(self):
         """Test action_get_invoice opens invoice form when invoice exists"""
-        student = self.env.ref('openeducat_core.op_student_1')
+        student = self.student
         fee = self.op_student_fees.create({
             'student_id': student.id,
             'amount': 500.0,
@@ -87,7 +87,7 @@ class TestStudentFees(TestFeesCommon):
 
     def test_05_student_fees_count_compute(self):
         """Test fees_details_count is computed from linked fee records"""
-        student = self.env.ref('openeducat_core.op_student_1')
+        student = self.student
         initial_count = student.fees_details_count
 
         self.op_student_fees.create({'student_id': student.id, 'amount': 100.0})
@@ -177,7 +177,7 @@ class TestWizardFees(TestFeesCommon):
         """Test the fees report wizard filtered by student"""
         wizard = self.op_fees_wizard.create({
             'fees_filter': 'student',
-            'student_id': self.env.ref('openeducat_core.op_student_1').id
+            'student_id': self.student.id
         })
         self.assertTrue(wizard.id)
         self.assertEqual(wizard.fees_filter, 'student')
@@ -187,14 +187,14 @@ class TestWizardFees(TestFeesCommon):
         """Test the fees report wizard filtered by course"""
         wizard = self.op_fees_wizard.create({
             'fees_filter': 'course',
-            'course_id': self.env.ref('openeducat_core.op_course_1').id,
+            'course_id': self.course.id,
         })
         self.assertTrue(wizard.id)
         wizard.print_report()
 
     def test_03_wizard_filter_by_student_report(self):
         """Test that print_report returns a report action for student filter"""
-        student = self.env.ref('openeducat_core.op_student_2')
+        student = self.student_2
         wizard = self.op_fees_wizard.create({
             'fees_filter': 'student',
             'student_id': student.id,

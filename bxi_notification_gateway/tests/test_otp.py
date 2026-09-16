@@ -18,12 +18,24 @@ def _fake_send_otp_sms(self, phone, otp_code):
     return True
 
 
+TEST_PHONES = ['+919876543210', '+910000000000']
+
+
 @tagged('post_install', '-at_install')
 class TestBxiOtp(HttpCase):
+
+    def _purge_test_otps(self):
+        self.env['bxi.otp.request'].sudo().search([('phone', 'in', TEST_PHONES)]).unlink()
 
     def setUp(self):
         super().setUp()
         CAPTURED.clear()
+        # url_open() in this test setup shares the test's own transaction rather than
+        # a separately-committed connection, so a plain unlink() here is enough to hide
+        # any pre-existing OTP row (leftover from an earlier, truly-committed run) for
+        # the duration of this test - without it, a later _verify() search could match
+        # a stale row and report "expired" instead of "no OTP for this phone at all".
+        self._purge_test_otps()
 
     @patch.object(Msg91Client, 'send_otp_sms', _fake_send_otp_sms)
     def test_request_otp_sends_and_returns_sent_true(self):
