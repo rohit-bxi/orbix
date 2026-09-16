@@ -63,8 +63,14 @@ class TestTimetableRobustCommon(TransactionCase):
         })
         
         # Classroom
+        stale_classrooms = self.Classroom.search([('code', '=', 'R101')])
+        if stale_classrooms:
+            if 'op.exam.room' in self.env:
+                self.env['op.exam.room'].search(
+                    [('classroom_id', 'in', stale_classrooms.ids)]).unlink()
+            stale_classrooms.unlink()
         self.classroom = self.Classroom.create({
-            'name': 'Room 101', 
+            'name': 'Room 101',
             'code': 'R101',
             'capacity': 30
         })

@@ -3,9 +3,12 @@
 # License OPL-1 (Odoo Proprietary License v1.0, see LICENSE file for full text).
 from datetime import timedelta
 
+from psycopg2 import IntegrityError
+
 from odoo import fields
 from odoo.exceptions import UserError, ValidationError
 from odoo.tests.common import TransactionCase, tagged
+from odoo.tools import mute_logger
 
 
 @tagged('post_install', '-at_install')
@@ -25,10 +28,14 @@ class TestTransport(TransactionCase):
             'is_school_bus': True,
             'seats': 2,
         })
+        income_account = cls.env['account.account'].search([
+            ('account_type', '=', 'income'),
+        ], limit=1)
         cls.fee_product = cls.env['product.product'].create({
             'name': 'Transport Fee',
             'type': 'service',
             'list_price': 0.0,
+            'property_account_income_id': income_account.id,
         })
         cls.route = cls.env['bxi.transport.route'].create({
             'name': 'Route A',
@@ -58,10 +65,10 @@ class TestTransport(TransactionCase):
             'first_name': 'Sam', 'last_name': 'Lee', 'gr_no': 'TRN-003', 'gender': 'm',
         })
 
-    def _register(self, student, stop):
+    def _register(self, student, stop, route=None):
         return self.env['bxi.transport.registration'].create({
             'student_id': student.id,
-            'route_id': self.route.id,
+            'route_id': (route or self.route).id,
             'stop_id': stop.id,
         })
 
@@ -121,19 +128,27 @@ class TestTransport(TransactionCase):
         self.assertEqual(reg.state, 'confirmed')
 
     def test_confirm_without_fee_product_raises(self):
+        # fee_product_id is a required, NOT NULL field, so a route can never actually
+        # end up without one - the real failure mode this guards against is a fee
+        # product that has no income account configured (see _create_invoice), which
+        # is what actually blocks the invoice from being created on confirm.
+        product_without_income_account = self.env['product.product'].create({
+            'name': 'Fee Product Without Income Account',
+            'type': 'service',
+            'list_price': 0.0,
+        })
         route_no_fee = self.env['bxi.transport.route'].create({
             'name': 'Route C',
             'code': 'RC',
             'vehicle_id': self.vehicle.id,
-            'fee_product_id': self.fee_product.id,
+            'fee_product_id': product_without_income_account.id,
             'state': 'active',
         })
         stop = self.env['bxi.transport.route.stop'].create({
             'route_id': route_no_fee.id,
             'name': 'Stop C',
         })
-        reg = self._register(self.student_1, stop)
-        route_no_fee.fee_product_id = False
+        reg = self._register(self.student_1, stop, route=route_no_fee)
         with self.assertRaises(UserError):
             reg.action_confirm()
 
@@ -152,13 +167,14 @@ class TestTransport(TransactionCase):
         self.assertEqual(self.route.seats_available, 2)
 
     def test_route_code_unique(self):
-        with self.assertRaises(Exception):
-            self.env['bxi.transport.route'].create({
-                'name': 'Duplicate Code Route',
-                'code': 'RA',
-                'vehicle_id': self.vehicle.id,
-                'fee_product_id': self.fee_product.id,
-            })
+        with mute_logger('odoo.sql_db'), self.assertRaises(IntegrityError):
+            with self.env.cr.savepoint():
+                self.env['bxi.transport.route'].create({
+                    'name': 'Duplicate Code Route',
+                    'code': 'RA',
+                    'vehicle_id': self.vehicle.id,
+                    'fee_product_id': self.fee_product.id,
+                })
 
     def test_driver_license_expiring_soon_computed(self):
         partner = self.env['res.partner'].create({'name': 'Test Driver'})
@@ -178,10 +194,11 @@ class TestTransport(TransactionCase):
             'license_type': 'lmv',
             'license_expiry': fields.Date.today() + timedelta(days=60),
         })
-        with self.assertRaises(Exception):
-            self.env['bxi.transport.driver'].create({
-                'partner_id': partner.id,
-                'license_number': 'DL2',
-                'license_type': 'lmv',
-                'license_expiry': fields.Date.today() + timedelta(days=90),
-            })
+        with mute_logger('odoo.sql_db'), self.assertRaises(IntegrityError):
+            with self.env.cr.savepoint():
+                self.env['bxi.transport.driver'].create({
+                    'partner_id': partner.id,
+                    'license_number': 'DL2',
+                    'license_type': 'lmv',
+                    'license_expiry': fields.Date.today() + timedelta(days=90),
+                })

@@ -59,13 +59,21 @@ class TestBxiLibraryBookRequest(HttpCase):
         self.assertEqual(len(teacher_list), 1)
 
     def test_librarian_sees_all_requests(self):
-        self._create_request()
-        self.url_open('/api/v1/library/book-requests', headers=self._headers('book_other', 'OtherPass1!'), json={
-            'media_id': self.media.id,
-        })
+        librarian_headers = self._headers('book_librarian', 'LibrarianPass1!')
+        before_ids = {
+            r['id'] for r in self.url_open(
+                '/api/v1/library/book-requests', headers=librarian_headers,
+            ).json()['data']['requests']
+        }
 
-        librarian_list = self.url_open('/api/v1/library/book-requests', headers=self._headers('book_librarian', 'LibrarianPass1!')).json()['data']['requests']
-        self.assertEqual(len(librarian_list), 2)
+        teacher_req_id = self._create_request().json()['data']['id']
+        other_req_id = self.url_open('/api/v1/library/book-requests', headers=self._headers('book_other', 'OtherPass1!'), json={
+            'media_id': self.media.id,
+        }).json()['data']['id']
+
+        librarian_list = self.url_open('/api/v1/library/book-requests', headers=librarian_headers).json()['data']['requests']
+        new_ids = {r['id'] for r in librarian_list} - before_ids
+        self.assertEqual(new_ids, {teacher_req_id, other_req_id})
 
     def test_non_librarian_cannot_approve(self):
         req_id = self._create_request().json()['data']['id']
@@ -111,7 +119,7 @@ class TestBxiLibraryBookRequest(HttpCase):
     def test_create_request_links_teacher_when_requester_is_faculty(self):
         faculty = self.env['op.faculty'].create({
             'first_name': 'Book', 'last_name': 'Teacher', 'user_id': self.teacher_user.id,
-            'gender': 'male',
+            'gender': 'male', 'birth_date': '1990-01-01',
         })
         req_id = self._create_request().json()['data']['id']
         book_request = self.env['bxi.library.book.request'].sudo().browse(req_id)

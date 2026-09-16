@@ -43,7 +43,7 @@ class TestCore(TestCoreCommon):
         faculty = self.op_faculty.search([])
 
         new_faculty = self.op_faculty.create({
-            'partner_id': self.env.ref('openeducat_core.op_res_partner_30').id,
+            'partner_id': self.partner_for_faculty.id,
             'first_name': 'binapshah',
             'last_name': 'kalol',
             'birth_date': '2009-01-01',
@@ -67,7 +67,7 @@ class TestCore(TestCoreCommon):
 
     def test_case_5_res_company(self):
         users = self.res_company.search([])
-        record = self.env.ref('openeducat_core.op_faculty_1'),
+        record = self.faculty_1,
         users.create_user(record)
 
     def test_case_6_student(self):
@@ -79,7 +79,7 @@ class TestCore(TestCoreCommon):
             'last_name': 'ahir',
             'birth_date': '1999-01-01',
             'gender': 'm',
-            'partner_id': self.env.ref('openeducat_core.op_res_partner_14').id
+            'partner_id': self.partner_for_student.id
 
         }
         new_student = self.op_student.create(vals)
@@ -91,9 +91,9 @@ class TestCore(TestCoreCommon):
 
     def test_case_7_subject_registartion(self):
         vals = {
-            'student_id': self.env.ref('openeducat_core.op_student_1').id,
-            'course_id': self.env.ref('openeducat_core.op_course_1').id,
-            'batch_id': self.env.ref('openeducat_core.op_batch_1').id,
+            'student_id': self.student_1.id,
+            'course_id': self.course_1.id,
+            'batch_id': self.batch_1.id,
         }
         registrations = self.subject_registration.create(vals)
 
@@ -116,14 +116,14 @@ class TestCore(TestCoreCommon):
 
     def test_case_9_faculty_user_wizard(self):
 
-        faculty_id = self.env.ref('openeducat_core.op_faculty_1')
+        faculty_id = self.faculty_1
         vals = {'faculty_ids': [(6, 0, [faculty_id.id])]}
         faculty = self.faculty_user_wizard.create(vals)
         faculty._get_faculties()
         faculty.create_faculty_user()
 
     def test_case_10_studnet_wizard(self):
-        student_id = self.env.ref('openeducat_core.op_student_1')
+        student_id = self.student_1
         vals = {'student_ids': [(6, 0, [student_id.id])]}
         student = self.studnet_wizard.create(vals)
         student._get_students()

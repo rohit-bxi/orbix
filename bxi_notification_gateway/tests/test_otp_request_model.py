@@ -53,10 +53,13 @@ class TestBxiOtpRequestModel(TransactionCase):
 
     @patch.object(Msg91Client, 'send_otp_sms', _fake_send_otp_sms_ok)
     def test_generate_and_send_creates_record_and_returns_true_on_success(self):
-        result = self.Otp._generate_and_send('+919876543210')
+        # Uses its own number rather than +919876543210 (shared with test_otp.py's
+        # HttpCase tests), since HttpCase requests can leave real, committed rows for
+        # that number behind, which would make this exact-count assertion flaky.
+        result = self.Otp._generate_and_send('+919876543218')
 
         self.assertTrue(result)
-        otp = self.Otp.sudo().search([('phone', '=', '+919876543210')])
+        otp = self.Otp.sudo().search([('phone', '=', '+919876543218')])
         self.assertEqual(len(otp), 1)
         self.assertEqual(otp.purpose, 'login')
         self.assertEqual(otp.attempts, 0)

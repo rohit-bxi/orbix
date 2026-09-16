@@ -47,9 +47,7 @@ class TestAttendanceSheet(TestAttendanceCommon):
         sheet = self.op_attendance_sheet.create({
             'name': 'AS',
             'attendance_date': time.strftime('%Y-%m-01'),
-            'register_id':
-                self.env.ref('openeducat_attendance.'
-                             'op_attendance_register_1').id
+            'register_id': self.register.id
         })
         # info('  Details Of Attendance Sheet:.....')
         for record in sheet:

@@ -18,12 +18,18 @@
 #
 ###############################################################################
 
-from odoo.tests import TransactionCase
+from odoo.tests import TransactionCase, tagged
 from odoo.exceptions import ValidationError, AccessError
 from odoo import fields
 import datetime
 
 
+# Creating an op.course triggers rte_gender_restriction (a required field with a
+# default that bxi_rte_admission adds to op.course via model inheritance); running
+# at_install (the default) can execute before that patch is applied depending on
+# module load order, so this needs the full registry from post_install (same fix
+# used for the same reason elsewhere in this session, e.g. openeducat_admission).
+@tagged('post_install', '-at_install')
 class TestAssignmentRobustCommon(TransactionCase):
     def setUp(self):
         super(TestAssignmentRobustCommon, self).setUp()
@@ -74,11 +80,14 @@ class TestAssignmentRobustCommon(TransactionCase):
             'birth_date': '2010-01-01'
         })
         
-        self.asg_type = self.AssignmentType.create({
-            'name': 'Homework',
-            'code': 'HW',
-            'assign_type': 'sub'
-        })
+        # grading.assignment.type.code is unique; this shared dev DB may already have
+        # a real "HW" row from earlier use, so reuse it instead of assuming it's free.
+        self.asg_type = self.AssignmentType.search([('code', '=', 'HW')], limit=1) \
+            or self.AssignmentType.create({
+                'name': 'Homework',
+                'code': 'HW',
+                'assign_type': 'sub'
+            })
 
 
 class TestAssignmentModel(TestAssignmentRobustCommon):

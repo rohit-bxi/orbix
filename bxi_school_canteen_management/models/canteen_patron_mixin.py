@@ -30,6 +30,15 @@ class CanteenPatronMixin(models.AbstractModel):
                 record.patron_type = False
                 record.patron_name = False
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        # @api.constrains only fires for fields present in vals, so a create() that
+        # omits both student_id and faculty_id (e.g. create({})) would otherwise skip
+        # _check_single_patron entirely and silently produce a patron-less record.
+        records = super().create(vals_list)
+        records._check_single_patron()
+        return records
+
     @api.constrains('student_id', 'faculty_id')
     def _check_single_patron(self):
         for record in self:

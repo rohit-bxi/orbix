@@ -18,12 +18,18 @@
 #
 ###############################################################################
 
-from odoo.tests import TransactionCase
+from odoo.tests import TransactionCase, tagged
 from odoo.exceptions import ValidationError
 from odoo import fields
 import datetime
 
 
+# Creating an op.course triggers rte_gender_restriction (a required field with a
+# default that bxi_rte_admission adds to op.course via model inheritance); running
+# at_install (the default) can execute before that patch is applied depending on
+# module load order, so this needs the full registry from post_install (same fix
+# used for the same reason elsewhere in this session, e.g. openeducat_admission).
+@tagged('post_install', '-at_install')
 class TestAttendanceRobustCommon(TransactionCase):
     def setUp(self):
         super(TestAttendanceRobustCommon, self).setUp()
@@ -141,13 +147,24 @@ class TestAttendanceSheet(TestAttendanceRobustCommon):
         """Sheet must be unique per Register/Date/Session"""
         from psycopg2 import IntegrityError
         from odoo.tools import mute_logger
-        
+
+        # The DB constraint is unique(register_id, session_id, attendance_date), and
+        # SQL never treats two NULLs as equal, so leaving session_id unset (as both
+        # creates below used to) can never trigger it regardless of duplication -
+        # a session must be set on both rows to actually exercise the constraint.
+        session = self.Session.create({
+            'course_id': self.course.id, 'batch_id': self.batch.id,
+            'faculty_id': self.faculty.id, 'subject_id': self.subject.id,
+            'start_datetime': '2026-01-01 09:00:00', 'end_datetime': '2026-01-01 10:00:00',
+        })
         today = fields.Date.today()
-        self.Sheet.create({'register_id': self.reg.id, 'attendance_date': today})
-        
+        self.Sheet.create({'register_id': self.reg.id, 'attendance_date': today, 'session_id': session.id})
+
         with self.cr.savepoint(), mute_logger('odoo.sql_db'):
             with self.assertRaises(IntegrityError):
-                self.Sheet.create({'register_id': self.reg.id, 'attendance_date': today})
+                self.Sheet.create({
+                    'register_id': self.reg.id, 'attendance_date': today, 'session_id': session.id,
+                })
 
 
 class TestAttendanceLine(TestAttendanceRobustCommon):

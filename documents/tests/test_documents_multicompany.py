@@ -2,11 +2,18 @@ from odoo.addons.documents.tests.test_documents_common import TransactionCaseDoc
 
 from odoo import Command
 from odoo.exceptions import ValidationError
+from odoo.tests import tagged
 from odoo.tools import mute_logger
 
 MEMBER_VIEW, INTERNAL_VIEW, MEMBER_INTERNAL_VIEW, OWNER, MEMBER_VIEW_LINK_EDIT, INTERNAL_VIEW_LINK_EDIT = range(6)
 
 
+# setUpClass creates res.company records, which copies existing payment.provider
+# templates (including ones with codes added by other modules, e.g. payment_custom's
+# 'custom'). Running at_install (the default) can execute before every installed
+# module has finished patching that selection field depending on load order, so this
+# needs the full registry from post_install (same fix as elsewhere in this session).
+@tagged('post_install', '-at_install')
 class TestDocumentsMulticompany(TransactionCaseDocuments):
 
     @classmethod

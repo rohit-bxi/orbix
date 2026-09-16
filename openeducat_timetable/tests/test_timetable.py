@@ -36,7 +36,7 @@ class TestFacultySession(TestTimetableCommon):
                 'Error in data, please check for faculty session details')
         info('  Details Of Faculty Sessions:.....')
         for record in faculty:
-            info('      Sessions : %s' % record.session_ids.name)
+            info('      Sessions : %s' % record.session_ids.mapped('name'))
 
 
 class TestTimetable(TestTimetableCommon):
@@ -46,13 +46,13 @@ class TestTimetable(TestTimetableCommon):
 
     def test_case_timetable(self):
         session = self.op_session.create({
-            'timing_id': self.env.ref('openeducat_timetable.op_timing_1').id,
+            'timing_id': self.timing.id,
             'start_datetime': time.strftime('%Y-%m-10 11:00'),
             'end_datetime': time.strftime('%Y-%m-10 12:00'),
-            'course_id': self.env.ref('openeducat_core.op_course_2').id,
-            'faculty_id': self.env.ref('openeducat_core.op_faculty_1').id,
-            'batch_id': self.env.ref('openeducat_core.op_batch_1').id,
-            'subject_id': self.env.ref('openeducat_core.op_subject_1').id
+            'course_id': self.course.id,
+            'faculty_id': self.faculty.id,
+            'batch_id': self.batch.id,
+            'subject_id': self.subject.id
         })
         info('  Details Of Timetable Sessions:.....')
         session._compute_day()
@@ -76,8 +76,8 @@ class TestGenerateTimetable(TestTimetableCommon):
 
     def test_case_wizard_generate_timetable(self):
         wizard = self.generate_timetable.create({
-            'course_id': self.env.ref('openeducat_core.op_course_2').id,
-            'batch_id': self.env.ref('openeducat_core.op_batch_1').id,
+            'course_id': self.course.id,
+            'batch_id': self.batch.id,
             'start_date': time.strftime('%Y-%m-01'),
             'end_date':  time.strftime('%Y-%m-01')
         })
@@ -94,16 +94,16 @@ class TestWizardSession(TestTimetableCommon):
 
     def test_case_wizard_session(self):
         wizard = self.generate_timetable.create({
-            'course_id': self.env.ref('openeducat_core.op_course_2').id,
-            'batch_id': self.env.ref('openeducat_core.op_batch_1').id,
+            'course_id': self.course.id,
+            'batch_id': self.batch.id,
             'start_date': time.strftime('%Y-%m-01'),
             'end_date': time.strftime('%Y-%m-01')
         })
         session = self.wizard_session.create({
             'gen_time_table': wizard.id,
-            'faculty_id': self.env.ref('openeducat_core.op_faculty_1').id,
-            'subject_id': self.env.ref('openeducat_core.op_subject_1').id,
-            'timing_id': self.env.ref('openeducat_timetable.op_timing_1').id,
+            'faculty_id': self.faculty.id,
+            'subject_id': self.subject.id,
+            'timing_id': self.timing.id,
             'day': '2'
         })
         info('  Details Of Session lines:.....')
@@ -118,8 +118,8 @@ class TestTimetableReport(TestTimetableCommon):
     def test_case_wizard_timetable_report(self):
         report = self.timetable_report.create({
             'state': 'student',
-            'course_id': self.env.ref('openeducat_core.op_course_2').id,
-            'batch_id': self.env.ref('openeducat_core.op_batch_1').id,
+            'course_id': self.course.id,
+            'batch_id': self.batch.id,
             'start_date': time.strftime('%Y-%m-01'),
             'end_date':  time.strftime('%Y-%m-01')
         })

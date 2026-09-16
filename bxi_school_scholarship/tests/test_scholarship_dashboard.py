@@ -10,6 +10,17 @@ class TestScholarshipDashboard(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        # The dashboard intentionally aggregates every approved scholarship in the
+        # database (it's a real company-wide KPI view, not scoped to this test), so a
+        # long-lived dev DB can already have other approved scholarships in it. Capture
+        # a baseline before creating this test's fixture and assert deltas against it,
+        # rather than assuming this test's scholarship is the only one that exists.
+        baseline_approved = cls.env['bxi.student.scholarship'].sudo().search([
+            ('approval_status', '=', 'approved'), ('active', '=', True),
+        ])
+        cls.baseline_recipient_count = len(baseline_approved.mapped('student_id'))
+        cls.baseline_amount_disbursed = sum(baseline_approved.mapped('scholarship_amount'))
+
         cls.student = cls.env['op.student'].create({
             'first_name': 'Dash', 'last_name': 'Board',
             'gr_no': 'SCH-DASH-001', 'gender': 'f',
@@ -82,8 +93,11 @@ class TestScholarshipDashboard(TransactionCase):
 
     def test_dashboard_reflects_approved_scholarship(self):
         data = self.env['bxi.scholarship.dashboard'].get_dashboard_data()
-        self.assertEqual(data['kpis']['total_recipients']['value'], 1)
-        self.assertEqual(data['kpis']['total_amount_disbursed']['value'], self.scholarship.scholarship_amount)
+        self.assertEqual(
+            data['kpis']['total_recipients']['value'], self.baseline_recipient_count + 1)
+        self.assertEqual(
+            data['kpis']['total_amount_disbursed']['value'],
+            self.baseline_amount_disbursed + self.scholarship.scholarship_amount)
         self.assertTrue(any(p['name'] == self.program.name for p in data['top_programs']))
 
     def test_export_full_report_action(self):

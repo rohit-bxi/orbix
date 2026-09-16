@@ -20,16 +20,24 @@
 
 import logging
 
+from odoo.tests import tagged
+
 from .test_admission_common import TestAdmissionCommon
 
 
+# TestAdmissionCommon.setUp creates op.course records. Other installed modules (e.g.
+# bxi_rte_admission) add required fields with defaults to op.course via model
+# inheritance; running at_install (the default) can execute before those patches are
+# applied depending on module load order, so these need the full registry from
+# post_install (same species of bug as the res.company/payment.provider timing issue
+# fixed earlier in helpdesk's tests).
+@tagged('post_install', '-at_install')
 class TestAdmission(TestAdmissionCommon):
 
     def setUp(self):
         super(TestAdmission, self).setUp()
 
     def test_case_1_admissions(self):
-        admissions = self.op_admission.search([])
         self.op_admission._onchange_name()
 
         vals = {
@@ -40,15 +48,14 @@ class TestAdmission(TestAdmissionCommon):
             'application_number': self.env.ref(
                 'openeducat_admission.seq_op_admission').id,
             'birth_date': '2002-12-20',
-            'course_id': self.env.ref('openeducat_core.op_course_5').id,
-            'batch_id': self.env.ref('openeducat_core.op_batch_4').id,
+            'course_id': self.course_5.id,
+            'batch_id': self.batch_4.id,
             'phone': 32234234,
             'mobile': 93432,
             'email': 'nik.ahir@gmail.com',
             'state': 'submit',
             'gender': 'm',
-            'register_id': self.env.ref(
-                'openeducat_admission.op_admission_register_3').id,
+            'register_id': self.admission_register_3.id,
             'image': False
         }
 
@@ -61,17 +68,16 @@ class TestAdmission(TestAdmissionCommon):
             'middle_name': 'M',
             'last_name': 'Last',
             'birth_date': '2002-12-20',
-            'course_id': self.env.ref('openeducat_core.op_course_5').id,
-            'batch_id': self.env.ref('openeducat_core.op_batch_4').id,
+            'course_id': self.course_5.id,
+            'batch_id': self.batch_4.id,
             'phone': 32234234,
             'mobile': 93432,
             'email': 'nisak.ahir@gmail.com',
             'state': 'submit',
             'gender': 'm',
-            'register_id': self.env.ref(
-                'openeducat_admission.op_admission_register_3').id,
-            'student_id': self.env.ref('openeducat_core.op_student_18').id,
-            'fees_term_id': 2,
+            'register_id': self.admission_register_3.id,
+            'student_id': self.student_18.id,
+            'fees_term_id': self.fees_term.id,
             'fees': 1000,
         }
 
@@ -79,6 +85,11 @@ class TestAdmission(TestAdmissionCommon):
         studnet_2.enroll_student()
         studnet_2.onchange_student()
 
+        # Exercise the workflow/onchange methods on the records this test created,
+        # not on every op.admission that happens to exist in the database (searching
+        # unconditionally would run state-transition methods against real, unrelated
+        # data and can fail on legacy rows that don't satisfy constraints added later).
+        admissions = studnet_1 | studnet_2
         for admission in admissions:
             admission._onchange_name()
             admission.onchange_register()
@@ -88,7 +99,10 @@ class TestAdmission(TestAdmissionCommon):
             admission.submit_form()
             admission.admission_confirm()
             admission.confirm_in_progress()
-            admission.get_student_vals()
+            # Not calling get_student_vals() here: enroll_student() above already
+            # invokes it for any admission without a student_id yet (studnet_1), and
+            # calling it again would create a second res.users with the same login/
+            # email, which is rejected by the "unique login" constraint.
             admission.confirm_rejected()
             admission.confirm_pending()
             admission.confirm_cancel()
@@ -96,6 +110,7 @@ class TestAdmission(TestAdmissionCommon):
             admission.open_student()
 
 
+@tagged('post_install', '-at_install')
 class TestAdmissionregister(TestAdmissionCommon):
 
     def setUp(self):
@@ -117,6 +132,7 @@ class TestAdmissionregister(TestAdmissionCommon):
         register.check_no_of_admission()
 
 
+@tagged('post_install', '-at_install')
 class TestAdmissionAnalysisWizard(TestAdmissionCommon):
 
     def setUp(self):
@@ -124,7 +140,7 @@ class TestAdmissionAnalysisWizard(TestAdmissionCommon):
 
     def test_wizard_admission_analysis(self):
         vals = {
-            'course_id': self.env.ref('openeducat_core.op_course_2').id,
+            'course_id': self.course_2.id,
             'start_date': '2018-01-01',
             'end_date': '2019-12-30',
         }
@@ -132,6 +148,7 @@ class TestAdmissionAnalysisWizard(TestAdmissionCommon):
         admission.print_report()
 
 
+@tagged('post_install', '-at_install')
 class TestAdmissionScenarios(TestAdmissionCommon):
 
     def setUp(self):
@@ -141,7 +158,7 @@ class TestAdmissionScenarios(TestAdmissionCommon):
         """ Test the complete admission state transition workflow """
         from odoo.exceptions import ValidationError
         
-        course = self.env.ref('openeducat_core.op_course_1')
+        course = self.course_1
         
         register = self.op_register.create({
             'name': 'Test Register 2026',
@@ -187,7 +204,7 @@ class TestAdmissionScenarios(TestAdmissionCommon):
         """ Test admission capacity constraints on the register """
         from odoo.exceptions import ValidationError
         
-        course = self.env.ref('openeducat_core.op_course_2')
+        course = self.course_2
         register = self.op_register.create({
             'name': 'Test Registration Full',
             'course_id': course.id,
@@ -231,7 +248,7 @@ class TestAdmissionScenarios(TestAdmissionCommon):
     def test_03_register_invalid_dates(self):
         """ Test validation when start_date is > end_date """
         from odoo.exceptions import ValidationError
-        course = self.env.ref('openeducat_core.op_course_3')
+        course = self.course_3
         
         with self.assertRaises(ValidationError):
             self.op_register.create({

@@ -104,10 +104,12 @@ class TestAnnouncement(TransactionCase):
         self.assertFalse(announcement.published_date)
 
     def test_cron_publishes_due_scheduled_announcements(self):
-        past = fields.Datetime.now() - timedelta(hours=1)
-        announcement = self._make_announcement(schedule_date=past)
+        future = fields.Datetime.now() + timedelta(days=1)
+        announcement = self._make_announcement(schedule_date=future)
         announcement.action_publish()
         self.assertEqual(announcement.state, 'scheduled')
+        past = fields.Datetime.now() - timedelta(hours=1)
+        announcement.schedule_date = past
         self.env['bxi.announcement']._cron_publish_scheduled()
         self.assertEqual(announcement.state, 'published')
         self.assertTrue(announcement.published_date)

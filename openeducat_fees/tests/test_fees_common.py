@@ -27,3 +27,15 @@ class TestFeesCommon(TransactionCase):
         self.op_student = self.env['op.student']
         self.op_fees_wizard = self.env['fees.detail.report.wizard']
         self.op_fees_terms = self.env['op.fees.terms']
+        # These tests used to reference demo data (openeducat_core.op_student_1/_2,
+        # op_course_1) directly, but demo data is not guaranteed to be loaded (this
+        # DB, and any --without-demo run, doesn't have it), so build fixtures here.
+        self.course = self.env['op.course'].create({'name': 'Fees Test Course', 'code': 'FEE-C1'})
+        self.student = self.op_student.create({
+            'first_name': 'Fees', 'last_name': 'Student One',
+            'gr_no': 'FEE-S1', 'gender': 'm',
+        })
+        self.student_2 = self.op_student.create({
+            'first_name': 'Fees', 'last_name': 'Student Two',
+            'gr_no': 'FEE-S2', 'gender': 'f',
+        })

@@ -7,10 +7,17 @@ import json
 
 from odoo import Command, fields, http
 from odoo.addons.mail.tests.common import MailCommon
-from odoo.tests import Form, RecordCapturer, HttpCase
+from odoo.tests import Form, RecordCapturer, HttpCase, tagged
 from odoo.tools import mute_logger
 
 
+# MailCommon.setUpClass unconditionally calls _activate_multi_company(), which creates a
+# res.company and thus copies existing payment.provider templates (including ones with
+# codes added by other modules, e.g. payment_custom's 'custom'). Running at_install (the
+# default) can execute before every installed module has finished patching that selection
+# field depending on load order, so this needs the full registry from post_install (same
+# fix as elsewhere in this session).
+@tagged('post_install', '-at_install')
 class TestDocumentRequest(MailCommon, HttpCase):
 
     @classmethod

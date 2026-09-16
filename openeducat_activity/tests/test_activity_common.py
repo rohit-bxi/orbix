@@ -45,14 +45,14 @@ class TestActivityCommon(TransactionCase):
         })
         self.batch_1 = self.env['op.batch'].create({
             'name': 'Batch 1',
-            'code': 'B1',
+            'code': 'ACT-B1',
             'course_id': self.course_1.id,
             'start_date': '2025-01-01',
             'end_date': '2025-12-31'
         })
         self.batch_2 = self.env['op.batch'].create({
             'name': 'Batch 2',
-            'code': 'B2',
+            'code': 'ACT-B2',
             'course_id': self.course_2.id,
             'start_date': '2025-01-01',
             'end_date': '2025-12-31'
