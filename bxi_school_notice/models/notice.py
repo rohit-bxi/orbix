@@ -76,11 +76,20 @@ class Notice(models.Model):
             notice.is_expired = bool(notice.expires_on and notice.expires_on < today)
 
     def _search_is_expired(self, operator, value):
-        want_expired = (operator == '=') == bool(value)
+        # Odoo normalizes leaves like ('is_expired', '=', True) into 'in'/'not in' with a
+        # list value before calling a field's search method, so this must not assume it
+        # will only ever see '=' with a plain boolean.
+        values = {bool(v) for v in value} if isinstance(value, (list, tuple)) else {bool(value)}
+        if operator in ('!=', 'not in'):
+            values = {True, False} - values
+        if not values:
+            return [('id', '=', False)]
+        if len(values) > 1:
+            return []
+        want_expired = values.pop()
         today = fields.Date.today()
-        domain = [('expires_on', '<', today)]
         if want_expired:
-            return domain
+            return [('expires_on', '<', today)]
         return ['|', ('expires_on', '=', False), ('expires_on', '>=', today)]
 
     def action_toggle_pin(self):

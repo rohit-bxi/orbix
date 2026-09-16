@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) 2026 BXI Technology Pvt. Ltd. All Rights Reserved.
 # License OPL-1 (Odoo Proprietary License v1.0, see LICENSE file for full text).
+from psycopg2 import IntegrityError
+
 from odoo.exceptions import ValidationError
 from odoo.tests.common import TransactionCase, tagged
+from odoo.tools import mute_logger
 
 
 @tagged('post_install', '-at_install')
@@ -30,9 +33,14 @@ class TestClassTimetable(TransactionCase):
         })
 
     def _make_timing(self, name, hour, minute, am_pm, duration=1.0, is_break=False):
+        # op.timing's hour/minute/am_pm selection fields are not translated into
+        # start_time/end_time anywhere in the model, so tests must derive and set
+        # those Float fields themselves to get a meaningful display_label.
+        start_time = int(hour) % 12 + (12 if am_pm == 'pm' else 0) + int(minute) / 60.0
         return self.env['op.timing'].create({
-            'name': name, 'hour': hour, 'minute': minute,
-            'am_pm': am_pm, 'duration': duration, 'is_break': is_break,
+            'name': name, 'hour': hour, 'minute': minute, 'am_pm': am_pm,
+            'duration': duration, 'is_break': is_break,
+            'start_time': start_time, 'end_time': start_time + duration,
         })
 
     # --- op.batch: batch_class_manager ---
@@ -115,10 +123,11 @@ class TestClassTimetable(TransactionCase):
         self.env['bxi.timetable'].create({
             'course_id': self.course.id, 'batch_id': self.batch.id,
         })
-        with self.assertRaises(Exception):
-            self.env['bxi.timetable'].create({
-                'course_id': self.course.id, 'batch_id': self.batch.id,
-            })
+        with mute_logger('odoo.sql_db'), self.assertRaises(IntegrityError):
+            with self.env.cr.savepoint():
+                self.env['bxi.timetable'].create({
+                    'course_id': self.course.id, 'batch_id': self.batch.id,
+                })
 
     def test_timetable_display_name(self):
         timetable = self.env['bxi.timetable'].create({
@@ -150,10 +159,11 @@ class TestClassTimetable(TransactionCase):
         self.env['bxi.timetable.line'].create({
             'timetable_id': timetable.id, 'day': 'monday', 'timing_id': timing.id,
         })
-        with self.assertRaises(Exception):
-            self.env['bxi.timetable.line'].create({
-                'timetable_id': timetable.id, 'day': 'monday', 'timing_id': timing.id,
-            })
+        with mute_logger('odoo.sql_db'), self.assertRaises(IntegrityError):
+            with self.env.cr.savepoint():
+                self.env['bxi.timetable.line'].create({
+                    'timetable_id': timetable.id, 'day': 'monday', 'timing_id': timing.id,
+                })
 
     def test_timetable_line_blocked_when_locked(self):
         timetable = self.env['bxi.timetable'].create({

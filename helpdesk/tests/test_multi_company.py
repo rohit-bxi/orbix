@@ -2,11 +2,16 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 from odoo.exceptions import AccessError, UserError
-from odoo.tests import new_test_user
+from odoo.tests import new_test_user, tagged
 
 from .common import HelpdeskCommon
 
 
+# res.company creation copies existing payment.provider templates (including ones with
+# codes added by other modules, e.g. payment_custom's 'custom'). Running at_install (the
+# default) can execute before every installed module has finished patching that selection
+# field depending on load order, so this needs the full registry from post_install.
+@tagged('post_install', '-at_install')
 class TestHelpdeskMultyCompany(HelpdeskCommon):
 
     def test_team_per_company(self):

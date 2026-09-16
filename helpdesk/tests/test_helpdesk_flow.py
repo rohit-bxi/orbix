@@ -8,7 +8,7 @@ from freezegun import freeze_time
 from .common import HelpdeskCommon
 from odoo.exceptions import AccessError
 from odoo.fields import Command
-from odoo.tests import Form
+from odoo.tests import Form, tagged
 from odoo.tests.common import users
 
 
@@ -384,86 +384,6 @@ class TestHelpdeskFlow(HelpdeskCommon):
         self.assertEqual(tickets[1].user_id.id, self.helpdesk_user.id, "The second ticket should be assigned to the user.")
         self.assertFalse(tickets[2].user_id.id, "The third ticket should remain unassigned as it is in a closed stage.")
         self.assertFalse(tickets[3].user_id.id, "The fourth ticket should remain unassigned as there is no match in the mapping for the added tag in its team.")
-
-    def test_ticket_sequence_created_from_multi_company(self):
-        """
-        In this test we ensure that in a multi-company environment, mail sent to helpdesk team
-        create a ticket with the right sequence.
-        """
-        company0 = self.env.company
-        company1 = self.env['res.company'].create({'name': 'new_company0'})
-
-        self.env.user.write({
-            'company_ids': [(4, company0.id, False), (4, company1.id, False)],
-        })
-
-        helpdesk_team_model = self.env['ir.model'].search([('model', '=', 'helpdesk_team')])
-        ticket_model = self.env['ir.model'].search([('model', '=', 'helpdesk.ticket')])
-
-        helpdesk_team0 = self.env['helpdesk.team'].create({
-            'name': 'helpdesk team 0',
-            'company_id': company0.id,
-        })
-        helpdesk_team1 = self.env['helpdesk.team'].create({
-            'name': 'helpdesk team 1',
-            'company_id': company1.id,
-        })
-
-        _mail_alias_0, mail_alias_1 = self.env['mail.alias'].create([
-            {
-                'alias_name': 'helpdesk_team_0',
-                'alias_model_id': ticket_model.id,
-                'alias_parent_model_id': helpdesk_team_model.id,
-                'alias_parent_thread_id': helpdesk_team0.id,
-                'alias_defaults': "{'team_id': %s}" % helpdesk_team0.id,
-            },
-            {
-                'alias_name': 'helpdesk_team_1',
-                'alias_model_id': ticket_model.id,
-                'alias_parent_model_id': helpdesk_team_model.id,
-                'alias_parent_thread_id': helpdesk_team1.id,
-                'alias_defaults': "{'team_id': %s}" % helpdesk_team1.id,
-            }
-        ])
-
-        new_message1 = f"""MIME-Version: 1.0
-Date: Thu, 27 Dec 2018 16:27:45 +0100
-Message-ID: blablabla1
-Subject: helpdesk team 1 in company 1
-From:  B client <client_b@someprovider.com>
-To: {mail_alias_1.display_name}
-Content-Type: multipart/alternative; boundary="000000000000a47519057e029630"
-
---000000000000a47519057e029630
-Content-Type: text/plain; charset="UTF-8"
-
-
---000000000000a47519057e029630
-Content-Type: text/html; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
-
-<div>A good message bis</div>
-
---000000000000a47519057e029630--
-"""
-        self.env['ir.sequence'].create([
-            {
-                'company_id': company0.id,
-                'name': 'test-sequence-00',
-                'prefix': 'FirstCompany',
-                'code': 'helpdesk.ticket'
-            },
-            {
-                'company_id': company1.id,
-                'name': 'test-sequence-01',
-                'prefix': 'SecondCompany',
-                'code': 'helpdesk.ticket'
-            }
-        ])
-
-        helpdesk_ticket1_id = self.env['mail.thread'].message_process('helpdesk.ticket', new_message1)
-        helpdesk_ticket1 = self.env['helpdesk.ticket'].browse(helpdesk_ticket1_id)
-        self.assertTrue(helpdesk_ticket1.ticket_ref.startswith('SecondCompany'))
 
     def test_email_non_ascii(self):
         """
@@ -842,6 +762,133 @@ Content-Transfer-Encoding: quoted-printable
         self.assertEqual(ticket2_a.user_id, self.helpdesk_user)
         self.assertEqual(ticket2_b.user_id, self.helpdesk_user)
 
+    def test_ticket_created_in_closed_stage_sets_close_date(self):
+        """Test that a ticket created directly in a folded (closed) stage sets close_date."""
+        with self._ticket_patch_now("2024-06-01 10:00:00"):
+            ticket = self.env['helpdesk.ticket'].create({
+                'name': 'Closed from start',
+                'team_id': self.test_team.id,
+                'stage_id': self.stage_done.id,
+            })
+        self.assertEqual(
+            ticket.close_date,
+            datetime(2024, 6, 1, 10, 0, 0),
+            "Ticket created in a closed stage should have close_date set to the current datetime"
+        )
+
+    def test_save_ticket_without_tags(self):
+        self.test_team.update({'assign_method': 'tags', 'auto_assignment': True})
+
+        tag = self.env['helpdesk.tag'].create({'name': 'Test Tag'})
+
+        ticket = self.env['helpdesk.ticket'].create({
+            'name': 'Test Ticket',
+            'team_id': self.test_team.id,
+            'tag_ids': [(6, 0, [tag.id])],
+        })
+        self.assertIn(tag, ticket.tag_ids)
+
+        ticket.write({'tag_ids': [(5, 0, 0)]})
+        self.assertFalse(ticket.tag_ids)
+
+    def test_create_ticket_with_stage_days_to_rot(self):
+        """Test that creating a ticket with stage New having Days to rot > 0"""
+        self.stage_new.rotting_threshold_days = 1
+        ticket_form = Form(self.env['helpdesk.ticket'])
+        ticket_form.name = "Test Ticket"
+        ticket = ticket_form.save()
+        self.assertTrue(ticket.id)
+        self.assertEqual(ticket.stage_id.name, 'New')
+
+
+# res.company creation copies existing payment.provider templates (including ones with
+# codes added by other modules, e.g. payment_custom's 'custom'). Running at_install (the
+# default) can execute before every installed module has finished patching that selection
+# field depending on load order, so this one needs the full registry from post_install
+# (see TestHelpdeskMultyCompany in test_multi_company.py for the same fix).
+@tagged('post_install', '-at_install')
+class TestHelpdeskFlowMultiCompany(HelpdeskCommon):
+
+    def test_ticket_sequence_created_from_multi_company(self):
+        """
+        In this test we ensure that in a multi-company environment, mail sent to helpdesk team
+        create a ticket with the right sequence.
+        """
+        company0 = self.env.company
+        company1 = self.env['res.company'].create({'name': 'new_company0'})
+
+        self.env.user.write({
+            'company_ids': [(4, company0.id, False), (4, company1.id, False)],
+        })
+
+        helpdesk_team_model = self.env['ir.model'].search([('model', '=', 'helpdesk_team')])
+        ticket_model = self.env['ir.model'].search([('model', '=', 'helpdesk.ticket')])
+
+        helpdesk_team0 = self.env['helpdesk.team'].create({
+            'name': 'helpdesk team 0',
+            'company_id': company0.id,
+        })
+        helpdesk_team1 = self.env['helpdesk.team'].create({
+            'name': 'helpdesk team 1',
+            'company_id': company1.id,
+        })
+
+        _mail_alias_0, mail_alias_1 = self.env['mail.alias'].create([
+            {
+                'alias_name': 'helpdesk_team_0',
+                'alias_model_id': ticket_model.id,
+                'alias_parent_model_id': helpdesk_team_model.id,
+                'alias_parent_thread_id': helpdesk_team0.id,
+                'alias_defaults': "{'team_id': %s}" % helpdesk_team0.id,
+            },
+            {
+                'alias_name': 'helpdesk_team_1',
+                'alias_model_id': ticket_model.id,
+                'alias_parent_model_id': helpdesk_team_model.id,
+                'alias_parent_thread_id': helpdesk_team1.id,
+                'alias_defaults': "{'team_id': %s}" % helpdesk_team1.id,
+            }
+        ])
+
+        new_message1 = f"""MIME-Version: 1.0
+Date: Thu, 27 Dec 2018 16:27:45 +0100
+Message-ID: blablabla1
+Subject: helpdesk team 1 in company 1
+From:  B client <client_b@someprovider.com>
+To: {mail_alias_1.display_name}
+Content-Type: multipart/alternative; boundary="000000000000a47519057e029630"
+
+--000000000000a47519057e029630
+Content-Type: text/plain; charset="UTF-8"
+
+
+--000000000000a47519057e029630
+Content-Type: text/html; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+<div>A good message bis</div>
+
+--000000000000a47519057e029630--
+"""
+        self.env['ir.sequence'].create([
+            {
+                'company_id': company0.id,
+                'name': 'test-sequence-00',
+                'prefix': 'FirstCompany',
+                'code': 'helpdesk.ticket'
+            },
+            {
+                'company_id': company1.id,
+                'name': 'test-sequence-01',
+                'prefix': 'SecondCompany',
+                'code': 'helpdesk.ticket'
+            }
+        ])
+
+        helpdesk_ticket1_id = self.env['mail.thread'].message_process('helpdesk.ticket', new_message1)
+        helpdesk_ticket1 = self.env['helpdesk.ticket'].browse(helpdesk_ticket1_id)
+        self.assertTrue(helpdesk_ticket1.ticket_ref.startswith('SecondCompany'))
+
     def test_assigned_customer_multicompany(self):
         """
         Test in multicompany that the assigned customer is in the same company as the ticket
@@ -903,41 +950,3 @@ Content-Transfer-Encoding: quoted-printable
 
         self.assertEqual(ticket2.partner_id, test_partner2)
         self.assertFalse(ticket2.partner_id.company_id)
-
-    def test_ticket_created_in_closed_stage_sets_close_date(self):
-        """Test that a ticket created directly in a folded (closed) stage sets close_date."""
-        with self._ticket_patch_now("2024-06-01 10:00:00"):
-            ticket = self.env['helpdesk.ticket'].create({
-                'name': 'Closed from start',
-                'team_id': self.test_team.id,
-                'stage_id': self.stage_done.id,
-            })
-        self.assertEqual(
-            ticket.close_date,
-            datetime(2024, 6, 1, 10, 0, 0),
-            "Ticket created in a closed stage should have close_date set to the current datetime"
-        )
-
-    def test_save_ticket_without_tags(self):
-        self.test_team.update({'assign_method': 'tags', 'auto_assignment': True})
-
-        tag = self.env['helpdesk.tag'].create({'name': 'Test Tag'})
-
-        ticket = self.env['helpdesk.ticket'].create({
-            'name': 'Test Ticket',
-            'team_id': self.test_team.id,
-            'tag_ids': [(6, 0, [tag.id])],
-        })
-        self.assertIn(tag, ticket.tag_ids)
-
-        ticket.write({'tag_ids': [(5, 0, 0)]})
-        self.assertFalse(ticket.tag_ids)
-
-    def test_create_ticket_with_stage_days_to_rot(self):
-        """Test that creating a ticket with stage New having Days to rot > 0"""
-        self.stage_new.rotting_threshold_days = 1
-        ticket_form = Form(self.env['helpdesk.ticket'])
-        ticket_form.name = "Test Ticket"
-        ticket = ticket_form.save()
-        self.assertTrue(ticket.id)
-        self.assertEqual(ticket.stage_id.name, 'New')

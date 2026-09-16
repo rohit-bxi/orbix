@@ -5,7 +5,7 @@ from odoo.tests import tagged
 from odoo.addons.mail.tests.common_tracking import MailTrackingDurationMixinCase
 
 
-@tagged('is_query_count')
+@tagged('post_install', '-at_install', 'is_query_count')
 class TestHelpdeskTicketMailTrackingDuration(MailTrackingDurationMixinCase):
 
     @classmethod

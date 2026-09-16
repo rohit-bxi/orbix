@@ -85,11 +85,24 @@ class HrAttendance(models.Model):
             employee = student_employee_map.get(vals.get('employee_id'))
             if not employee:
                 continue
-            if 'status' not in vals:
+            is_manual_entry = 'status' in vals
+            if not is_manual_entry:
                 vals['status'] = 'present'
             if not vals.get('session_id') and vals.get('check_in'):
                 check_in = fields.Datetime.to_datetime(vals['check_in'])
                 session = self._find_matching_session(employee.student_id, check_in)
                 if session:
                     vals['session_id'] = session.id
+            if is_manual_entry and not vals.get('check_in') and not vals.get('check_out'):
+                # A teacher-entered bookkeeping row (absent/present/late marked by
+                # hand, no real scan) has no natural check-out event either. Base
+                # hr.attendance treats any record without check_out as "open" and
+                # refuses to create a second one for the same employee - which
+                # would otherwise mean the FIRST manual entry ever created for a
+                # student permanently blocks every later attendance (manual or
+                # real check-in) for them. Stamp it as an instantaneous, already
+                # "closed" record instead so it does not linger open.
+                now = fields.Datetime.now()
+                vals['check_in'] = now
+                vals['check_out'] = now
         return super().create(vals_list)

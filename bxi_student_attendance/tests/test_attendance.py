@@ -5,6 +5,7 @@ from datetime import date, datetime
 
 from psycopg2 import IntegrityError
 
+from odoo import fields
 from odoo.tests.common import TransactionCase, tagged
 from odoo.tools import mute_logger
 
@@ -49,6 +50,22 @@ class TestStudentAttendance(TransactionCase):
             'batch_id': cls.batch.id,
             'subject_id': cls.subject.id,
         })
+
+    def setUp(self):
+        super().setUp()
+        # The shadow employee is shared (created once in setUpClass) across
+        # every test method in this class, and hr.attendance enforces "at
+        # most one open (no check_out) attendance per employee". A test run
+        # earlier (in this run or a previous one, e.g. leftover data from an
+        # interrupted HttpCase-based run against a shared dev database) may
+        # have left an open attendance for this employee, which would make
+        # the very first create() in an unrelated test fail with "hasn't
+        # checked out since ...". Force-close any such stale record so each
+        # test starts from a clean, self-contained state.
+        self.env['hr.attendance'].search([
+            ('employee_id', '=', self.student.employee_id.id),
+            ('check_out', '=', False),
+        ]).write({'check_out': fields.Datetime.now()})
 
     def test_shadow_employee_created_on_student_create(self):
         self.assertTrue(self.student.employee_id)

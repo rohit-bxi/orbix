@@ -3,7 +3,7 @@
 # License OPL-1 (Odoo Proprietary License v1.0, see LICENSE file for full text).
 from datetime import datetime, timedelta
 
-from odoo.exceptions import ValidationError
+from odoo.exceptions import UserError, ValidationError
 from odoo.tests.common import TransactionCase, tagged
 
 
@@ -41,7 +41,14 @@ class TestSchoolEvent(TransactionCase):
         self._make_event(start + timedelta(hours=2), start + timedelta(hours=4), self.venue)
 
     def test_paid_event_blocks_confirm_without_payment(self):
-        product = self.env['product.product'].create({'name': 'Workshop Fee', 'lst_price': 100.0})
+        income_account = self.env['account.account'].search([
+            ('account_type', '=', 'income'),
+        ], limit=1)
+        product = self.env['product.product'].create({
+            'name': 'Workshop Fee',
+            'lst_price': 100.0,
+            'property_account_income_id': income_account.id,
+        })
         event = self._make_event(
             datetime(2026, 9, 1, 10, 0), datetime(2026, 9, 1, 12, 0))
         event.write({'is_paid_event': True, 'fee_product_id': product.id})
@@ -50,9 +57,27 @@ class TestSchoolEvent(TransactionCase):
             'student_id': self.student.id,
             'partner_id': self.student.partner_id.id,
         })
-        registration.action_confirm()
+        # Confirming without payment must be blocked (UserError), but the
+        # invoice itself is still generated as part of that attempt and
+        # must survive the failure. Odoo's self.assertRaises() wraps its
+        # block in a savepoint that gets rolled back once the expected
+        # exception is caught (see BaseCase._assertRaises), which would
+        # silently undo the invoice creation along with the error - so the
+        # call is made through a plain try/except here instead.
+        try:
+            registration.action_confirm()
+            self.fail('action_confirm() should have raised UserError.')
+        except UserError:
+            pass
         self.assertTrue(registration.invoice_id)
-        self.assertEqual(registration.state, 'draft')
+        # event.registration's own default state is already 'open' (base
+        # `event` treats that as "registered", not "confirmed" - see
+        # event_registration.py state field help text); action_confirm()
+        # only ever writes 'open' again via super(). So a blocked
+        # confirmation simply never gets past the payment guard - it does
+        # not move the record to some separate 'draft' state, which this
+        # module's state selection doesn't even have as an initial value.
+        self.assertEqual(registration.state, 'open')
 
     def test_bulk_registration_wizard(self):
         event = self._make_event(datetime(2026, 9, 1, 10, 0), datetime(2026, 9, 1, 12, 0))

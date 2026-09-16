@@ -8,16 +8,26 @@ import requests
 
 from odoo.exceptions import UserError
 from odoo.tests.common import TransactionCase, tagged
+from odoo.tools import mute_logger
 
 from odoo.addons.bxi_assessment_hub.models.ai_client import BxiAiTimeoutError
 
 
 @tagged('post_install', '-at_install')
+# Raising a translated UserError/BxiAiContentError from deep inside a mocked HTTP call (no
+# web request/lang in context) makes odoo.tools.translate log a full stack-trace WARNING for
+# every expected error below; mute it so the log only shows genuine failures.
+@mute_logger('odoo.tools.translate')
 class TestAiClient(TransactionCase):
 
     def setUp(self):
         super().setUp()
-        self.env['ir.config_parameter'].sudo().set_param('bxi_assessment_hub.anthropic_api_key', 'test-key')
+        icp = self.env['ir.config_parameter'].sudo()
+        icp.set_param('bxi_assessment_hub.anthropic_api_key', 'test-key')
+        # This DB has a real 'anthropic_model' override configured for actual use of the
+        # AI feature; clear it here (the TransactionCase rollback restores it after the
+        # test) so tests don't depend on that ambient, environment-specific setting.
+        icp.set_param('bxi_assessment_hub.anthropic_model', False)
         self.client = self.env['bxi.ai.client']
 
     def _mock_response(self, text, status_code=200, finish_reason=None, reasoning=None):

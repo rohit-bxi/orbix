@@ -6,9 +6,14 @@ import io
 
 from odoo.exceptions import UserError
 from odoo.tests.common import TransactionCase, tagged
+from odoo.tools import mute_logger
 
 
 @tagged('post_install', '-at_install')
+# Raising a translated UserError from deep inside a directly-invoked wizard method (no web
+# request/lang in context) makes odoo.tools.translate log a full stack-trace WARNING for every
+# expected error below; mute it so the log only shows genuine failures.
+@mute_logger('odoo.tools.translate')
 class TestExamQuestionImportWizard(TransactionCase):
 
     @classmethod

@@ -8,7 +8,7 @@ class HelpdeskSearchTicketSteps {
     _searchTickets() {
         return {
             content: "search Ticket",
-            trigger: ".oi-search",
+            trigger: "form.o_portal_search_panel .oi-search",
             run: "click",
             expectUnloadPage: true,
         };
