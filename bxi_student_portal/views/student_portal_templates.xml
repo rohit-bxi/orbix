@@ -170,8 +170,62 @@
                     </t>
                 </div>
 
+                <div class="row">
+                    <div class="col-lg-7 mb-3">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                                    <h6 class="card-title mb-0 d-flex align-items-center gap-2">
+                                        <i class="fa fa-calendar text-muted"/> <t t-out="calendar['month_label']"/>
+                                    </h6>
+                                    <div class="d-flex gap-3 small text-muted flex-wrap">
+                                        <span><i class="fa fa-square text-success me-1"/>Present</span>
+                                        <span><i class="fa fa-square text-danger me-1"/>Absent</span>
+                                        <span><i class="fa fa-square text-warning me-1"/>Late</span>
+                                        <span><i class="fa fa-square text-secondary me-1"/>Excused</span>
+                                    </div>
+                                </div>
+                                <table class="table table-borderless text-center mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th t-foreach="['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']" t-as="wd" t-out="wd" class="text-muted small fw-normal"/>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr t-foreach="calendar['weeks']" t-as="week">
+                                            <td t-foreach="week" t-as="day"
+                                                t-attf-class="py-2 rounded #{'text-muted opacity-50' if not day['in_month'] else ''} #{('bg-' + day['color'] + '-subtle text-' + day['color'] + ' fw-semibold') if day['color'] else ''}">
+                                                <t t-out="day['day']"/>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-5 mb-3">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-body">
+                                <h6 class="card-title mb-3"><i class="fa fa-book text-muted me-2"/>Subject-wise Attendance</h6>
+                                <div t-foreach="subject_breakdown" t-as="subj" class="mb-3">
+                                    <div class="d-flex justify-content-between small mb-1">
+                                        <span class="fw-semibold" t-out="subj['subject']"/>
+                                        <span t-attf-class="text-#{subj['color']} fw-semibold"><t t-out="subj['percentage']"/>%</span>
+                                    </div>
+                                    <div class="progress" style="height:6px;">
+                                        <div t-attf-class="progress-bar bg-#{subj['color']}" t-attf-style="width: #{subj['percentage']}%"/>
+                                    </div>
+                                    <div class="text-muted small mt-1"><t t-out="subj['present']"/>/<t t-out="subj['total']"/> classes</div>
+                                </div>
+                                <p t-if="not subject_breakdown" class="text-muted mb-0">No attendance records yet.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="card border-0 shadow-sm">
                     <div class="card-body">
+                        <h6 class="card-title mb-3"><i class="fa fa-list text-muted me-2"/>Attendance Log</h6>
                         <table class="table table-hover mb-0" t-if="lines">
                             <thead>
                                 <tr><th>Date</th><th>Course</th><th>Batch</th><th>Status</th><th>Remark</th></tr>
@@ -206,8 +260,40 @@
                 <t t-call="bxi_student_portal.portal_academics_subnav">
                     <t t-set="page_name" t-value="'timetable'"/>
                 </t>
+                <div class="card border-0 shadow-sm mb-3">
+                    <div class="card-body">
+                        <h6 class="card-title mb-3"><i class="fa fa-th text-muted me-2"/>Weekly Schedule</h6>
+                        <div class="table-responsive" t-if="timetable_grid['slots']">
+                            <table class="table table-bordered text-center align-middle mb-0">
+                                <thead>
+                                    <tr class="table-light">
+                                        <th class="text-muted small">Time</th>
+                                        <th t-foreach="timetable_grid['days']" t-as="d" t-out="d"/>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-foreach="timetable_grid['slots']" t-as="slot">
+                                        <td class="fw-semibold small text-muted text-nowrap" t-out="slot"/>
+                                        <t t-foreach="timetable_grid['days']" t-as="d">
+                                            <t t-set="cell_session" t-value="timetable_grid['grid'][slot][d]"/>
+                                            <td t-if="cell_session"
+                                                t-attf-class="bg-#{timetable_grid['subject_colors'].get(cell_session.subject_id.id, 'primary')}-subtle">
+                                                <div class="fw-semibold small" t-out="cell_session.subject_id.name"/>
+                                                <div class="text-muted small" t-out="cell_session.faculty_id.name"/>
+                                            </td>
+                                            <td t-else=""/>
+                                        </t>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <p t-else="" class="text-muted mb-0"><i class="fa fa-clock-o me-1"/>No sessions scheduled.</p>
+                    </div>
+                </div>
+
                 <div class="card border-0 shadow-sm">
                     <div class="card-body">
+                        <h6 class="card-title mb-3"><i class="fa fa-list text-muted me-2"/>All Sessions</h6>
                         <table class="table table-hover mb-0" t-if="sessions">
                             <thead>
                                 <tr><th>Start</th><th>End</th><th>Subject</th><th>Course</th><th>Batch</th><th>Faculty</th><th>Room</th></tr>
@@ -239,6 +325,53 @@
                 <t t-call="bxi_student_portal.portal_academics_subnav">
                     <t t-set="page_name" t-value="'exams'"/>
                 </t>
+
+                <div class="row">
+                    <t t-call="bxi_student_portal.portal_stat_tile">
+                        <t t-set="icon" t-value="'fa-graduation-cap'"/>
+                        <t t-set="color" t-value="'primary'"/>
+                        <t t-set="value"><t t-out="overall_percentage"/>%</t>
+                        <t t-set="label">Overall Average</t>
+                    </t>
+                    <t t-call="bxi_student_portal.portal_stat_tile">
+                        <t t-set="icon" t-value="'fa-list-ol'"/>
+                        <t t-set="color" t-value="'info'"/>
+                        <t t-set="value" t-value="len(marksheets)"/>
+                        <t t-set="label">Exams Taken</t>
+                    </t>
+                    <t t-call="bxi_student_portal.portal_stat_tile">
+                        <t t-set="icon" t-value="'fa-check-circle'"/>
+                        <t t-set="color" t-value="'success'"/>
+                        <t t-set="value" t-value="passed_count"/>
+                        <t t-set="label">Passed</t>
+                    </t>
+                    <t t-call="bxi_student_portal.portal_stat_tile">
+                        <t t-set="icon" t-value="'fa-times-circle'"/>
+                        <t t-set="color" t-value="'danger'"/>
+                        <t t-set="value" t-value="len(marksheets) - passed_count"/>
+                        <t t-set="label">Failed</t>
+                    </t>
+                </div>
+
+                <div class="card border-0 shadow-sm mb-3" t-if="subject_performance">
+                    <div class="card-body">
+                        <h6 class="card-title mb-3"><i class="fa fa-bar-chart text-muted me-2"/>Subject-wise Performance</h6>
+                        <div t-foreach="subject_performance" t-as="subj" class="mb-3">
+                            <div class="d-flex justify-content-between small mb-1">
+                                <span class="fw-semibold">
+                                    <t t-out="subj['subject']"/>
+                                    <span class="badge text-bg-light border ms-1" t-out="subj['grade']"/>
+                                </span>
+                                <span t-attf-class="text-#{subj['color']} fw-semibold"><t t-out="subj['percentage']"/>%</span>
+                            </div>
+                            <div class="progress" style="height:6px;">
+                                <div t-attf-class="progress-bar bg-#{subj['color']}" t-attf-style="width: #{subj['percentage']}%"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <h6 class="text-muted mb-2"><i class="fa fa-history me-2"/>Exam History</h6>
                 <t t-if="marksheets">
                     <div class="card mb-3 border-0 shadow-sm" t-foreach="marksheets" t-as="marksheet">
                         <div class="card-body">
@@ -402,8 +535,38 @@
         <xpath expr="//div[hasclass('o_portal_docs')]" position="inside">
             <t t-if="academics_student" t-call="portal.portal_docs_entry">
                 <t t-set="title">My Academics</t>
-                <t t-set="text">Attendance, timetable, exams, assignments, library and fees</t>
+                <t t-set="text">Overview of attendance, timetable, exams, assignments, library and fees</t>
                 <t t-set="url" t-value="'/my/academics'"/>
+            </t>
+            <t t-if="academics_student" t-call="portal.portal_docs_entry">
+                <t t-set="title">Attendance</t>
+                <t t-set="text">Attendance history and monthly calendar</t>
+                <t t-set="url" t-value="'/my/academics/attendance'"/>
+            </t>
+            <t t-if="academics_student" t-call="portal.portal_docs_entry">
+                <t t-set="title">Timetable</t>
+                <t t-set="text">Weekly class schedule</t>
+                <t t-set="url" t-value="'/my/academics/timetable'"/>
+            </t>
+            <t t-if="academics_student" t-call="portal.portal_docs_entry">
+                <t t-set="title">Exams</t>
+                <t t-set="text">Exam results and report card</t>
+                <t t-set="url" t-value="'/my/academics/exams'"/>
+            </t>
+            <t t-if="academics_student" t-call="portal.portal_docs_entry">
+                <t t-set="title">Assignments</t>
+                <t t-set="text">Assignments and submission status</t>
+                <t t-set="url" t-value="'/my/academics/assignments'"/>
+            </t>
+            <t t-if="academics_student" t-call="portal.portal_docs_entry">
+                <t t-set="title">Library</t>
+                <t t-set="text">Book issue and return history</t>
+                <t t-set="url" t-value="'/my/academics/library'"/>
+            </t>
+            <t t-if="academics_student" t-call="portal.portal_docs_entry">
+                <t t-set="title">Fees</t>
+                <t t-set="text">Fee payment history and dues</t>
+                <t t-set="url" t-value="'/my/academics/fees'"/>
             </t>
         </xpath>
     </template>
