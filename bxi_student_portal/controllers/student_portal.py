@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) 2026 BXI Technology Pvt. Ltd. All Rights Reserved.
 # License OPL-1 (Odoo Proprietary License v1.0, see LICENSE file for full text).
+import calendar as calendar_module
+
 from odoo import fields, http
 from odoo.addons.portal.controllers.portal import CustomerPortal
 from odoo.exceptions import MissingError
@@ -11,6 +13,30 @@ from odoo.http import request
 # shouldn't leak to a portal user before publication.
 MARKSHEET_PUBLISHED_STATE = 'validated'
 ASSIGNMENT_VISIBLE_STATES = ('publish', 'finish')
+
+# Shared visual vocabulary for the dashboard-style pages: attendance status
+# to bootstrap color, and a color cycle for anything grouped by subject
+# (there's no subject->color field anywhere in openeducat, so this is the
+# only stable way to keep the same subject in the same color across cards).
+ATTENDANCE_STATUS_COLOR = {'present': 'success', 'absent': 'danger', 'late': 'warning', 'excused': 'secondary'}
+SUBJECT_COLOR_CYCLE = ['primary', 'success', 'info', 'warning', 'danger', 'secondary']
+WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+
+
+def _grade_from_percentage(pct):
+    if pct >= 90:
+        return 'A+'
+    if pct >= 80:
+        return 'A'
+    if pct >= 70:
+        return 'B+'
+    if pct >= 60:
+        return 'B'
+    if pct >= 50:
+        return 'C'
+    if pct >= 35:
+        return 'D'
+    return 'F'
 
 
 class StudentPortal(CustomerPortal):
@@ -83,6 +109,101 @@ class StudentPortal(CustomerPortal):
         return sum(details.mapped('invoice_id.amount_residual'))
 
     # ------------------------------------------------------------------
+    # Dashboard aggregations - calendar/grid/report-card views built on
+    # top of the same recordsets the plain list pages already fetch, kept
+    # here rather than on the models since they're purely presentational.
+    # ------------------------------------------------------------------
+    def _attendance_calendar(self, lines):
+        """Bucket attendance lines onto a Sun-Sat month grid for the most
+        recent recorded month (falls back to the current month when the
+        student has no attendance yet)."""
+        status_by_date = {}
+        for line in lines:
+            if line.present:
+                status_by_date[line.attendance_date] = 'present'
+            elif line.absent:
+                status_by_date[line.attendance_date] = 'absent'
+            elif line.late:
+                status_by_date[line.attendance_date] = 'late'
+            elif line.excused:
+                status_by_date[line.attendance_date] = 'excused'
+        ref_date = max(status_by_date) if status_by_date else fields.Date.today()
+        cal = calendar_module.Calendar(firstweekday=6)  # weeks start on Sunday
+        weeks = []
+        for week in cal.monthdatescalendar(ref_date.year, ref_date.month):
+            weeks.append([{
+                'day': day.day,
+                'in_month': day.month == ref_date.month,
+                'status': status_by_date.get(day),
+                'color': ATTENDANCE_STATUS_COLOR.get(status_by_date.get(day)),
+            } for day in week])
+        return {'month_label': ref_date.strftime('%B %Y'), 'weeks': weeks}
+
+    def _attendance_subject_breakdown(self, lines):
+        """Present/total per subject (via the attendance register), sorted
+        best-attendance-first, each tagged with a stable subject color.
+
+        Portal users have no direct read access to op.attendance.register
+        (it's staff-only, unlike op.attendance.line which carries its own
+        student-scoped ir.rule) - sudo() is safe here because `lines` is
+        already the access-checked, student-scoped recordset; we're only
+        reading the register's subject name off of it, not exposing any
+        other student's data.
+        """
+        buckets = {}
+        for line in lines:
+            subject = line.sudo().register_id.subject_id
+            key = subject.id
+            entry = buckets.setdefault(key, {'subject': subject.name or 'General', 'present': 0, 'total': 0})
+            entry['total'] += 1
+            if line.present:
+                entry['present'] += 1
+        result = []
+        for i, entry in enumerate(buckets.values()):
+            entry['percentage'] = round(entry['present'] * 100.0 / entry['total'], 0) if entry['total'] else 0.0
+            entry['color'] = SUBJECT_COLOR_CYCLE[i % len(SUBJECT_COLOR_CYCLE)]
+            result.append(entry)
+        return sorted(result, key=lambda r: -r['percentage'])
+
+    def _timetable_grid(self, sessions):
+        """Pivot dated sessions onto a Mon-Sun x time-slot weekly pattern,
+        the way a school timetable is normally displayed. When two sessions
+        land on the same weekday/slot (e.g. two different weeks), the most
+        recent one wins the cell."""
+        slots = sorted({s.start_datetime.strftime('%H:%M') for s in sessions})
+        grid = {slot: {day: None for day in WEEKDAY_LABELS} for slot in slots}
+        for session in sessions.sorted('start_datetime'):
+            day = WEEKDAY_LABELS[session.start_datetime.weekday()]
+            slot = session.start_datetime.strftime('%H:%M')
+            grid[slot][day] = session
+        subjects = sessions.mapped('subject_id')
+        subject_colors = {subj.id: SUBJECT_COLOR_CYCLE[i % len(SUBJECT_COLOR_CYCLE)] for i, subj in enumerate(subjects)}
+        return {'slots': slots, 'days': WEEKDAY_LABELS, 'grid': grid, 'subject_colors': subject_colors}
+
+    def _exam_subject_performance(self, student):
+        """Average percentage per subject across every result line the
+        student has, each tagged with a computed letter grade and color."""
+        result_lines = request.env['op.result.line'].search([('student_id', '=', student.id)])
+        buckets = {}
+        for rl in result_lines:
+            subject = rl.exam_id.subject_id
+            key = subject.id
+            total_marks = rl.exam_id.total_marks or 100
+            entry = buckets.setdefault(key, {'subject': subject.name or 'General', 'scores': []})
+            entry['scores'].append(rl.marks * 100.0 / total_marks)
+        result = []
+        for i, entry in enumerate(buckets.values()):
+            pct = round(sum(entry['scores']) / len(entry['scores']), 1) if entry['scores'] else 0.0
+            result.append({
+                'subject': entry['subject'],
+                'percentage': pct,
+                'grade': _grade_from_percentage(pct),
+                'exams_count': len(entry['scores']),
+                'color': SUBJECT_COLOR_CYCLE[i % len(SUBJECT_COLOR_CYCLE)],
+            })
+        return sorted(result, key=lambda r: -r['percentage'])
+
+    # ------------------------------------------------------------------
     # Portal home tile
     # ------------------------------------------------------------------
     def _prepare_home_portal_values(self, counters):
@@ -129,6 +250,8 @@ class StudentPortal(CustomerPortal):
             'student': student,
             'lines': lines,
             'summary': self._attendance_summary(student),
+            'calendar': self._attendance_calendar(lines),
+            'subject_breakdown': self._attendance_subject_breakdown(lines),
             'date_from': date_from,
             'date_to': date_to,
             'page_name': 'academics',
@@ -144,6 +267,7 @@ class StudentPortal(CustomerPortal):
         return request.render('bxi_student_portal.portal_academics_timetable', {
             'student': student,
             'sessions': sessions,
+            'timetable_grid': self._timetable_grid(sessions),
             'page_name': 'academics',
             'student_id': student_id,
         })
@@ -156,9 +280,14 @@ class StudentPortal(CustomerPortal):
             ('student_id', '=', student.id),
             ('marksheet_reg_id.state', '=', MARKSHEET_PUBLISHED_STATE),
         ], order='generated_date desc')
+        passed_count = len(marksheets.filtered(lambda ms: ms.status == 'pass'))
+        overall_percentage = round(sum(marksheets.mapped('percentage')) / len(marksheets), 1) if marksheets else 0.0
         return request.render('bxi_student_portal.portal_academics_exams', {
             'student': student,
             'marksheets': marksheets,
+            'passed_count': passed_count,
+            'overall_percentage': overall_percentage,
+            'subject_performance': self._exam_subject_performance(student),
             'page_name': 'academics',
             'student_id': student_id,
         })

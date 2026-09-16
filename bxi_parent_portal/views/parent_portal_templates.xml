@@ -77,6 +77,42 @@
                 <t t-set="text">View each child's attendance, timetable, exams, assignments, library and fees</t>
                 <t t-set="url" t-value="'/my/child'"/>
             </t>
+            <!-- With a single child there's no ambiguity to resolve, so
+                 surface direct one-click links to each section here too
+                 instead of making the parent go via /my/child every time. -->
+            <t t-if="portal_children and len(portal_children) == 1">
+                <t t-set="_only_child_id" t-value="portal_children.id"/>
+                <t t-call="portal.portal_docs_entry">
+                    <t t-set="title">Attendance</t>
+                    <t t-set="text">Attendance history and monthly calendar</t>
+                    <t t-set="url" t-value="'/my/academics/%s/attendance' % _only_child_id"/>
+                </t>
+                <t t-call="portal.portal_docs_entry">
+                    <t t-set="title">Timetable</t>
+                    <t t-set="text">Weekly class schedule</t>
+                    <t t-set="url" t-value="'/my/academics/%s/timetable' % _only_child_id"/>
+                </t>
+                <t t-call="portal.portal_docs_entry">
+                    <t t-set="title">Exams</t>
+                    <t t-set="text">Exam results and report card</t>
+                    <t t-set="url" t-value="'/my/academics/%s/exams' % _only_child_id"/>
+                </t>
+                <t t-call="portal.portal_docs_entry">
+                    <t t-set="title">Assignments</t>
+                    <t t-set="text">Assignments and submission status</t>
+                    <t t-set="url" t-value="'/my/academics/%s/assignments' % _only_child_id"/>
+                </t>
+                <t t-call="portal.portal_docs_entry">
+                    <t t-set="title">Library</t>
+                    <t t-set="text">Book issue and return history</t>
+                    <t t-set="url" t-value="'/my/academics/%s/library' % _only_child_id"/>
+                </t>
+                <t t-call="portal.portal_docs_entry">
+                    <t t-set="title">Fees</t>
+                    <t t-set="text">Fee payment history and dues</t>
+                    <t t-set="url" t-value="'/my/academics/%s/fees' % _only_child_id"/>
+                </t>
+            </t>
         </xpath>
     </template>
 </odoo>
