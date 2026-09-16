@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="portal_children_list" name="My Children">
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs_searchbar" t-value="False"/>
+            <div class="container">
+                <div class="d-flex align-items-center gap-3 mb-4">
+                    <div class="rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center flex-shrink-0"
+                         style="width:56px;height:56px;">
+                        <i class="fa fa-child fa-lg"/>
+                    </div>
+                    <h3 class="mb-0">My Children</h3>
+                </div>
+
+                <div t-if="children">
+                    <div class="card border-0 shadow-sm mb-3" t-foreach="children" t-as="child">
+                        <a t-attf-href="/my/academics/#{child.id}" class="card-body d-flex align-items-center gap-3 text-decoration-none text-reset flex-wrap">
+                            <div class="rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center flex-shrink-0"
+                                 style="width:48px;height:48px;">
+                                <i class="fa fa-user fs-5"/>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="fs-5 fw-semibold" t-out="child.name"/>
+                                <div class="d-flex flex-wrap gap-2 mt-1">
+                                    <span t-if="child.course_detail_ids" class="badge text-bg-light border">
+                                        <i class="fa fa-graduation-cap me-1"/><t t-out="child.course_detail_ids[0].course_id.name"/>
+                                    </span>
+                                    <span t-if="child.course_detail_ids and child.course_detail_ids[0].batch_id" class="badge text-bg-light border">
+                                        <i class="fa fa-users me-1"/><t t-out="child.course_detail_ids[0].batch_id.name"/>
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="d-flex gap-4 text-center">
+                                <div>
+                                    <div class="fs-5 fw-semibold text-success"><t t-out="attendance_by_student[child.id]['percentage']"/>%</div>
+                                    <div class="text-muted small">Attendance</div>
+                                </div>
+                                <div>
+                                    <div class="fs-5 fw-semibold text-danger">
+                                        <t t-esc="fees_due_by_student[child.id]" t-options="{'widget': 'monetary', 'display_currency': child.partner_id.currency_id if child.partner_id else None}"/>
+                                    </div>
+                                    <div class="text-muted small">Fees Due</div>
+                                </div>
+                            </div>
+                            <i class="fa fa-chevron-right text-muted"/>
+                        </a>
+                    </div>
+                </div>
+                <div t-else="" class="card border-0 shadow-sm">
+                    <div class="card-body text-center text-muted py-5">
+                        <i class="fa fa-child fa-2x mb-3 d-block"/>
+                        No children are linked to this account yet.
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!-- Lets a parent viewing a specific child's academics pages jump back
+         to the children list; only relevant once more than one child page
+         can be reached, i.e. whenever a student_id is in the URL. -->
+    <template id="portal_academics_subnav_children_link"
+              inherit_id="bxi_student_portal.portal_academics_subnav"
+              name="Academics Sub-nav: My Children link">
+        <xpath expr="//ul[hasclass('nav-pills')]" position="before">
+            <a t-if="student_id" href="/my/child" class="d-inline-flex align-items-center gap-1 text-muted text-decoration-none mb-2 small">
+                <i class="fa fa-arrow-left"/> My Children
+            </a>
+        </xpath>
+    </template>
+
+    <template id="portal_my_home_children" name="Portal My Home: My Children"
+              customize_show="True" inherit_id="portal.portal_my_home" priority="56">
+        <xpath expr="//div[hasclass('o_portal_docs')]" position="inside">
+            <t t-if="portal_children" t-call="portal.portal_docs_entry">
+                <t t-set="title">My Children</t>
+                <t t-set="text">View each child's attendance, timetable, exams, assignments, library and fees</t>
+                <t t-set="url" t-value="'/my/child'"/>
+            </t>
+        </xpath>
+    </template>
+</odoo>

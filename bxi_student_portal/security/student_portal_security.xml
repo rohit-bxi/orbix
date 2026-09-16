@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Same idiom openeducat_parent already uses on op.student/op.parent
+        (student_parent_login_rule / parent_login_rule): a portal user may
+        see a row that belongs to themself, or to one of the children
+        listed on their own res.users.child_ids. Extending it here to every
+        model the Student/Parent Portal pages read, since none of them had
+        a portal-scoped ir.rule before this module.
+    -->
+    <record id="student_own_attendance_rule" model="ir.rule">
+        <field name="name">Student/Parent Portal: own attendance only</field>
+        <field name="model_id" ref="openeducat_attendance.model_op_attendance_line"/>
+        <field name="groups" eval="[(4, ref('base.group_portal'))]"/>
+        <field name="domain_force">['|', ('student_id.user_id', '=', user.id), ('student_id.user_id', 'in', user.child_ids.ids)]</field>
+    </record>
+
+    <record id="student_own_session_rule" model="ir.rule">
+        <field name="name">Student/Parent Portal: own timetable sessions only</field>
+        <field name="model_id" ref="openeducat_timetable.model_op_session"/>
+        <field name="groups" eval="[(4, ref('base.group_portal'))]"/>
+        <field name="domain_force">['|', ('student_ids.user_id', '=', user.id), ('student_ids.user_id', 'in', user.child_ids.ids)]</field>
+    </record>
+
+    <record id="student_own_marksheet_line_rule" model="ir.rule">
+        <field name="name">Student/Parent Portal: own marksheet lines only</field>
+        <field name="model_id" ref="openeducat_exam.model_op_marksheet_line"/>
+        <field name="groups" eval="[(4, ref('base.group_portal'))]"/>
+        <field name="domain_force">['|', ('student_id.user_id', '=', user.id), ('student_id.user_id', 'in', user.child_ids.ids)]</field>
+    </record>
+
+    <record id="student_own_result_line_rule" model="ir.rule">
+        <field name="name">Student/Parent Portal: own exam result lines only</field>
+        <field name="model_id" ref="openeducat_exam.model_op_result_line"/>
+        <field name="groups" eval="[(4, ref('base.group_portal'))]"/>
+        <field name="domain_force">['|', ('student_id.user_id', '=', user.id), ('student_id.user_id', 'in', user.child_ids.ids)]</field>
+    </record>
+
+    <record id="student_own_media_movement_rule" model="ir.rule">
+        <field name="name">Student/Parent Portal: own library movements only</field>
+        <field name="model_id" ref="openeducat_library.model_op_media_movement"/>
+        <field name="groups" eval="[(4, ref('base.group_portal'))]"/>
+        <field name="domain_force">['|', ('student_id.user_id', '=', user.id), ('student_id.user_id', 'in', user.child_ids.ids)]</field>
+    </record>
+
+    <record id="student_own_fees_details_rule" model="ir.rule">
+        <field name="name">Student/Parent Portal: own fee details only</field>
+        <field name="model_id" ref="openeducat_fees.model_op_student_fees_details"/>
+        <field name="groups" eval="[(4, ref('base.group_portal'))]"/>
+        <field name="domain_force">['|', ('student_id.user_id', '=', user.id), ('student_id.user_id', 'in', user.child_ids.ids)]</field>
+    </record>
+
+    <!--
+        openeducat_assignment already grants base.group_portal read/write/
+        create access on op.assignment and op.assignment.sub.line (for the
+        submission flow) but ships no ir.rule scoping those rows to the
+        logged-in portal user, so today ANY portal user can read every
+        assignment/submission in the school. Closing that gap here since
+        the assignments portal page depends on these two models.
+    -->
+    <record id="student_own_assignment_rule" model="ir.rule">
+        <field name="name">Student/Parent Portal: own allocated assignments only</field>
+        <field name="model_id" ref="openeducat_assignment.model_op_assignment"/>
+        <field name="groups" eval="[(4, ref('base.group_portal'))]"/>
+        <field name="domain_force">['|', ('allocation_ids.user_id', '=', user.id), ('allocation_ids.user_id', 'in', user.child_ids.ids)]</field>
+    </record>
+
+    <record id="student_own_assignment_sub_line_rule" model="ir.rule">
+        <field name="name">Student/Parent Portal: own assignment submissions only</field>
+        <field name="model_id" ref="openeducat_assignment.model_op_assignment_sub_line"/>
+        <field name="groups" eval="[(4, ref('base.group_portal'))]"/>
+        <field name="domain_force">['|', ('student_id.user_id', '=', user.id), ('student_id.user_id', 'in', user.child_ids.ids)]</field>
+    </record>
+</odoo>

@@ -1,0 +1,410 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Profile header reused at the top of every /my/academics page. -->
+    <template id="portal_academics_header" name="Academics Header">
+        <div class="d-flex align-items-center gap-3 mb-4">
+            <div class="rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center flex-shrink-0"
+                 style="width:56px;height:56px;">
+                <i class="fa fa-user fa-lg"/>
+            </div>
+            <div>
+                <h3 class="mb-1" t-out="student.name"/>
+                <div class="d-flex flex-wrap gap-2">
+                    <span t-if="student.course_detail_ids" class="badge text-bg-light border">
+                        <i class="fa fa-graduation-cap me-1"/><t t-out="student.course_detail_ids[0].course_id.name"/>
+                    </span>
+                    <span t-if="student.course_detail_ids and student.course_detail_ids[0].batch_id" class="badge text-bg-light border">
+                        <i class="fa fa-users me-1"/><t t-out="student.course_detail_ids[0].batch_id.name"/>
+                    </span>
+                    <span t-if="student.gr_no" class="badge text-bg-light border">
+                        <i class="fa fa-id-card-o me-1"/>GR <t t-out="student.gr_no"/>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- Shared sub-nav reused by every /my/academics page below. -->
+    <template id="portal_academics_subnav" name="Academics Sub-nav">
+        <t t-set="_sid" t-value="('/' + str(student.id)) if student_id else ''"/>
+        <ul class="nav nav-pills gap-1 mb-4 flex-nowrap overflow-auto text-nowrap">
+            <li class="nav-item">
+                <a t-attf-href="/my/academics#{_sid}" t-att-class="'nav-link d-flex align-items-center gap-1 active' if page_name == 'overview' else 'nav-link d-flex align-items-center gap-1'">
+                    <i class="fa fa-th-large"/> Overview</a>
+            </li>
+            <li class="nav-item">
+                <a t-attf-href="/my/academics#{_sid}/attendance" t-att-class="'nav-link d-flex align-items-center gap-1 active' if page_name == 'attendance' else 'nav-link d-flex align-items-center gap-1'">
+                    <i class="fa fa-calendar-check-o"/> Attendance</a>
+            </li>
+            <li class="nav-item">
+                <a t-attf-href="/my/academics#{_sid}/timetable" t-att-class="'nav-link d-flex align-items-center gap-1 active' if page_name == 'timetable' else 'nav-link d-flex align-items-center gap-1'">
+                    <i class="fa fa-clock-o"/> Timetable</a>
+            </li>
+            <li class="nav-item">
+                <a t-attf-href="/my/academics#{_sid}/exams" t-att-class="'nav-link d-flex align-items-center gap-1 active' if page_name == 'exams' else 'nav-link d-flex align-items-center gap-1'">
+                    <i class="fa fa-graduation-cap"/> Exams</a>
+            </li>
+            <li class="nav-item">
+                <a t-attf-href="/my/academics#{_sid}/assignments" t-att-class="'nav-link d-flex align-items-center gap-1 active' if page_name == 'assignments' else 'nav-link d-flex align-items-center gap-1'">
+                    <i class="fa fa-tasks"/> Assignments</a>
+            </li>
+            <li class="nav-item">
+                <a t-attf-href="/my/academics#{_sid}/library" t-att-class="'nav-link d-flex align-items-center gap-1 active' if page_name == 'library' else 'nav-link d-flex align-items-center gap-1'">
+                    <i class="fa fa-book"/> Library</a>
+            </li>
+            <li class="nav-item">
+                <a t-attf-href="/my/academics#{_sid}/fees" t-att-class="'nav-link d-flex align-items-center gap-1 active' if page_name == 'fees' else 'nav-link d-flex align-items-center gap-1'">
+                    <i class="fa fa-credit-card"/> Fees</a>
+            </li>
+        </ul>
+    </template>
+
+    <!-- One stat tile: icon in a colored circle, big value, label. -->
+    <template id="portal_stat_tile" name="Academics Stat Tile">
+        <div class="col-6 col-md-3 mb-3">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div t-attf-class="rounded-circle bg-#{color}-subtle text-#{color} d-flex align-items-center justify-content-center flex-shrink-0"
+                         style="width:48px;height:48px;">
+                        <i t-attf-class="fa #{icon} fs-5"/>
+                    </div>
+                    <div>
+                        <div class="fs-4 fw-semibold lh-1" t-out="value"/>
+                        <div class="text-muted small" t-out="label"/>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template id="portal_academics_home" name="My Academics">
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs_searchbar" t-value="False"/>
+            <div class="container">
+                <t t-call="bxi_student_portal.portal_academics_header"/>
+                <t t-call="bxi_student_portal.portal_academics_subnav">
+                    <t t-set="page_name" t-value="'overview'"/>
+                </t>
+
+                <div class="row">
+                    <t t-call="bxi_student_portal.portal_stat_tile">
+                        <t t-set="icon" t-value="'fa-calendar-check-o'"/>
+                        <t t-set="color" t-value="'success'"/>
+                        <t t-set="value"><t t-out="attendance['percentage']"/>%</t>
+                        <t t-set="label">Attendance</t>
+                    </t>
+                    <t t-call="bxi_student_portal.portal_stat_tile">
+                        <t t-set="icon" t-value="'fa-clock-o'"/>
+                        <t t-set="color" t-value="'primary'"/>
+                        <t t-set="value" t-value="len(upcoming_sessions)"/>
+                        <t t-set="label">Upcoming Sessions</t>
+                    </t>
+                    <t t-call="bxi_student_portal.portal_stat_tile">
+                        <t t-set="icon" t-value="'fa-tasks'"/>
+                        <t t-set="color" t-value="'warning'"/>
+                        <t t-set="value" t-value="pending_assignments"/>
+                        <t t-set="label">Pending Assignments</t>
+                    </t>
+                    <t t-call="bxi_student_portal.portal_stat_tile">
+                        <t t-set="icon" t-value="'fa-credit-card'"/>
+                        <t t-set="color" t-value="'danger'"/>
+                        <t t-set="value"><t t-esc="fees_due" t-options="{'widget': 'monetary', 'display_currency': student.partner_id.currency_id if student.partner_id else None}"/></t>
+                        <t t-set="label">Fees Due</t>
+                    </t>
+                </div>
+
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <h6 class="card-title d-flex align-items-center gap-2"><i class="fa fa-clock-o text-muted"/> Upcoming Sessions</h6>
+                        <ul class="list-group list-group-flush" t-if="upcoming_sessions">
+                            <li class="list-group-item d-flex justify-content-between align-items-center px-0" t-foreach="upcoming_sessions" t-as="session">
+                                <span>
+                                    <i class="fa fa-book text-muted me-2"/>
+                                    <t t-out="session.subject_id.name or session.name"/>
+                                </span>
+                                <span class="text-muted small" t-esc="session.start_datetime" t-options="{'widget': 'datetime'}"/>
+                            </li>
+                        </ul>
+                        <p class="text-muted mb-0 mt-2" t-else="">
+                            <i class="fa fa-calendar-o me-1"/>No upcoming sessions scheduled.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <template id="portal_academics_attendance" name="My Attendance">
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs_searchbar" t-value="False"/>
+            <div class="container">
+                <t t-call="bxi_student_portal.portal_academics_header"/>
+                <t t-call="bxi_student_portal.portal_academics_subnav">
+                    <t t-set="page_name" t-value="'attendance'"/>
+                </t>
+
+                <div class="row">
+                    <t t-call="bxi_student_portal.portal_stat_tile">
+                        <t t-set="icon" t-value="'fa-check-circle'"/>
+                        <t t-set="color" t-value="'success'"/>
+                        <t t-set="value" t-value="summary['present']"/>
+                        <t t-set="label">Present</t>
+                    </t>
+                    <t t-call="bxi_student_portal.portal_stat_tile">
+                        <t t-set="icon" t-value="'fa-times-circle'"/>
+                        <t t-set="color" t-value="'danger'"/>
+                        <t t-set="value" t-value="summary['absent']"/>
+                        <t t-set="label">Absent</t>
+                    </t>
+                    <t t-call="bxi_student_portal.portal_stat_tile">
+                        <t t-set="icon" t-value="'fa-clock-o'"/>
+                        <t t-set="color" t-value="'warning'"/>
+                        <t t-set="value" t-value="summary['late']"/>
+                        <t t-set="label">Late</t>
+                    </t>
+                    <t t-call="bxi_student_portal.portal_stat_tile">
+                        <t t-set="icon" t-value="'fa-percent'"/>
+                        <t t-set="color" t-value="'primary'"/>
+                        <t t-set="value"><t t-out="summary['percentage']"/>%</t>
+                        <t t-set="label">Overall</t>
+                    </t>
+                </div>
+
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <table class="table table-hover mb-0" t-if="lines">
+                            <thead>
+                                <tr><th>Date</th><th>Course</th><th>Batch</th><th>Status</th><th>Remark</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="lines" t-as="line">
+                                    <td t-esc="line.attendance_date" t-options="{'widget': 'date'}"/>
+                                    <td t-out="line.course_id.name"/>
+                                    <td t-out="line.batch_id.name"/>
+                                    <td>
+                                        <span t-if="line.present" class="badge text-bg-success"><i class="fa fa-check-circle me-1"/>Present</span>
+                                        <span t-elif="line.absent" class="badge text-bg-danger"><i class="fa fa-times-circle me-1"/>Absent</span>
+                                        <span t-elif="line.late" class="badge text-bg-warning"><i class="fa fa-clock-o me-1"/>Late</span>
+                                        <span t-elif="line.excused" class="badge text-bg-secondary"><i class="fa fa-minus-circle me-1"/>Excused</span>
+                                    </td>
+                                    <td t-out="line.remark"/>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <p t-else="" class="text-muted mb-0"><i class="fa fa-calendar-o me-1"/>No attendance records yet.</p>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <template id="portal_academics_timetable" name="My Timetable">
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs_searchbar" t-value="False"/>
+            <div class="container">
+                <t t-call="bxi_student_portal.portal_academics_header"/>
+                <t t-call="bxi_student_portal.portal_academics_subnav">
+                    <t t-set="page_name" t-value="'timetable'"/>
+                </t>
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <table class="table table-hover mb-0" t-if="sessions">
+                            <thead>
+                                <tr><th>Start</th><th>End</th><th>Subject</th><th>Course</th><th>Batch</th><th>Faculty</th><th>Room</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="sessions" t-as="session">
+                                    <td t-esc="session.start_datetime" t-options="{'widget': 'datetime'}"/>
+                                    <td t-esc="session.end_datetime" t-options="{'widget': 'datetime'}"/>
+                                    <td t-out="session.subject_id.name"/>
+                                    <td t-out="session.course_id.name"/>
+                                    <td t-out="session.batch_id.name"/>
+                                    <td t-out="session.faculty_id.name"/>
+                                    <td t-out="session.classroom_id.name"/>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <p t-else="" class="text-muted mb-0"><i class="fa fa-clock-o me-1"/>No sessions scheduled.</p>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <template id="portal_academics_exams" name="My Exams">
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs_searchbar" t-value="False"/>
+            <div class="container">
+                <t t-call="bxi_student_portal.portal_academics_header"/>
+                <t t-call="bxi_student_portal.portal_academics_subnav">
+                    <t t-set="page_name" t-value="'exams'"/>
+                </t>
+                <t t-if="marksheets">
+                    <div class="card mb-3 border-0 shadow-sm" t-foreach="marksheets" t-as="marksheet">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+                                <h6 class="card-title mb-0 d-flex align-items-center gap-2">
+                                    <i class="fa fa-graduation-cap text-muted"/>
+                                    <t t-out="marksheet.marksheet_reg_id.name"/>
+                                    <span class="text-muted small fw-normal">- <t t-esc="marksheet.generated_date" t-options="{'widget': 'date'}"/></span>
+                                </h6>
+                                <span t-if="marksheet.status == 'pass'" class="badge text-bg-success"><i class="fa fa-check-circle me-1"/>Pass</span>
+                                <span t-else="" class="badge text-bg-danger"><i class="fa fa-times-circle me-1"/>Fail</span>
+                            </div>
+                            <p class="text-muted">
+                                Total Marks: <strong t-out="marksheet.total_marks"/> ·
+                                Percentage: <strong><t t-out="round(marksheet.percentage, 1)"/>%</strong>
+                                <span t-if="marksheet.grade"> · Grade: <strong t-out="marksheet.grade"/></span>
+                            </p>
+                            <table class="table table-sm mb-0" t-if="marksheet.result_line">
+                                <thead><tr><th>Exam</th><th>Marks</th><th>Grade</th><th>Status</th></tr></thead>
+                                <tbody>
+                                    <tr t-foreach="marksheet.result_line" t-as="result">
+                                        <td t-out="result.exam_id.name"/>
+                                        <td t-out="result.marks"/>
+                                        <td t-out="result.grade"/>
+                                        <td>
+                                            <span t-if="result.status == 'pass'" class="badge text-bg-success">Pass</span>
+                                            <span t-else="" class="badge text-bg-danger">Fail</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </t>
+                <div t-else="" class="card border-0 shadow-sm">
+                    <div class="card-body text-muted"><i class="fa fa-graduation-cap me-1"/>No published exam results yet.</div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <template id="portal_academics_assignments" name="My Assignments">
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs_searchbar" t-value="False"/>
+            <div class="container">
+                <t t-call="bxi_student_portal.portal_academics_header"/>
+                <t t-call="bxi_student_portal.portal_academics_subnav">
+                    <t t-set="page_name" t-value="'assignments'"/>
+                </t>
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <table class="table table-hover mb-0" t-if="assignments">
+                            <thead>
+                                <tr><th>Assignment</th><th>Subject</th><th>Due</th><th>Status</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="assignments" t-as="assignment">
+                                    <td t-out="assignment.name"/>
+                                    <td t-out="assignment.subject_id.name"/>
+                                    <td t-esc="assignment.submission_date" t-options="{'widget': 'datetime'}"/>
+                                    <td>
+                                        <t t-set="submission" t-value="submission_by_assignment.get(assignment.id)"/>
+                                        <span t-if="submission" class="badge text-bg-success"><i class="fa fa-check me-1"/><t t-out="submission.state"/></span>
+                                        <span t-else="" class="badge text-bg-warning"><i class="fa fa-exclamation-circle me-1"/>Not submitted</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <p t-else="" class="text-muted mb-0"><i class="fa fa-tasks me-1"/>No assignments right now.</p>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <template id="portal_academics_library" name="My Library">
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs_searchbar" t-value="False"/>
+            <div class="container">
+                <t t-call="bxi_student_portal.portal_academics_header"/>
+                <t t-call="bxi_student_portal.portal_academics_subnav">
+                    <t t-set="page_name" t-value="'library'"/>
+                </t>
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <table class="table table-hover mb-0" t-if="movements">
+                            <thead>
+                                <tr><th>Media</th><th>Issued</th><th>Due</th><th>Returned</th><th>Status</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="movements" t-as="movement">
+                                    <td t-out="movement.media_id.name"/>
+                                    <td t-esc="movement.issued_date" t-options="{'widget': 'date'}"/>
+                                    <td t-esc="movement.return_date" t-options="{'widget': 'date'}"/>
+                                    <td t-esc="movement.actual_return_date" t-options="{'widget': 'date'}"/>
+                                    <td>
+                                        <span t-if="movement.actual_return_date" class="badge text-bg-success"><i class="fa fa-check me-1"/>Returned</span>
+                                        <span t-elif="movement.return_date and movement.return_date &lt; today" class="badge text-bg-danger"><i class="fa fa-exclamation-triangle me-1"/>Overdue</span>
+                                        <span t-else="" class="badge text-bg-info"><i class="fa fa-book me-1"/>Issued</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <p t-else="" class="text-muted mb-0"><i class="fa fa-book me-1"/>No library activity yet.</p>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <template id="portal_academics_fees" name="My Fees">
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs_searchbar" t-value="False"/>
+            <div class="container">
+                <t t-call="bxi_student_portal.portal_academics_header"/>
+                <t t-call="bxi_student_portal.portal_academics_subnav">
+                    <t t-set="page_name" t-value="'fees'"/>
+                </t>
+
+                <div class="card border-0 shadow-sm mb-3">
+                    <div class="card-body d-flex align-items-center gap-3">
+                        <div class="rounded-circle bg-danger-subtle text-danger d-flex align-items-center justify-content-center flex-shrink-0"
+                             style="width:48px;height:48px;">
+                            <i class="fa fa-credit-card fs-5"/>
+                        </div>
+                        <div>
+                            <div class="fs-4 fw-semibold lh-1">
+                                <t t-esc="due_total" t-options="{'widget': 'monetary', 'display_currency': student.partner_id.currency_id if student.partner_id else None}"/>
+                            </div>
+                            <div class="text-muted small">Amount currently due:</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <table class="table table-hover mb-0" t-if="details">
+                            <thead>
+                                <tr><th>Date</th><th>Amount</th><th>Status</th><th/></tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="details" t-as="detail">
+                                    <td t-esc="detail.date" t-options="{'widget': 'date'}"/>
+                                    <td t-esc="detail.amount" t-options="{'widget': 'monetary', 'display_currency': detail.currency_id}"/>
+                                    <td t-out="detail.invoice_state or detail.state"/>
+                                    <td>
+                                        <a t-if="detail.invoice_id" t-attf-href="/my/invoices/#{detail.invoice_id.id}">
+                                            <i class="fa fa-external-link me-1"/>View invoice</a>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <p t-else="" class="text-muted mb-0"><i class="fa fa-credit-card me-1"/>No fee records yet.</p>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <template id="portal_my_home_academics" name="Portal My Home: Academics" customize_show="True" inherit_id="portal.portal_my_home" priority="55">
+        <xpath expr="//div[hasclass('o_portal_docs')]" position="inside">
+            <t t-if="academics_student" t-call="portal.portal_docs_entry">
+                <t t-set="title">My Academics</t>
+                <t t-set="text">Attendance, timetable, exams, assignments, library and fees</t>
+                <t t-set="url" t-value="'/my/academics'"/>
+            </t>
+        </xpath>
+    </template>
+</odoo>
