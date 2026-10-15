@@ -16,9 +16,8 @@ class ParentPortal(StudentPortal):
 
     def _prepare_home_portal_values(self, counters):
         values = super()._prepare_home_portal_values(counters)
-        children = self._portal_children()
-        if children:
-            values['portal_children'] = children
+        if 'children_count' in counters:
+            values['children_count'] = len(self._portal_children())
         return values
 
     @http.route(['/my/child'], type='http', auth='user', website=True)

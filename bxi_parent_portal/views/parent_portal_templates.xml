@@ -69,49 +69,19 @@
         </xpath>
     </template>
 
+    <!-- /my/child already jumps straight to the academics page when there's
+         only one child, so a single card covers both cases. Inherits the
+         student card's view so portal_academics_category is guaranteed to
+         exist; revealed by the counter script like that card. -->
     <template id="portal_my_home_children" name="Portal My Home: My Children"
-              customize_show="True" inherit_id="portal.portal_my_home" priority="56">
-        <xpath expr="//div[hasclass('o_portal_docs')]" position="inside">
-            <t t-if="portal_children" t-call="portal.portal_docs_entry">
+              customize_show="True" inherit_id="bxi_student_portal.portal_my_home_academics" priority="56">
+        <xpath expr="//div[@id='portal_academics_category']" position="inside">
+            <t t-call="portal.portal_docs_entry">
+                <t t-set="icon" t-value="'/bxi_parent_portal/static/src/img/portal-children.svg'"/>
                 <t t-set="title">My Children</t>
-                <t t-set="text">View each child's attendance, timetable, exams, assignments, library and fees</t>
+                <t t-set="text">Each child's attendance, timetable, exams, assignments, library and fees</t>
                 <t t-set="url" t-value="'/my/child'"/>
-            </t>
-            <!-- With a single child there's no ambiguity to resolve, so
-                 surface direct one-click links to each section here too
-                 instead of making the parent go via /my/child every time. -->
-            <t t-if="portal_children and len(portal_children) == 1">
-                <t t-set="_only_child_id" t-value="portal_children.id"/>
-                <t t-call="portal.portal_docs_entry">
-                    <t t-set="title">Attendance</t>
-                    <t t-set="text">Attendance history and monthly calendar</t>
-                    <t t-set="url" t-value="'/my/academics/%s/attendance' % _only_child_id"/>
-                </t>
-                <t t-call="portal.portal_docs_entry">
-                    <t t-set="title">Timetable</t>
-                    <t t-set="text">Weekly class schedule</t>
-                    <t t-set="url" t-value="'/my/academics/%s/timetable' % _only_child_id"/>
-                </t>
-                <t t-call="portal.portal_docs_entry">
-                    <t t-set="title">Exams</t>
-                    <t t-set="text">Exam results and report card</t>
-                    <t t-set="url" t-value="'/my/academics/%s/exams' % _only_child_id"/>
-                </t>
-                <t t-call="portal.portal_docs_entry">
-                    <t t-set="title">Assignments</t>
-                    <t t-set="text">Assignments and submission status</t>
-                    <t t-set="url" t-value="'/my/academics/%s/assignments' % _only_child_id"/>
-                </t>
-                <t t-call="portal.portal_docs_entry">
-                    <t t-set="title">Library</t>
-                    <t t-set="text">Book issue and return history</t>
-                    <t t-set="url" t-value="'/my/academics/%s/library' % _only_child_id"/>
-                </t>
-                <t t-call="portal.portal_docs_entry">
-                    <t t-set="title">Fees</t>
-                    <t t-set="text">Fee payment history and dues</t>
-                    <t t-set="url" t-value="'/my/academics/%s/fees' % _only_child_id"/>
-                </t>
+                <t t-set="placeholder_count" t-value="'children_count'"/>
             </t>
         </xpath>
     </template>

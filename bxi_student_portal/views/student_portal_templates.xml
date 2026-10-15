@@ -531,43 +531,21 @@
         </t>
     </template>
 
+    <!-- Starts hidden like every portal_docs_entry; portal's counter script
+         reveals it once academics_count comes back > 0. Own category ahead
+         of Orders/Invoices so it's the first card a student sees, and
+         bxi_parent_portal drops the parent's card into the same one. -->
     <template id="portal_my_home_academics" name="Portal My Home: Academics" customize_show="True" inherit_id="portal.portal_my_home" priority="55">
-        <xpath expr="//div[hasclass('o_portal_docs')]" position="inside">
-            <t t-if="academics_student" t-call="portal.portal_docs_entry">
-                <t t-set="title">My Academics</t>
-                <t t-set="text">Overview of attendance, timetable, exams, assignments, library and fees</t>
-                <t t-set="url" t-value="'/my/academics'"/>
-            </t>
-            <t t-if="academics_student" t-call="portal.portal_docs_entry">
-                <t t-set="title">Attendance</t>
-                <t t-set="text">Attendance history and monthly calendar</t>
-                <t t-set="url" t-value="'/my/academics/attendance'"/>
-            </t>
-            <t t-if="academics_student" t-call="portal.portal_docs_entry">
-                <t t-set="title">Timetable</t>
-                <t t-set="text">Weekly class schedule</t>
-                <t t-set="url" t-value="'/my/academics/timetable'"/>
-            </t>
-            <t t-if="academics_student" t-call="portal.portal_docs_entry">
-                <t t-set="title">Exams</t>
-                <t t-set="text">Exam results and report card</t>
-                <t t-set="url" t-value="'/my/academics/exams'"/>
-            </t>
-            <t t-if="academics_student" t-call="portal.portal_docs_entry">
-                <t t-set="title">Assignments</t>
-                <t t-set="text">Assignments and submission status</t>
-                <t t-set="url" t-value="'/my/academics/assignments'"/>
-            </t>
-            <t t-if="academics_student" t-call="portal.portal_docs_entry">
-                <t t-set="title">Library</t>
-                <t t-set="text">Book issue and return history</t>
-                <t t-set="url" t-value="'/my/academics/library'"/>
-            </t>
-            <t t-if="academics_student" t-call="portal.portal_docs_entry">
-                <t t-set="title">Fees</t>
-                <t t-set="text">Fee payment history and dues</t>
-                <t t-set="url" t-value="'/my/academics/fees'"/>
-            </t>
+        <xpath expr="//div[@id='portal_client_category']" position="before">
+            <div class="o_portal_category row g-2 mt-3" id="portal_academics_category">
+                <t t-call="portal.portal_docs_entry">
+                    <t t-set="icon" t-value="'/bxi_student_portal/static/src/img/portal-academics.svg'"/>
+                    <t t-set="title">My Academics</t>
+                    <t t-set="text">Attendance, timetable, exams, assignments, library and fees</t>
+                    <t t-set="url" t-value="'/my/academics'"/>
+                    <t t-set="placeholder_count" t-value="'academics_count'"/>
+                </t>
+            </div>
         </xpath>
     </template>
 </odoo>

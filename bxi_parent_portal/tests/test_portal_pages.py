@@ -64,17 +64,29 @@ class TestParentPortalPages(HttpCase, TestParentPortalCommon):
         resp = self.url_open('/my/academics/%d' % other_student.id)
         self.assertEqual(resp.status_code, 403)
 
-    def test_portal_home_shows_my_children_entry_only_when_children_linked(self):
+    def test_portal_home_has_my_children_card(self):
         child = self._make_student()
         parent_user = self._make_parent_user(child)
         self.authenticate(parent_user.login, 'PortalPass1!')
         resp = self.url_open('/my/home')
         self.assertEqual(resp.status_code, 200)
-        self.assertIn('My Children', resp.text)
+        self.assertIn('href="/my/child"', resp.text)
+        self.assertIn('data-placeholder_count="children_count"', resp.text)
 
-    def test_portal_home_hides_my_children_entry_without_children(self):
+    def test_children_counter_reveals_card_for_parent(self):
+        parent_user = self._make_parent_user(self._make_student() | self._make_student())
+        self.authenticate(parent_user.login, 'PortalPass1!')
+        res = self.make_jsonrpc_request('/my/counters', {'counters': ['children_count']})
+        self.assertEqual(res, {'children_count': 2})
+
+    def test_children_counter_is_zero_without_children(self):
         parent_user = self._make_portal_user('lonely_parent2')
         self.authenticate(parent_user.login, 'PortalPass1!')
-        resp = self.url_open('/my/home')
-        self.assertEqual(resp.status_code, 200)
-        self.assertNotIn('My Children', resp.text)
+        res = self.make_jsonrpc_request('/my/counters', {'counters': ['children_count']})
+        self.assertEqual(res, {'children_count': 0})
+
+    def test_counters_skip_children_when_not_requested(self):
+        parent_user = self._make_parent_user(self._make_student())
+        self.authenticate(parent_user.login, 'PortalPass1!')
+        res = self.make_jsonrpc_request('/my/counters', {'counters': []})
+        self.assertEqual(res, {})
