@@ -83,3 +83,28 @@ class TestStudentPortalPages(HttpCase, TestStudentPortalCommon):
         self.authenticate(self.student.user_id.login, 'PortalPass1!')
         resp = self.url_open('/my/academics/999999999')
         self.assertEqual(resp.status_code, 404)
+
+    def test_portal_home_has_academics_card(self):
+        self.authenticate(self.student.user_id.login, 'PortalPass1!')
+        resp = self.url_open('/my/home')
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn('href="/my/academics"', resp.text)
+        self.assertIn('data-placeholder_count="academics_count"', resp.text)
+
+    def test_academics_counter_reveals_card_for_student(self):
+        self.authenticate(self.student.user_id.login, 'PortalPass1!')
+        res = self.make_jsonrpc_request('/my/counters', {'counters': ['academics_count']})
+        self.assertEqual(res, {'academics_count': 1})
+
+    def test_academics_counter_is_zero_without_student_profile(self):
+        user = self._make_portal_user('no_student')
+        self.authenticate(user.login, 'PortalPass1!')
+        res = self.make_jsonrpc_request('/my/counters', {'counters': ['academics_count']})
+        self.assertEqual(res, {'academics_count': 0})
+
+    def test_counters_skip_academics_when_not_requested(self):
+        # portal_home_counters.js looks up a card for every returned key,
+        # so an unrequested key would throw and leave the spinner running.
+        self.authenticate(self.student.user_id.login, 'PortalPass1!')
+        res = self.make_jsonrpc_request('/my/counters', {'counters': []})
+        self.assertEqual(res, {})

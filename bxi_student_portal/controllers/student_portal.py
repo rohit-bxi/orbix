@@ -207,15 +207,13 @@ class StudentPortal(CustomerPortal):
     # Portal home tile
     # ------------------------------------------------------------------
     def _prepare_home_portal_values(self, counters):
+        # Only answer the counters actually asked for: /my/counters returns
+        # this dict as-is and portal_home_counters.js looks up a card for
+        # every key, so an unrequested key throws and leaves the spinner on.
         values = super()._prepare_home_portal_values(counters)
-        student = request.env['op.student'].sudo().search(
-            [('user_id', '=', request.env.uid)], limit=1)
-        if student:
-            values['academics_student'] = student
-            values['academics_attendance'] = self._attendance_summary(student)
-            values['academics_upcoming'] = self._upcoming_sessions(student, limit=1)
-            values['academics_pending_assignments'] = self._pending_assignment_count(student)
-            values['academics_fees_due'] = self._fees_due_total(student)
+        if 'academics_count' in counters:
+            values['academics_count'] = request.env['op.student'].sudo().search_count(
+                [('user_id', '=', request.env.uid)], limit=1)
         return values
 
     # ------------------------------------------------------------------
