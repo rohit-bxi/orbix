@@ -13,6 +13,8 @@ SETTINGS_REGISTRY = {
         'msg91_auth_key': ('bxi_notification_gateway.msg91_auth_key', True),
         'msg91_sender_id': ('bxi_notification_gateway.msg91_sender_id', False),
         'msg91_otp_template_id': ('bxi_notification_gateway.msg91_otp_template_id', False),
+        'fcm_project_id': ('bxi_notification_gateway.fcm_project_id', False),
+        'fcm_service_account_json': ('bxi_notification_gateway.fcm_service_account_json', True),
     },
     'finance': {
         'razorpay_key_id': ('bxi_online_fee_payment.razorpay_key_id', False),

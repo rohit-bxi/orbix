@@ -1,6 +1,6 @@
 {
     'name': 'BXI Student Portal',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.1.0',
     'category': 'Education',
     'summary': 'Self-service web portal for students to view their own academic record',
     'description': """
@@ -27,7 +27,7 @@
         'website',
         'openeducat_core',
         'openeducat_parent',
-        'openeducat_attendance',
+        'bxi_student_attendance',
         'openeducat_timetable',
         'openeducat_exam',
         'openeducat_assignment',

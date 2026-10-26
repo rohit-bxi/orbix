@@ -2,19 +2,39 @@
 # Copyright (c) 2026 BXI Technology Pvt. Ltd. All Rights Reserved.
 # License OPL-1 (Odoo Proprietary License v1.0, see LICENSE file for full text).
 from odoo import http
+from odoo.fields import Domain
 from odoo.http import request
 
 from odoo.addons.bxi_api.controllers.auth import api_error, api_response, require_auth
 
-from .common import parse_pagination, safe_create
+from .common import audience_domain, parse_pagination, safe_create
 
 MANAGER_GROUP = 'bxi_school_notice.group_notice_manager'
+
+# Mirrors bxi.notice's _resolve_recipient_partners; 'specific_class' is
+# matched per class in audience_domain (parents see their children's).
+AUDIENCES_BY_ROLE = {
+    'student': ('all_students', 'all_classes', 'students_and_families'),
+    'parent': ('all_parents', 'students_and_families'),
+    'teacher': ('all_teachers',),
+    'staff': ('all_teachers',),
+}
 
 CREATE_FIELDS = ('title', 'body', 'category', 'target_audience', 'expires_on', 'is_pinned')
 
 
 def _is_notice_manager(user):
     return user.has_group(MANAGER_GROUP)
+
+
+def _visible_domain(env):
+    if _is_notice_manager(env.user):
+        return Domain.TRUE
+    return Domain.AND([
+        Domain('active', '=', True),
+        Domain('is_expired', '=', False),
+        audience_domain(env, AUDIENCES_BY_ROLE),
+    ])
 
 
 def _notice_dict(notice):
@@ -40,7 +60,7 @@ class BxiApiSupportNoticeController(http.Controller):
         limit, offset, error = parse_pagination(kwargs)
         if error:
             return error
-        domain = [] if _is_notice_manager(request.env.user) else [('active', '=', True)]
+        domain = _visible_domain(request.env)
         Notice = request.env['bxi.notice'].sudo()
         total = Notice.search_count(domain)
         notices = Notice.search(domain, limit=limit, offset=offset)
@@ -53,6 +73,8 @@ class BxiApiSupportNoticeController(http.Controller):
         notice = request.env['bxi.notice'].sudo().browse(notice_id)
         if not notice.exists():
             return api_error('Notice not found.', status=404, code='not_found')
+        if not notice.filtered_domain(_visible_domain(request.env)):
+            return api_error('Not authorized for this notice.', status=403, code='forbidden')
         return api_response(_notice_dict(notice))
 
     @http.route('/api/v1/notices', type='http', auth='public', methods=['POST'], csrf=False)

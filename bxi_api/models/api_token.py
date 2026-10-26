@@ -30,9 +30,7 @@ class BxiApiToken(models.Model):
     last_used_at = fields.Datetime(string='Last Used At', readonly=True, copy=False)
     active = fields.Boolean(default=True, help='Unchecked = revoked.')
 
-    _sql_constraints = [
-        ('token_hash_unique', 'unique(token_hash)', 'This token already exists.'),
-    ]
+    _token_hash_unique = models.Constraint('unique(token_hash)', 'This token already exists.')
 
     @staticmethod
     def _hash(raw_token):
@@ -62,18 +60,33 @@ class BxiApiToken(models.Model):
         recordset if the token is missing, revoked or expired. Bumps
         last_used_at on success.
         """
+        return self._verify_token_record(raw_token).user_id
+
+    @api.model
+    def _verify_token_record(self, raw_token):
+        """Same check as _verify_token, but returns the token record itself
+        (empty if missing, revoked, expired or its user is archived)."""
         if not raw_token:
-            return self.env['res.users']
+            return self.browse()
         token = self.sudo().search([
             ('token_hash', '=', self._hash(raw_token)),
             ('active', '=', True),
         ], limit=1)
-        if not token:
-            return self.env['res.users']
+        if not token or not token.user_id.active:
+            return self.browse()
         if token.expires_at and token.expires_at < fields.Datetime.now():
-            return self.env['res.users']
+            return self.browse()
         token.write({'last_used_at': fields.Datetime.now()})
-        return token.user_id
+        return token
+
+    @api.model
+    def _revoke_all_for_user(self, user, keep=None):
+        """Revoke every active token of `user` except `keep` - used after a
+        password change/reset so a stolen token stops working."""
+        domain = [('user_id', '=', user.id), ('active', '=', True)]
+        if keep:
+            domain.append(('id', 'not in', keep.ids))
+        self.sudo().search(domain).action_revoke()
 
     def action_revoke(self):
         self.write({'active': False})

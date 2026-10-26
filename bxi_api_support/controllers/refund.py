@@ -6,7 +6,7 @@ from odoo.http import request
 
 from odoo.addons.bxi_api.controllers.auth import api_error, api_response, call_action, require_auth
 
-from .common import get_authorized_student, get_own_student_ids, parse_pagination, safe_create
+from .common import get_authorized_student, get_own_student_ids, parse_ids, parse_pagination, safe_create
 
 REFUND_STAFF_GROUP = 'bxi_student_refund_management.group_refund_staff'
 
@@ -161,3 +161,32 @@ class BxiApiSupportRefundController(http.Controller):
         if error:
             return error
         return api_response(_refund_dict(refund))
+
+    @http.route('/api/v1/refunds/bulk', type='http', auth='public', methods=['POST'], csrf=False)
+    @require_auth
+    def bulk_refunds(self, **kwargs):
+        """Raise refund requests for several students with an excess
+        payment at once, through the module's bulk wizard: {"student_ids",
+        "refund_type", "refund_amount_calculation"?, "refund_percentage"?,
+        "fixed_refund_amount"?, "reason"?, "preferred_refund_mode"?}."""
+        if not _is_refund_staff(request.env.user):
+            return api_error('Not authorized to create refunds.', status=403, code='forbidden')
+        payload = request.get_json_data() or {}
+        student_ids, error = parse_ids(payload.get('student_ids') or [], 'student_ids')
+        if error:
+            return error
+        if not student_ids:
+            return api_error('student_ids is required.', status=400, code='missing_student_ids')
+        vals = {k: payload[k] for k in (
+            'refund_type', 'refund_amount_calculation', 'refund_percentage', 'fixed_refund_amount', 'priority',
+            'reason', 'preferred_refund_mode', 'notify_parent', 'notify_sms', 'notify_email',
+        ) if k in payload}
+        vals['student_ids'] = [(6, 0, student_ids)]
+        wizard, error = safe_create(request.env['bxi.refund.bulk.wizard'].sudo(), vals)
+        if error:
+            return error
+        action, error = call_action(wizard, 'action_process_refunds')
+        if error:
+            return error
+        refunds = request.env['bxi.student.refund.request'].sudo().search(action['domain'])
+        return api_response({'refunds': [_refund_dict(r) for r in refunds]}, status=201)

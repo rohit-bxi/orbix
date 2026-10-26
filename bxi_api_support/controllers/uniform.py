@@ -6,7 +6,7 @@ from odoo.http import request
 
 from odoo.addons.bxi_api.controllers.auth import api_error, api_response, call_action, require_auth
 
-from .common import get_own_student_ids, parse_pagination, safe_create
+from .common import get_own_student_ids, parse_amount, parse_pagination, safe_create
 
 STAFF_GROUP = 'bxi_uniform_management.group_uniform_staff'
 MANAGER_GROUP = 'bxi_uniform_management.group_uniform_manager'
@@ -214,3 +214,24 @@ class BxiApiSupportUniformController(http.Controller):
         stock = Stock.search([], limit=limit, offset=offset)
         return api_response(
             {'stock': [_stock_dict(s) for s in stock]}, meta={'total': total, 'limit': limit, 'offset': offset})
+
+    @http.route('/api/v1/uniform/stock/<int:stock_id>/receive', type='http', auth='public', methods=['POST'], csrf=False)
+    @require_auth
+    def receive_stock(self, stock_id, **kwargs):
+        """Book a delivery into stock: {"quantity", "note"?} - the same
+        receipt move the backend's Receive Stock button creates."""
+        if not _is_uniform_staff(request.env.user):
+            return api_error('Not authorized to receive stock.', status=403, code='forbidden')
+        stock = request.env['bxi.uniform.stock'].sudo().browse(stock_id)
+        if not stock.exists():
+            return api_error('Stock item not found.', status=404, code='not_found')
+        payload = request.get_json_data() or {}
+        quantity, error = parse_amount(payload.get('quantity'), 'quantity')
+        if error:
+            return error
+        _move, error = safe_create(request.env['bxi.uniform.stock.move'].sudo(), {
+            'stock_id': stock.id, 'move_type': 'receipt', 'quantity': quantity, 'note': payload.get('note') or False,
+        })
+        if error:
+            return error
+        return api_response(_stock_dict(stock), status=201)

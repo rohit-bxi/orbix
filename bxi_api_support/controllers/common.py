@@ -23,10 +23,155 @@ bxi_parent_data_api convention - only correct for that same class of
 low-sensitivity data, not for anything financial or private.
 """
 
+from odoo import fields
 from odoo.exceptions import UserError
+from odoo.fields import Domain
 from odoo.http import request
 
 from odoo.addons.bxi_api.controllers.auth import api_error, parse_int
+
+
+def school_context(env):
+    """The caller's student/parent/teacher records and classes - see
+    res.users._bxi_school_context."""
+    return env.user._bxi_school_context()
+
+
+def audience_domain(env, audiences_by_role, specific_value='specific_class'):
+    """Domain restricting a `target_audience` model (announcements,
+    notices, events) to what the caller is meant to see.
+
+    `audiences_by_role` maps a role ('student', 'parent', 'teacher',
+    'staff', or '*' for everyone) to the target_audience values that role
+    receives. On top of those, a `specific_value` item is visible when one
+    of its classes/sections (empty = all) is a class the caller's own or
+    linked students are in or - for staff - teaches.
+    """
+    user = env.user
+    context = school_context(env)
+    roles = set(user._bxi_roles(context))
+    allowed = set()
+    for role, values in audiences_by_role.items():
+        if role == '*' or role in roles:
+            allowed |= set(values)
+    courses = env['op.course']
+    batches = env['op.batch']
+    if roles & {'student', 'parent'}:
+        courses |= context['family_courses']
+        batches |= context['family_batches']
+    if roles & {'teacher', 'staff'}:
+        courses |= context['teaching_courses']
+        batches |= context['teaching_batches']
+    domain = Domain('target_audience', 'in', sorted(allowed))
+    if courses:
+        domain |= Domain.AND([
+            Domain('target_audience', '=', specific_value),
+            Domain('course_ids', '=', False) | Domain('course_ids', 'in', courses.ids),
+            Domain('batch_ids', '=', False) | Domain('batch_ids', 'in', batches.ids),
+        ])
+    return domain
+
+
+def is_staff(env):
+    return env.user._bxi_is_staff()
+
+
+def ref(record):
+    """many2one-style {id, name} for a JSON body, or None."""
+    return {'id': record.id, 'name': record.display_name} if record else None
+
+
+def running_enrollment(student):
+    return student.course_detail_ids.filtered(lambda line: line.state == 'running')[:1]
+
+
+# Staff who may open any student's records (profile, homework, results,
+# library, transport...): the student's own teachers are allowed
+# separately, by section.
+STUDENT_STAFF_GROUPS = (
+    'bxi_academic_management.group_academic_coordinator',
+    'bxi_academic_management.group_academic_manager',
+    'openeducat_core.group_op_back_office_admin',
+    'openeducat_admission.group_op_admission_user',
+    'op_health_center.group_health_staff',
+    'op_health_center.group_health_manager',
+    'base.group_system',
+)
+
+
+def can_view_student(env, student):
+    """Family (the student or their parent), the teachers of the student's
+    current section, and the office staff in STUDENT_STAFF_GROUPS."""
+    context = school_context(env)
+    if student in context['students']:
+        return True
+    if any(env.user.has_group(group) for group in STUDENT_STAFF_GROUPS):
+        return True
+    enrollment = running_enrollment(student)
+    return bool(enrollment and enrollment.batch_id in context['teaching_batches'])
+
+
+def session_students(session):
+    """A period's roster: its own students, or - for periods generated
+    before the timetable generator started filling them in - everyone
+    currently enrolled in its section."""
+    if session.student_ids or not session.batch_id:
+        return session.student_ids
+    return session.env['op.student.course'].sudo().search([
+        ('batch_id', '=', session.batch_id.id), ('state', '=', 'running'),
+    ]).student_id
+
+
+def get_viewable_student(env, student_id, allow=None):
+    """Resolve a student_id (path/query/payload value) to an op.student
+    (sudo) the caller may see - can_view_student, or `allow(env, student)`
+    when given. Returns (student, None) or (None, api_error(...))."""
+    if not student_id:
+        return None, api_error('student_id is required.', status=400, code='missing_student_id')
+    student_id, error = parse_int(student_id, 'student_id')
+    if error:
+        return None, error
+    student = env['op.student'].sudo().browse(student_id)
+    if not student.exists():
+        return None, api_error('Student not found.', status=404, code='not_found')
+    if not (allow or can_view_student)(env, student):
+        return None, api_error('Not authorized for this student.', status=403, code='forbidden')
+    return student, None
+
+
+def parse_ids(values, field_name):
+    """(list of ints, None) or (None, api_error(...)) for a JSON id list."""
+    if not isinstance(values, (list, tuple)):
+        return None, api_error('%s must be a list of ids.' % field_name, status=400, code='invalid_%s' % field_name)
+    ids = []
+    for value in values:
+        value, error = parse_int(value, field_name)
+        if error:
+            return None, error
+        ids.append(value)
+    return ids, None
+
+
+def parse_amount(value, field_name='amount'):
+    """(float > 0, None) or (None, api_error(...)) for a money amount."""
+    if value is None or value == '':
+        return None, api_error('%s is required.' % field_name, status=400, code='missing_%s' % field_name)
+    try:
+        amount = float(value)
+    except (TypeError, ValueError):
+        return None, api_error('%s must be a number.' % field_name, status=400, code='invalid_%s' % field_name)
+    if amount <= 0:
+        return None, api_error('%s must be greater than zero.' % field_name, status=400, code='invalid_%s' % field_name)
+    return amount, None
+
+
+def date_str(value):
+    """Date/Datetime (or False) -> ISO string or None, for JSON bodies."""
+    if not value:
+        return None
+    if hasattr(value, 'hour'):
+        return fields.Datetime.to_string(value)
+    return fields.Date.to_string(value)
 
 
 def get_own_student_ids(env):

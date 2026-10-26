@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_bxi_api_device_list" model="ir.ui.view">
+        <field name="name">bxi.api.device.list</field>
+        <field name="model">bxi.api.device</field>
+        <field name="arch" type="xml">
+            <list create="false">
+                <field name="user_id"/>
+                <field name="platform"/>
+                <field name="device_name"/>
+                <field name="app_version"/>
+                <field name="last_seen_at"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_bxi_api_device" model="ir.actions.act_window">
+        <field name="name">App Devices</field>
+        <field name="res_model">bxi.api.device</field>
+        <field name="view_mode">list</field>
+        <field name="context">{'active_test': False}</field>
+    </record>
+
+    <record id="view_bxi_notification_list" model="ir.ui.view">
+        <field name="name">bxi.notification.list</field>
+        <field name="model">bxi.notification</field>
+        <field name="arch" type="xml">
+            <list create="false">
+                <field name="create_date" string="Sent On"/>
+                <field name="user_id"/>
+                <field name="category"/>
+                <field name="title"/>
+                <field name="read_at"/>
+                <field name="push_state" widget="badge"
+                       decoration-success="push_state == 'sent'"
+                       decoration-danger="push_state == 'failed'"
+                       decoration-muted="push_state in ('no_device', 'disabled')"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_bxi_notification_search" model="ir.ui.view">
+        <field name="name">bxi.notification.search</field>
+        <field name="model">bxi.notification</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="user_id"/>
+                <field name="title"/>
+                <field name="category"/>
+                <filter name="unread" string="Unread" domain="[('read_at', '=', False)]"/>
+                <filter name="push_failed" string="Push Failed" domain="[('push_state', '=', 'failed')]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_bxi_notification" model="ir.actions.act_window">
+        <field name="name">App Notifications</field>
+        <field name="res_model">bxi.notification</field>
+        <field name="view_mode">list</field>
+    </record>
+
+    <menuitem id="menu_api_device" name="App Devices" parent="bxi_api.menu_api_root"
+              action="action_bxi_api_device" sequence="20"/>
+    <menuitem id="menu_api_notification" name="App Notifications" parent="bxi_api.menu_api_root"
+              action="action_bxi_notification" sequence="30"/>
+</odoo>

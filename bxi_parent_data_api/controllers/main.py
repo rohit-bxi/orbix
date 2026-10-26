@@ -23,6 +23,15 @@ def _user_can_access_student(env, student):
     ]))
 
 
+def _sessions_domain(student):
+    """The student's periods: those listing them, plus - for periods
+    generated from the timetable before it filled in rosters - every period
+    of their current section that lists nobody."""
+    batches = student.course_detail_ids.filtered(lambda line: line.state == 'running').batch_id
+    return ['|', ('student_ids', 'in', student.id),
+            '&', ('student_ids', '=', False), ('batch_id', 'in', batches.ids)]
+
+
 def _get_authorized_student(payload_student_id):
     if not payload_student_id:
         return None, api_error('student_id is required.', status=400, code='missing_student_id')
@@ -77,35 +86,36 @@ class BxiParentDataApiController(http.Controller):
         date_to_val = fields.Date.from_string(date_to) if date_to else fields.Date.today()
         date_from_val = fields.Date.from_string(date_from) if date_from else date_to_val - timedelta(days=30)
 
-        lines = request.env['op.attendance.line'].sudo().search([
-            ('student_id', '=', student.id),
-            ('attendance_date', '>=', date_from_val),
-            ('attendance_date', '<=', date_to_val),
-        ], order='attendance_date desc')
-
-        present_count = len(lines.filtered('present'))
-        absent_count = len(lines.filtered('absent'))
-        late_count = len(lines.filtered('late'))
-        excused_count = len(lines.filtered('excused'))
-        total = len(lines)
+        rows = student._get_attendance_rows(date_from_val, date_to_val)
+        summary = student._summarize_attendance_rows(rows)
 
         return api_response({
             'summary': {
-                'total': total,
-                'present': present_count,
-                'absent': absent_count,
-                'late': late_count,
-                'excused': excused_count,
-                'attendance_percentage': round(100.0 * present_count / total, 1) if total else 0.0,
+                'total': summary['total'],
+                'present': summary['present'],
+                'absent': summary['absent'],
+                'late': summary['late'],
+                'excused': summary['excused'],
+                'attendance_percentage': summary['percentage'],
             },
+            'days': [{
+                'date': fields.Date.to_string(day['date']),
+                'status': day['status'],
+                'periods': day['periods'],
+            } for day in summary['days']],
             'records': [{
-                'date': fields.Date.to_string(line.attendance_date),
-                'present': line.present,
-                'absent': line.absent,
-                'late': line.late,
-                'excused': line.excused,
-                'remark': line.remark,
-            } for line in lines],
+                'date': fields.Date.to_string(row['date']),
+                'session_id': row['session_id'],
+                'period': row['period'],
+                'subject': row['subject'],
+                'status': row['status'],
+                # Kept for clients built against the old op.attendance.line shape.
+                'present': row['status'] == 'present',
+                'absent': row['status'] == 'absent',
+                'late': row['status'] == 'late',
+                'excused': row['status'] == 'excused',
+                'remark': row['remark'],
+            } for row in rows],
         })
 
     @http.route('/api/v1/parent/timetable', type='http', auth='public', methods=['GET'], csrf=False)
@@ -118,8 +128,7 @@ class BxiParentDataApiController(http.Controller):
         date_from_val = fields.Datetime.from_string(date_from) if date_from else fields.Datetime.now()
         date_to_val = fields.Datetime.from_string(date_to) if date_to else date_from_val + timedelta(days=7)
 
-        sessions = request.env['op.session'].sudo().search([
-            ('student_ids', 'in', student.id),
+        sessions = request.env['op.session'].sudo().search(_sessions_domain(student) + [
             ('start_datetime', '>=', date_from_val),
             ('start_datetime', '<=', date_to_val),
             ('state', '!=', 'cancel'),
@@ -146,18 +155,11 @@ class BxiParentDataApiController(http.Controller):
             return error
 
         today = fields.Date.today()
-        thirty_days_ago = today - timedelta(days=30)
-        attendance_lines = request.env['op.attendance.line'].sudo().search([
-            ('student_id', '=', student.id),
-            ('attendance_date', '>=', thirty_days_ago),
-            ('attendance_date', '<=', today),
-        ])
-        present_count = len(attendance_lines.filtered('present'))
-        total_attendance = len(attendance_lines)
+        attendance = student._summarize_attendance_rows(
+            student._get_attendance_rows(today - timedelta(days=30), today))
 
         now = fields.Datetime.now()
-        upcoming_sessions = request.env['op.session'].sudo().search([
-            ('student_ids', 'in', student.id),
+        upcoming_sessions = request.env['op.session'].sudo().search(_sessions_domain(student) + [
             ('start_datetime', '>=', now),
             ('state', '!=', 'cancel'),
         ], order='start_datetime asc', limit=5)
@@ -174,9 +176,9 @@ class BxiParentDataApiController(http.Controller):
             },
             'fee_summary': student.get_fee_payment_summary(),
             'attendance_last_30_days': {
-                'total': total_attendance,
-                'present': present_count,
-                'attendance_percentage': round(100.0 * present_count / total_attendance, 1) if total_attendance else 0.0,
+                'total': attendance['total'],
+                'present': attendance['present'],
+                'attendance_percentage': attendance['percentage'],
             },
             'upcoming_sessions': [{
                 'id': s.id,

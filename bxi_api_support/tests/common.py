@@ -75,6 +75,42 @@ class ApiSupportHttpCase(HttpCase):
             register.action_create_payments()
         return invoice
 
+    @classmethod
+    def _create_class(cls, code):
+        """An op.course + op.batch (class + section) pair."""
+        course = cls.env['op.course'].create({'name': f'{code} Class', 'code': f'{code}-C'})
+        batch = cls.env['op.batch'].create({
+            'name': f'{code} Section', 'code': f'{code}-B', 'course_id': course.id,
+            'start_date': '2026-01-01', 'end_date': '2027-12-31',
+        })
+        return course, batch
+
+    @classmethod
+    def _enroll(cls, student, course, batch):
+        return cls.env['op.student.course'].create({
+            'student_id': student.id, 'course_id': course.id, 'batch_id': batch.id, 'state': 'running',
+        })
+
+    @classmethod
+    def _create_parent(cls, user, students, mobile=False):
+        relationship = cls.env['op.parent.relationship'].search([], limit=1) or cls.env['op.parent.relationship'].create({
+            'name': 'Guardian',
+        })
+        return cls.env['op.parent'].create({
+            'name': user.partner_id.id,
+            'relationship_id': relationship.id,
+            'user_id': user.id,
+            'mobile': mobile,
+            'student_ids': [(6, 0, students.ids)],
+        })
+
+    @classmethod
+    def _create_faculty(cls, user, first_name='Test', last_name='Teacher'):
+        return cls.env['op.faculty'].create({
+            'first_name': first_name, 'last_name': last_name, 'gender': 'male',
+            'birth_date': '1985-01-01', 'user_id': user.id,
+        })
+
     def _headers(self, login, password):
         resp = self.url_open('/api/v1/auth/login', json={'login': login, 'password': password})
         return {'Authorization': f'Bearer {resp.json()["data"]["token"]}'}

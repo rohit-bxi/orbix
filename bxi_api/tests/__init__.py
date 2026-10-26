@@ -3,3 +3,4 @@
 # License OPL-1 (Odoo Proprietary License v1.0, see LICENSE file for full text).
 from . import test_api_auth
 from . import test_api_token_model
+from . import test_api_account

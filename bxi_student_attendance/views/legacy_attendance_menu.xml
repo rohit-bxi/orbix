@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- hr.attendance is the attendance system of record; keep the
+         OpenEduCat sheets reachable for administrators (history) but out of
+         everyone else's way, so new marks aren't entered where neither the
+         portal nor the app will ever show them. -->
+    <record id="openeducat_attendance.menu_op_attendance_root" model="ir.ui.menu">
+        <field name="group_ids" eval="[(6, 0, [ref('base.group_system')])]"/>
+    </record>
+</odoo>

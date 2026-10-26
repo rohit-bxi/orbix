@@ -26,7 +26,7 @@ class TestParentPortalPages(HttpCase, TestParentPortalCommon):
     def test_my_child_lists_all_children_with_summaries(self):
         child_a = self._make_student()
         child_b = self._make_student()
-        self._make_attendance(child_a, [True, True, False, False])
+        self._mark_attendance(child_a, [True, True, False, False])
         self._make_fee_invoice(child_b, 250.0, invoice_state='posted')
         parent_user = self._make_parent_user(child_a | child_b)
         self.authenticate(parent_user.login, 'PortalPass1!')

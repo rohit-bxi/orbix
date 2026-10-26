@@ -1,6 +1,6 @@
 {
     'name': 'Health Center',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.0.1',
     'category': 'Education',
     'summary': 'Health & Medical Records management for Students and Teachers',
     'description': """

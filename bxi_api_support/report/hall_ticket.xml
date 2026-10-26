@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="report_hall_ticket_single">
+        <t t-call="openeducat_exam.report_ticket"/>
+    </template>
+
+    <record id="action_report_hall_ticket_single" model="ir.actions.report">
+        <field name="name">Hall Ticket (single student)</field>
+        <field name="model">op.exam.session</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">bxi_api_support.report_hall_ticket_single</field>
+        <field name="report_file">bxi_api_support.report_hall_ticket_single</field>
+    </record>
+</odoo>

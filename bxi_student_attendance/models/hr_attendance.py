@@ -1,7 +1,13 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) 2026 BXI Technology Pvt. Ltd. All Rights Reserved.
 # License OPL-1 (Odoo Proprietary License v1.0, see LICENSE file for full text).
+import logging
+from datetime import datetime, time
+
 from odoo import api, fields, models
+from odoo.exceptions import ValidationError
+
+_logger = logging.getLogger(__name__)
 
 
 class HrAttendance(models.Model):
@@ -106,3 +112,63 @@ class HrAttendance(models.Model):
                 vals['check_in'] = now
                 vals['check_out'] = now
         return super().create(vals_list)
+
+    @api.model
+    def _copy_legacy_op_attendance(self):
+        """One-time copy of OpenEduCat attendance sheets (op.attendance.line)
+        into hr.attendance, now the only attendance store the portal and
+        the app read. A line is skipped when hr.attendance already has a
+        row for that student and period (hr.attendance wins), when it has
+        no status ticked, or when it would overlap another of the student's
+        records (e.g. a kiosk check-in spanning that period). Each copied
+        row is an instant at the period start, the same way teacher-marked
+        rows are stamped, so it doesn't block later check-ins.
+        Returns (copied, skipped, conflicts).
+        """
+        if 'op.attendance.line' not in self.env:
+            return 0, 0, 0
+        lines = self.env['op.attendance.line'].sudo().with_context(active_test=False).search(
+            [('attendance_id.state', '!=', 'cancel')], order='attendance_date, id')
+        existing = {
+            (a.student_id.id, a.session_id.id)
+            for a in self.sudo().search([('student_id', '!=', False), ('session_id', '!=', False)])
+        }
+        # History, not news: modules that notify families on an absence
+        # (bxi_api_support) skip rows created under this flag.
+        Attendance = self.sudo().with_context(bxi_no_notify=True)
+        copied = skipped = conflicts = 0
+        for line in lines:
+            student = line.student_id
+            session = line.attendance_id.session_id
+            status = next((s for s in ('present', 'absent', 'late', 'excused') if line[s]), None)
+            if not student or not status or (session and (student.id, session.id) in existing):
+                skipped += 1
+                continue
+            if session.start_datetime:
+                stamp = session.start_datetime
+            elif line.attendance_date:
+                stamp = datetime.combine(line.attendance_date, time(0))
+            else:
+                skipped += 1
+                continue
+            student._ensure_attendance_employee()
+            try:
+                with self.env.cr.savepoint():
+                    Attendance.create({
+                        'employee_id': student.employee_id.id,
+                        'session_id': session.id or False,
+                        'status': status,
+                        'remark': line.remark or False,
+                        'check_in': stamp,
+                        'check_out': stamp,
+                    })
+            except ValidationError:
+                conflicts += 1
+                continue
+            if session:
+                existing.add((student.id, session.id))
+            copied += 1
+        _logger.info(
+            'Copied %s OpenEduCat attendance lines into hr.attendance (%s skipped, %s overlapping).',
+            copied, skipped, conflicts)
+        return copied, skipped, conflicts

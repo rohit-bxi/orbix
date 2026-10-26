@@ -109,6 +109,22 @@ class TestStudentPortalCommon(TransactionCase):
     # Attendance
     # ------------------------------------------------------------------
     @classmethod
+    def _mark_attendance(cls, student, presents):
+        """hr.attendance rows (the system of record the portal reads): one
+        hand-marked day per entry, newest first (True=present)."""
+        now = fields.Datetime.now()
+        attendances = cls.env['hr.attendance']
+        for i, present in enumerate(presents):
+            stamp = now - timedelta(days=i, minutes=1)
+            attendances |= cls.env['hr.attendance'].create({
+                'employee_id': student.employee_id.id,
+                'status': 'present' if present else 'absent',
+                'check_in': stamp,
+                'check_out': stamp,
+            })
+        return attendances
+
+    @classmethod
     def _make_attendance(cls, student, presents, state='done'):
         """presents: list of booleans, one per attendance line (True=present)."""
         n = cls._next()

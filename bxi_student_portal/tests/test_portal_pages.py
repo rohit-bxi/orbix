@@ -26,7 +26,7 @@ class TestStudentPortalPages(HttpCase, TestStudentPortalCommon):
         self.assertIn(self.student.name, resp.text)
 
     def test_attendance_page_shows_computed_percentage(self):
-        self._make_attendance(self.student, [True, True, True, False, False])
+        self._mark_attendance(self.student, [True, True, True, False, False])
         self.authenticate(self.student.user_id.login, 'PortalPass1!')
         resp = self.url_open('/my/academics/attendance')
         self.assertEqual(resp.status_code, 200)

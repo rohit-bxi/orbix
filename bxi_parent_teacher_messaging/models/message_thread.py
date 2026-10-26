@@ -24,10 +24,9 @@ class BxiMessageThread(models.Model):
     message_count = fields.Integer(compute='_compute_message_stats', store=True)
     last_message_at = fields.Datetime(compute='_compute_message_stats', store=True)
 
-    _sql_constraints = [
-        ('thread_unique', 'unique(student_id, parent_id, teacher_id)',
-         'A thread for this student/parent/teacher combination already exists.'),
-    ]
+    _thread_unique = models.Constraint(
+        'unique(student_id, parent_id, teacher_id)',
+        'A thread for this student/parent/teacher combination already exists.')
 
     @api.depends('message_ids.create_date')
     def _compute_message_stats(self):

@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) 2026 BXI Technology Pvt. Ltd. All Rights Reserved.
 # License OPL-1 (Odoo Proprietary License v1.0, see LICENSE file for full text).
-from odoo import http
+from odoo import fields, http
+from odoo.fields import Domain
 from odoo.http import request
 
 from odoo.addons.bxi_api.controllers.auth import api_error, api_response, call_action, require_auth
 
-from .common import parse_pagination
+from .common import parse_pagination, school_context
 
 COORDINATOR_GROUP = 'bxi_academic_management.group_academic_coordinator'
 MANAGER_GROUP = 'bxi_academic_management.group_academic_manager'
@@ -138,6 +139,26 @@ class BxiApiSupportAcademicController(http.Controller):
         return api_response(
             {'meetings': [_ptm_dict(m) for m in meetings]},
             meta={'total': total, 'limit': limit, 'offset': offset})
+
+    @http.route('/api/v1/academic/ptm-meetings/my', type='http', auth='public', methods=['GET'], csrf=False)
+    @require_auth
+    def my_ptm_meetings(self, include_past=None, **kwargs):
+        """PTMs the caller is expected at: invited by name, or - for a
+        family - held for a child's class, and - for a teacher - for a class
+        they teach. Upcoming only unless ?include_past=1."""
+        context = school_context(request.env)
+        parent, faculty = context['parent'], context['faculty']
+        domain = Domain.FALSE
+        if parent or context['students']:
+            domain |= Domain('class_ids', 'in', context['family_courses'].ids)
+        if parent:
+            domain |= Domain('parent_ids', 'in', parent.id)
+        if faculty:
+            domain |= Domain('teacher_ids', 'in', faculty.id) | Domain('class_ids', 'in', context['teaching_courses'].ids)
+        if include_past not in ('1', 'true', 'True'):
+            domain &= Domain('end_datetime', '>=', fields.Datetime.now())
+        meetings = request.env['bxi.ptm.meeting'].sudo().search(domain, order='start_datetime')
+        return api_response({'meetings': [_ptm_dict(m) for m in meetings]})
 
     @http.route('/api/v1/academic/ptm-meetings/<int:meeting_id>', type='http', auth='public', methods=['GET'], csrf=False)
     @require_auth

@@ -6,7 +6,7 @@ from odoo.http import request
 
 from odoo.addons.bxi_api.controllers.auth import api_error, api_response, call_action, require_auth
 
-from .common import get_authorized_student, get_own_student_ids, parse_pagination, safe_create
+from .common import get_authorized_student, get_own_student_ids, get_viewable_student, parse_pagination, safe_create
 
 STAFF_GROUP = 'bxi_school_transport_bus_management.group_transport_staff'
 MANAGER_GROUP = 'bxi_school_transport_bus_management.group_transport_manager'
@@ -205,3 +205,108 @@ class BxiApiSupportTransportController(http.Controller):
         registrations = request.env['bxi.transport.registration'].sudo().search(
             [('route_id', '=', payload['route_id']), ('stop_id', '=', payload['stop_id'])], order='id desc')
         return api_response({'registrations': [_registration_dict(r) for r in registrations]}, status=201)
+
+    @http.route('/api/v1/transport/my', type='http', auth='public', methods=['GET'], csrf=False)
+    @require_auth
+    def my_transport(self, student_id=None, **kwargs):
+        """The family's bus card: the student's current registrations with
+        route, stop, pickup/drop times, bus and the crew to call."""
+        student, error = get_viewable_student(request.env, student_id)
+        if error:
+            return error
+        registrations = request.env['bxi.transport.registration'].sudo().search([
+            ('student_id', '=', student.id), ('state', 'in', ('confirmed', 'active')),
+        ], order='date_start desc')
+        result = []
+        for reg in registrations:
+            route = reg.route_id
+            driver = route.vehicle_id.transport_driver_id
+            result.append(dict(
+                _registration_dict(reg),
+                route={'id': route.id, 'name': route.name, 'code': route.code or None},
+                stop={'id': reg.stop_id.id, 'name': reg.stop_id.name,
+                      'pickup_time': reg.pickup_time, 'drop_time': reg.drop_time},
+                vehicle={'id': route.vehicle_id.id, 'name': route.vehicle_id.display_name,
+                         'license_plate': route.vehicle_id.license_plate or None} if route.vehicle_id else None,
+                driver={'name': driver.name, 'phone': driver.phone or None} if driver else None,
+                attendant={'name': route.attendant_id.name, 'phone': route.attendant_id.phone or None}
+                if route.attendant_id else None,
+            ))
+        return api_response({'registrations': result})
+
+    # -- route set-up (transport office) -----------------------------------------
+
+    STOP_FIELDS = ('name', 'sequence', 'pickup_time', 'drop_time', 'fee_amount')
+
+    @http.route('/api/v1/transport/routes/<int:route_id>/stops', type='http', auth='public', methods=['POST'], csrf=False)
+    @require_auth
+    def add_stop(self, route_id, **kwargs):
+        if not _is_transport_staff(request.env.user):
+            return api_error('Not authorized to edit routes.', status=403, code='forbidden')
+        route = request.env['bxi.transport.route'].sudo().browse(route_id)
+        if not route.exists():
+            return api_error('Route not found.', status=404, code='not_found')
+        payload = request.get_json_data() or {}
+        if not payload.get('name'):
+            return api_error('name is required.', status=400, code='missing_name')
+        _stop, error = safe_create(request.env['bxi.transport.route.stop'].sudo(), dict(
+            {k: payload[k] for k in self.STOP_FIELDS if k in payload}, route_id=route.id))
+        if error:
+            return error
+        return api_response(_route_dict(route), status=201)
+
+    @http.route('/api/v1/transport/stops/<int:stop_id>/<any("update", "delete"):action>',
+                type='http', auth='public', methods=['POST'], csrf=False)
+    @require_auth
+    def change_stop(self, stop_id, action, **kwargs):
+        if not _is_transport_staff(request.env.user):
+            return api_error('Not authorized to edit routes.', status=403, code='forbidden')
+        stop = request.env['bxi.transport.route.stop'].sudo().browse(stop_id)
+        if not stop.exists():
+            return api_error('Stop not found.', status=404, code='not_found')
+        route = stop.route_id
+        if action == 'delete':
+            if stop.registration_ids.filtered(lambda r: r.state in ('confirmed', 'active')):
+                return api_error('Students are registered at this stop.', status=400, code='stop_in_use')
+            stop.unlink()
+        else:
+            payload = request.get_json_data() or {}
+            _, error = call_action(stop, 'write', vals={k: payload[k] for k in self.STOP_FIELDS if k in payload})
+            if error:
+                return error
+        return api_response(_route_dict(route))
+
+    @http.route('/api/v1/transport/vehicles', type='http', auth='public', methods=['GET'], csrf=False)
+    @require_auth
+    def list_vehicles(self, **kwargs):
+        if not _is_transport_staff(request.env.user):
+            return api_error('Not authorized to view vehicles.', status=403, code='forbidden')
+        vehicles = request.env['fleet.vehicle'].sudo().search([('is_school_bus', '=', True)])
+        return api_response({'vehicles': [{
+            'id': v.id,
+            'name': v.display_name,
+            'license_plate': v.license_plate or None,
+            'seats': v.seats,
+            'driver': {'id': v.transport_driver_id.id, 'name': v.transport_driver_id.name,
+                       'phone': v.transport_driver_id.phone or None} if v.transport_driver_id else None,
+            'attendant': {'name': v.bus_attendant_id.name, 'phone': v.bus_attendant_id.phone or None}
+            if v.bus_attendant_id else None,
+        } for v in vehicles]})
+
+    @http.route('/api/v1/transport/drivers', type='http', auth='public', methods=['GET'], csrf=False)
+    @require_auth
+    def list_drivers(self, **kwargs):
+        if not _is_transport_staff(request.env.user):
+            return api_error('Not authorized to view drivers.', status=403, code='forbidden')
+        drivers = request.env['bxi.transport.driver'].sudo().search([])
+        return api_response({'drivers': [{
+            'id': d.id,
+            'name': d.name,
+            'phone': d.phone or None,
+            'license_number': d.license_number,
+            'license_expiry': d.license_expiry and d.license_expiry.isoformat(),
+            'license_expiring_soon': d.license_expiring_soon,
+            'badge_verified': d.badge_verified,
+            'status': d.status,
+            'vehicle_id': d.vehicle_id.id or None,
+        } for d in drivers]})

@@ -53,7 +53,7 @@ class TestBxiApiSupportAnnouncement(ApiSupportHttpCase):
     def test_any_authenticated_user_reads_published_only(self):
         headers = self._manager_headers()
         create = self.url_open('/api/v1/announcements', headers=headers, json={
-            'title': 'Draft Only', 'body': 'Should not be visible to non-managers.',
+            'title': 'Draft Only', 'body': 'Should not be visible to non-managers.', 'target_audience': 'everyone',
         })
         ann_id = create.json()['data']['id']
 

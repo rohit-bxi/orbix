@@ -46,6 +46,14 @@ class OpSession(models.Model):
             ('session_date', '=', target_date),
         ])
         existing_line_ids = set(existing.timetable_line_id.ids)
+        # The period's roster (what attendance rosters, the parent
+        # timetable and session followers all read) - the backend form
+        # fills this by onchange, a plain create() has to do it itself.
+        students_by_batch = {}
+        for enrollment in self.env['op.student.course'].search([
+            ('batch_id', 'in', lines.timetable_id.batch_id.ids), ('state', '=', 'running'),
+        ]):
+            students_by_batch.setdefault(enrollment.batch_id.id, []).append(enrollment.student_id.id)
         vals_list = []
         for line in lines:
             if line.id in existing_line_ids:
@@ -63,6 +71,7 @@ class OpSession(models.Model):
                 'start_datetime': start,
                 'end_datetime': end,
                 'state': 'confirm',
+                'student_ids': [(6, 0, students_by_batch.get(line.timetable_id.batch_id.id, []))],
             })
         if not vals_list:
             return self.browse()

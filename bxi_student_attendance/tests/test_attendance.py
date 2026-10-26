@@ -124,6 +124,7 @@ class TestStudentAttendance(TransactionCase):
         self.assertEqual(len(created), 1)
         self.assertEqual(created.course_id, self.course)
         self.assertEqual(created.subject_id, self.subject)
+        self.assertEqual(created.student_ids, self.student, 'The section roster must be filled in.')
 
     def test_generate_sessions_idempotent(self):
         timetable = self.env['bxi.timetable'].create({

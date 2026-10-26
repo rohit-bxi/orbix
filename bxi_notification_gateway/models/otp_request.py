@@ -23,7 +23,10 @@ class BxiOtpRequest(models.Model):
     _order = 'create_date desc'
 
     phone = fields.Char(required=True, index=True)
-    purpose = fields.Selection([('login', 'Login')], required=True, default='login')
+    purpose = fields.Selection([
+        ('login', 'Login'),
+        ('password_reset', 'Password Reset'),
+    ], required=True, default='login')
     code_hash = fields.Char(required=True)
     expires_at = fields.Datetime(required=True)
     verified_at = fields.Datetime(readonly=True)

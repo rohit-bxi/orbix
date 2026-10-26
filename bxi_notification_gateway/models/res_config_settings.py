@@ -17,3 +17,10 @@ class ResConfigSettings(models.TransientModel):
         help='Flow/template ID of the SMS template used to deliver the OTP code. '
              'Must contain a ##OTP## (or equivalent) placeholder.',
         config_parameter='bxi_notification_gateway.msg91_otp_template_id')
+    fcm_project_id = fields.Char(
+        string='Firebase Project ID', config_parameter='bxi_notification_gateway.fcm_project_id')
+    fcm_service_account_json = fields.Char(
+        string='Firebase Service Account (JSON)',
+        help='Full JSON key of a Google service account with the "Firebase Cloud Messaging API Admin" '
+             'role, used to send push notifications to the Orbix app.',
+        config_parameter='bxi_notification_gateway.fcm_service_account_json')
