@@ -1,11 +1,22 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) 2026 BXI Technology Pvt. Ltd. All Rights Reserved.
 # License OPL-1 (Odoo Proprietary License v1.0, see LICENSE file for full text).
+import hashlib
+import hmac
+from unittest.mock import patch
+
 from odoo.tests import tagged
 
+from odoo.addons.bxi_online_fee_payment.models.razorpay_client import RazorpayClient
 from odoo.addons.mail.tests.common import mail_new_test_user
 
 from .common import ApiSupportHttpCase
+
+RAZORPAY_SECRET = 'canteen-test-secret'
+
+
+def _fake_create_order(self, amount, currency, receipt):
+    return {'id': 'order_canteen_%s' % receipt}
 
 
 @tagged('post_install', '-at_install')
@@ -60,9 +71,17 @@ class TestBxiApiSupportCanteen(ApiSupportHttpCase):
         self.assertEqual(resp.status_code, 400)
         self.assertEqual(resp.json()['error']['code'], 'invalid_transition')
 
+    def test_student_cannot_credit_wallet_directly(self):
+        resp = self.url_open('/api/v1/canteen/wallet/topup', headers=self._student_headers(), json={
+            'student_id': self.student.id, 'amount': 100.0, 'post_to_accounting': False,
+        })
+        self.assertEqual(resp.status_code, 403)
+        wallet = self.env['bxi.canteen.wallet'].search([('student_id', '=', self.student.id)])
+        self.assertFalse(wallet.balance)
+
     def test_topup_then_confirm_full_lifecycle(self):
         student_headers = self._student_headers()
-        topup = self.url_open('/api/v1/canteen/wallet/topup', headers=student_headers, json={
+        topup = self.url_open('/api/v1/canteen/wallet/topup', headers=self._headers('canteen_api_staff', 'StaffPass1!'), json={
             'student_id': self.student.id, 'amount': 100.0, 'post_to_accounting': False,
         })
         self.assertEqual(topup.status_code, 200)
@@ -108,3 +127,72 @@ class TestBxiApiSupportCanteen(ApiSupportHttpCase):
             headers=self._headers('canteen_api_manager', 'ManagerPass1!'), method='POST')
         self.assertEqual(manager_resp.status_code, 200)
         self.assertEqual(manager_resp.json()['data']['state'], 'confirmed')
+
+    def _configure_online_payments(self):
+        ICP = self.env['ir.config_parameter'].sudo()
+        ICP.set_param('bxi_online_fee_payment.razorpay_key_secret', RAZORPAY_SECRET)
+        ICP.set_param('bxi_online_fee_payment.default_journal_id', str(self.cash_journal.id))
+
+    @patch.object(RazorpayClient, 'create_order', _fake_create_order)
+    def test_online_topup_credits_wallet_only_after_verified_payment(self):
+        self._configure_online_payments()
+        headers = self._student_headers()
+        create = self.url_open('/api/v1/canteen/wallet/topup-order', headers=headers, json={
+            'student_id': self.student.id, 'amount': 250.0,
+        })
+        self.assertEqual(create.status_code, 201)
+        data = create.json()['data']
+        wallet = self.env['bxi.canteen.wallet'].search([('student_id', '=', self.student.id)])
+        self.assertFalse(wallet.balance, 'Creating the order must not credit anything.')
+
+        bad = self.url_open('/api/v1/payments/verify', headers=headers, json={
+            'payment_order_id': data['payment_order_id'], 'razorpay_payment_id': 'pay_1',
+            'razorpay_signature': 'forged'})
+        self.assertEqual(bad.status_code, 400)
+
+        signature = hmac.new(
+            RAZORPAY_SECRET.encode(), f"{data['razorpay_order_id']}|pay_2".encode(), hashlib.sha256).hexdigest()
+        ok = self.url_open('/api/v1/payments/verify', headers=headers, json={
+            'payment_order_id': data['payment_order_id'], 'razorpay_payment_id': 'pay_2',
+            'razorpay_signature': signature})
+        self.assertEqual(ok.status_code, 200)
+        wallet = self.env['bxi.canteen.wallet'].search([('student_id', '=', self.student.id)])
+        self.assertEqual(wallet.balance, 250.0)
+
+        # A second verify (or the webhook arriving later) must not credit again.
+        again = self.url_open('/api/v1/payments/verify', headers=headers, json={
+            'payment_order_id': data['payment_order_id'], 'razorpay_payment_id': 'pay_2',
+            'razorpay_signature': signature})
+        self.assertEqual(again.status_code, 200)
+        with patch.object(RazorpayClient, 'verify_webhook_signature', lambda self, body, sig: True):
+            self.url_open('/api/v1/payments/webhook', headers={'X-Razorpay-Signature': 'sig'}, json={
+                'payload': {'payment': {'entity': {'id': 'pay_2', 'order_id': data['razorpay_order_id']}}},
+            })
+        wallet.invalidate_recordset(['balance'])
+        self.assertEqual(wallet.balance, 250.0)
+
+        statement = self.url_open(f'/api/v1/canteen/wallets/{wallet.id}/transactions', headers=headers)
+        self.assertEqual(statement.status_code, 200)
+        transactions = statement.json()['data']['transactions']
+        self.assertEqual(len(transactions), 1)
+        self.assertEqual(transactions[0]['payment_method'], 'online')
+
+    @patch.object(RazorpayClient, 'create_order', _fake_create_order)
+    def test_online_topup_for_someone_elses_child_forbidden(self):
+        resp = self.url_open('/api/v1/canteen/wallet/topup-order', headers=self._headers('canteen_api_other', 'OtherPass1!'), json={
+            'student_id': self.student.id, 'amount': 50.0,
+        })
+        self.assertEqual(resp.status_code, 403)
+
+    def test_online_topup_rejects_non_positive_amount(self):
+        resp = self.url_open('/api/v1/canteen/wallet/topup-order', headers=self._student_headers(), json={
+            'student_id': self.student.id, 'amount': 0,
+        })
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.json()['error']['code'], 'invalid_amount')
+
+    def test_wallet_statement_forbidden_for_other_user(self):
+        wallet = self.env['bxi.canteen.wallet'].create({'student_id': self.student.id})
+        resp = self.url_open(
+            f'/api/v1/canteen/wallets/{wallet.id}/transactions', headers=self._headers('canteen_api_other', 'OtherPass1!'))
+        self.assertEqual(resp.status_code, 403)

@@ -18,7 +18,9 @@ ASSIGNMENT_VISIBLE_STATES = ('publish', 'finish')
 # to bootstrap color, and a color cycle for anything grouped by subject
 # (there's no subject->color field anywhere in openeducat, so this is the
 # only stable way to keep the same subject in the same color across cards).
-ATTENDANCE_STATUS_COLOR = {'present': 'success', 'absent': 'danger', 'late': 'warning', 'excused': 'secondary'}
+ATTENDANCE_STATUS_COLOR = {
+    'present': 'success', 'absent': 'danger', 'late': 'warning', 'excused': 'secondary', 'partial': 'info',
+}
 SUBJECT_COLOR_CYCLE = ['primary', 'success', 'info', 'warning', 'danger', 'secondary']
 WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
@@ -71,21 +73,13 @@ class StudentPortal(CustomerPortal):
     # ever back a portal page and would otherwise add cross-module fields
     # to op.student for a purely presentational need.
     # ------------------------------------------------------------------
-    def _attendance_summary(self, student):
-        lines = request.env['op.attendance.line'].search([
-            ('student_id', '=', student.id),
-            ('state', '=', 'done'),
-        ])
-        total = len(lines)
-        present = len(lines.filtered('present'))
-        return {
-            'total': total,
-            'present': present,
-            'absent': len(lines.filtered('absent')),
-            'late': len(lines.filtered('late')),
-            'excused': len(lines.filtered('excused')),
-            'percentage': round((present / total) * 100, 1) if total else 0.0,
-        }
+    def _attendance_summary(self, student, rows=None):
+        """Counts/percentage over hr.attendance (the system of record),
+        via the same helper the parent API uses. `student` has already
+        been access-checked by _resolve_target_student."""
+        if rows is None:
+            rows = student._get_attendance_rows()
+        return student._summarize_attendance_rows(rows)
 
     def _upcoming_sessions(self, student, limit=5):
         now = fields.Datetime.now()
@@ -113,20 +107,11 @@ class StudentPortal(CustomerPortal):
     # top of the same recordsets the plain list pages already fetch, kept
     # here rather than on the models since they're purely presentational.
     # ------------------------------------------------------------------
-    def _attendance_calendar(self, lines):
-        """Bucket attendance lines onto a Sun-Sat month grid for the most
-        recent recorded month (falls back to the current month when the
-        student has no attendance yet)."""
-        status_by_date = {}
-        for line in lines:
-            if line.present:
-                status_by_date[line.attendance_date] = 'present'
-            elif line.absent:
-                status_by_date[line.attendance_date] = 'absent'
-            elif line.late:
-                status_by_date[line.attendance_date] = 'late'
-            elif line.excused:
-                status_by_date[line.attendance_date] = 'excused'
+    def _attendance_calendar(self, summary):
+        """Put each day's rolled-up status (see _summarize_attendance_rows)
+        onto a Sun-Sat month grid for the most recent recorded month (falls
+        back to the current month when the student has no attendance yet)."""
+        status_by_date = {day['date']: day['status'] for day in summary['days']}
         ref_date = max(status_by_date) if status_by_date else fields.Date.today()
         cal = calendar_module.Calendar(firstweekday=6)  # weeks start on Sunday
         weeks = []
@@ -139,24 +124,14 @@ class StudentPortal(CustomerPortal):
             } for day in week])
         return {'month_label': ref_date.strftime('%B %Y'), 'weeks': weeks}
 
-    def _attendance_subject_breakdown(self, lines):
-        """Present/total per subject (via the attendance register), sorted
-        best-attendance-first, each tagged with a stable subject color.
-
-        Portal users have no direct read access to op.attendance.register
-        (it's staff-only, unlike op.attendance.line which carries its own
-        student-scoped ir.rule) - sudo() is safe here because `lines` is
-        already the access-checked, student-scoped recordset; we're only
-        reading the register's subject name off of it, not exposing any
-        other student's data.
-        """
+    def _attendance_subject_breakdown(self, rows):
+        """Present/total per subject (from each row's period), sorted
+        best-attendance-first, each tagged with a stable subject color."""
         buckets = {}
-        for line in lines:
-            subject = line.sudo().register_id.subject_id
-            key = subject.id
-            entry = buckets.setdefault(key, {'subject': subject.name or 'General', 'present': 0, 'total': 0})
+        for row in rows:
+            entry = buckets.setdefault(row['subject_id'], {'subject': row['subject'] or 'General', 'present': 0, 'total': 0})
             entry['total'] += 1
-            if line.present:
+            if row['status'] == 'present':
                 entry['present'] += 1
         result = []
         for i, entry in enumerate(buckets.values()):
@@ -238,18 +213,16 @@ class StudentPortal(CustomerPortal):
                 type='http', auth='user', website=True)
     def portal_academics_attendance(self, student_id=None, date_from=None, date_to=None, **kw):
         student = self._resolve_target_student(student_id)
-        domain = [('student_id', '=', student.id), ('state', '=', 'done')]
-        if date_from:
-            domain.append(('attendance_date', '>=', date_from))
-        if date_to:
-            domain.append(('attendance_date', '<=', date_to))
-        lines = request.env['op.attendance.line'].search(domain, order='attendance_date desc')
+        rows = student._get_attendance_rows(
+            fields.Date.to_date(date_from) if date_from else None,
+            fields.Date.to_date(date_to) if date_to else None)
+        summary = self._attendance_summary(student, rows)
         return request.render('bxi_student_portal.portal_academics_attendance', {
             'student': student,
-            'lines': lines,
-            'summary': self._attendance_summary(student),
-            'calendar': self._attendance_calendar(lines),
-            'subject_breakdown': self._attendance_subject_breakdown(lines),
+            'lines': rows,
+            'summary': summary,
+            'calendar': self._attendance_calendar(summary),
+            'subject_breakdown': self._attendance_subject_breakdown(rows),
             'date_from': date_from,
             'date_to': date_to,
             'page_name': 'academics',

@@ -18,6 +18,14 @@
                             <field name="msg91_otp_template_id"/>
                         </setting>
                     </block>
+                    <block title="Firebase Push (FCM)" help="Push notifications to the Orbix mobile app.">
+                        <setting id="fcm_project_id" string="Project ID">
+                            <field name="fcm_project_id"/>
+                        </setting>
+                        <setting id="fcm_service_account_json" string="Service Account JSON">
+                            <field name="fcm_service_account_json" password="True"/>
+                        </setting>
+                    </block>
                 </app>
             </xpath>
         </field>

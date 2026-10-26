@@ -47,23 +47,18 @@ class TestBxiParentDataApi(HttpCase):
         })
 
         # -- attendance fixture ------------------------------------------------
-        cls.attendance_register = cls.env['op.attendance.register'].create({
-            'name': 'Reg', 'code': 'ARDASH', 'course_id': cls.course.id, 'batch_id': cls.batch.id,
-        })
-        cls.attendance_sheets = cls.env['op.attendance.sheet']
+        # hr.attendance is the attendance system of record: five hand-marked
+        # days (instant rows, no period) - 3 present, 2 absent.
         today = fields.Date.today()
+        now = fields.Datetime.now()
         for i, present in enumerate([True, True, False, True, False]):
-            sheet = cls.env['op.attendance.sheet'].create({
-                'register_id': cls.attendance_register.id,
-                'attendance_date': today - timedelta(days=i),
+            stamp = now - timedelta(days=i, minutes=1)
+            cls.env['hr.attendance'].create({
+                'employee_id': cls.student.employee_id.id,
+                'status': 'present' if present else 'absent',
+                'check_in': stamp,
+                'check_out': stamp,
             })
-            cls.env['op.attendance.line'].create({
-                'attendance_id': sheet.id,
-                'student_id': cls.student.id,
-                'present': present,
-                'absent': not present,
-            })
-            cls.attendance_sheets |= sheet
 
         # -- timetable fixture ---------------------------------------------------
         cls.session_soon = cls.env['op.session'].create({
@@ -233,7 +228,7 @@ class TestBxiParentDataApi(HttpCase):
             headers=self._headers('dash_parent', 'ParentPass1!'))
         self.assertEqual(resp.status_code, 200)
         summary = resp.json()['data']['summary']
-        # Only the two most recent attendance sheets (today, yesterday) fall in range.
+        # Only the two most recent marked days (today, yesterday) fall in range.
         self.assertEqual(summary['total'], 2)
 
     # -- timetable -----------------------------------------------------------------------

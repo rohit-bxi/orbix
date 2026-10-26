@@ -20,3 +20,12 @@ from . import test_uniform_api
 from . import test_transport_api
 from . import test_health_api
 from . import test_lab_api
+from . import test_profile_audience_api
+from . import test_foundation_api
+from . import test_push_triggers
+from . import test_homework_exam_api
+from . import test_family_services_api
+from . import test_employee_public_fields
+from . import test_teacher_api
+from . import test_operations_api
+from . import test_route_smoke

@@ -37,6 +37,7 @@ class TestBxiApiSupportNotice(ApiSupportHttpCase):
         headers = self._manager_headers()
         create = self.url_open('/api/v1/notices', headers=headers, json={
             'title': 'Holiday Notice', 'body': 'School closed Friday.', 'category': 'holiday',
+            'target_audience': 'all_teachers',
         })
         self.assertEqual(create.status_code, 201)
         notice_id = create.json()['data']['id']

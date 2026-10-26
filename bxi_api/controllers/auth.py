@@ -10,10 +10,19 @@ and `@require_auth` on any route that needs to know which app user is
 calling, instead of building its own auth or response shape.
 """
 
+import base64
+import binascii
+import time
+from collections import defaultdict, deque
 from functools import wraps
 
+import odoo.modules.module
 from odoo.exceptions import AccessError, UserError
-from odoo.http import request
+from odoo.http import content_disposition, request
+
+# Largest single upload accepted by parse_request() - homework submissions,
+# RTE documents and avatars are photos/PDFs, not videos.
+MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 
 
 def api_response(data=None, status=200, meta=None):
@@ -26,6 +35,97 @@ def api_response(data=None, status=200, meta=None):
 def api_error(message, status=400, code=None):
     body = {'success': False, 'error': {'message': message, 'code': code or status}}
     return request.make_json_response(body, status=status)
+
+
+def api_file_response(content, filename, mimetype='application/pdf'):
+    """Binary download (PDF report, attachment) - the one response shape
+    that is deliberately not the JSON envelope, since the app hands the
+    bytes straight to a viewer/share sheet."""
+    return request.make_response(content, headers=[
+        ('Content-Type', mimetype),
+        ('Content-Length', str(len(content))),
+        ('Content-Disposition', content_disposition(filename)),
+    ])
+
+
+def parse_request():
+    """Return (payload, files, error) for a POST that may carry files.
+
+    Accepts either multipart/form-data (form fields become the payload,
+    every uploaded part becomes a file) or a JSON body whose optional
+    `attachments` key is a list of {name, data (base64), mimetype}. Each
+    file is a dict {name, content (bytes), mimetype}. `error` is an
+    api_error(...) for an oversized or undecodable file, else None.
+    """
+    httprequest = request.httprequest
+    files = []
+    if httprequest.mimetype == 'multipart/form-data':
+        payload = httprequest.form.to_dict()
+        for storage in httprequest.files.values():
+            content = storage.read()
+            files.append({
+                'name': storage.filename or 'upload',
+                'content': content,
+                'mimetype': storage.mimetype or 'application/octet-stream',
+            })
+    else:
+        payload = request.get_json_data() if httprequest.get_data() else {}
+        payload = payload or {}
+        for entry in payload.pop('attachments', None) or []:
+            try:
+                content = base64.b64decode(entry.get('data') or '', validate=True)
+            except (binascii.Error, ValueError, AttributeError):
+                return payload, [], api_error(
+                    'Attachment data must be base64-encoded.', status=400, code='invalid_attachment')
+            files.append({
+                'name': entry.get('name') or 'upload',
+                'content': content,
+                'mimetype': entry.get('mimetype') or 'application/octet-stream',
+            })
+    for file in files:
+        if len(file['content']) > MAX_UPLOAD_BYTES:
+            return payload, [], api_error(
+                'Each file must be %s MB or smaller.' % (MAX_UPLOAD_BYTES // (1024 * 1024)),
+                status=413, code='file_too_large')
+    return payload, files, None
+
+
+# Per-process sliding-window limiter for the public (unauthenticated)
+# routes - same approach sttl_face_attendance's /employee/images uses. Each
+# worker process keeps its own window, so this blunts scripted abuse of a
+# single worker; put a real limit at the reverse proxy for a hard guarantee.
+# Password login is deliberately not wrapped: Odoo's own per-IP
+# login cooldown already covers brute force there.
+_rate_buckets = defaultdict(deque)
+# Every test request comes from 127.0.0.1, so the limiter stays off while a
+# test runs unless that test switches it on to exercise it.
+RATE_LIMIT_DURING_TESTS = False
+
+
+def _rate_limit_active():
+    return RATE_LIMIT_DURING_TESTS or not odoo.modules.module.current_test
+
+
+def rate_limit(bucket, limit, window=60):
+    """Allow at most `limit` calls per `window` seconds per client IP to
+    the wrapped route; extra calls get a 429 envelope without running it."""
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            if not _rate_limit_active():
+                return func(*args, **kwargs)
+            key = (bucket, request.httprequest.remote_addr)
+            now = time.monotonic()
+            calls = _rate_buckets[key]
+            while calls and now - calls[0] > window:
+                calls.popleft()
+            if len(calls) >= limit:
+                return api_error(
+                    'Too many requests. Please wait a minute and try again.', status=429, code='rate_limited')
+            calls.append(now)
+            return func(*args, **kwargs)
+        return wrapper
+    return decorator
 
 
 def parse_int(value, field_name):
@@ -72,9 +172,20 @@ def require_auth(func):
     def wrapper(*args, **kwargs):
         auth_header = request.httprequest.headers.get('Authorization', '')
         raw_token = auth_header[7:] if auth_header.startswith('Bearer ') else None
-        user = request.env['bxi.api.token'].sudo()._verify_token(raw_token)
-        if not user:
+        token = request.env['bxi.api.token'].sudo()._verify_token_record(raw_token)
+        if not token:
             return api_error('Invalid or expired token.', status=401, code='unauthorized')
-        request.update_env(user=user.id)
+        request.update_env(user=token.user_id.id)
         return func(*args, **kwargs)
     return wrapper
+
+
+def get_current_token():
+    """The bxi.api.token (sudo) the current @require_auth request came in
+    with, or an empty recordset outside such a request."""
+    auth_header = request.httprequest.headers.get('Authorization', '')
+    raw_token = auth_header[7:] if auth_header.startswith('Bearer ') else None
+    Token = request.env['bxi.api.token'].sudo()
+    if not raw_token:
+        return Token
+    return Token.search([('token_hash', '=', Token._hash(raw_token)), ('active', '=', True)], limit=1)

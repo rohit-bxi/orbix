@@ -4,22 +4,27 @@
 
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
+from odoo.tools import SQL
 
 
 class BxiPaymentOrder(models.Model):
-    """One Razorpay checkout attempt against one fee line. Reconciliation
-    on success goes through bxi_fee_management's existing
-    bxi.fee.payment.wizard (account.payment.register underneath) - this
-    model never touches accounting directly, it only decides *when* to
-    trigger that flow and with which reference.
+    """One Razorpay checkout attempt. `purpose` says what a verified payment
+    pays for: a fee line here (reconciled through bxi_fee_management's
+    existing bxi.fee.payment.wizard), or anything another module adds to
+    the selection (e.g. bxi_api_support's canteen wallet top-ups) together
+    with a matching `_reconcile_<purpose>` method. This model never touches
+    accounting directly, it only decides *when* to trigger that flow and
+    with which reference.
     """
     _name = 'bxi.payment.order'
     _description = 'Orbix Online Payment Order'
     _order = 'create_date desc'
 
-    fees_detail_id = fields.Many2one('op.student.fees.details', string='Fee Line', required=True, index=True)
-    student_id = fields.Many2one(related='fees_detail_id.student_id', store=True, readonly=True)
-    currency_id = fields.Many2one(related='fees_detail_id.currency_id', readonly=True)
+    purpose = fields.Selection([('fee', 'Fee Payment')], required=True, default='fee', readonly=True)
+    fees_detail_id = fields.Many2one('op.student.fees.details', string='Fee Line', index=True)
+    student_id = fields.Many2one('op.student', string='Student', index=True, readonly=True)
+    currency_id = fields.Many2one(
+        'res.currency', required=True, readonly=True, default=lambda self: self.env.company.currency_id)
     amount = fields.Monetary(required=True)
     user_id = fields.Many2one('res.users', string='Initiated By', required=True)
 
@@ -39,15 +44,23 @@ class BxiPaymentOrder(models.Model):
             raise UserError(_('Enter a payment amount greater than zero.'))
         if amount > fees_detail.amount_pending + 0.01:
             raise UserError(_('Payment amount cannot exceed the pending amount of %s.') % fees_detail.amount_pending)
-
-        order = self.sudo().create({
+        return self._create_with_gateway({
+            'purpose': 'fee',
             'fees_detail_id': fees_detail.id,
+            'student_id': fees_detail.student_id.id,
+            'currency_id': (fees_detail.currency_id or self.env.company.currency_id).id,
             'amount': amount,
             'user_id': user.id,
         })
-        receipt = f'orbix-{order.id}'
+
+    @api.model
+    def _create_with_gateway(self, vals):
+        """Create the order and its Razorpay counterpart. Returns the order,
+        or None when Razorpay refused/was unreachable (the order is kept as
+        'failed' for the audit trail)."""
+        order = self.sudo().create(vals)
         rp_order = self.env['bxi.razorpay.client'].sudo().create_order(
-            amount=amount, currency=fees_detail.currency_id.name or 'INR', receipt=receipt)
+            amount=order.amount, currency=order.currency_id.name or 'INR', receipt=f'orbix-{order.id}')
         if not rp_order:
             order.status = 'failed'
             return None
@@ -59,13 +72,19 @@ class BxiPaymentOrder(models.Model):
         return self.env['account.journal'].sudo().browse(int(journal_id)) if journal_id else self.env['account.journal']
 
     def _reconcile_payment(self):
+        """Book the verified payment for whatever `purpose` it was for,
+        then mark the order paid."""
+        self.ensure_one()
+        getattr(self, '_reconcile_%s' % self.purpose)()
+        self.status = 'paid'
+
+    def _reconcile_fee(self):
         """Runs bxi.fee.payment.wizard as if a staff member had recorded
         this payment manually - same accounting path, same guarantees
         (invoice auto-created/posted if needed, partial-payment rules
         enforced), just triggered by a verified Razorpay signature instead
         of a form submit.
         """
-        self.ensure_one()
         journal = self._default_journal()
         if not journal:
             raise UserError(_('No default online-payment journal is configured (Settings > Orbix Payments).'))
@@ -80,7 +99,15 @@ class BxiPaymentOrder(models.Model):
             'memo': f'Razorpay payment {self.razorpay_payment_id} (order {self.razorpay_order_id})',
         })
         wizard.action_confirm()
-        self.status = 'paid'
+
+    def _lock_and_check_paid(self):
+        """Row-lock this order and re-read its status, so the app's /verify
+        call and Razorpay's webhook arriving at the same moment can't both
+        reconcile (and double-book) the same payment. True if already paid.
+        """
+        self.env.execute_query(SQL('SELECT id FROM bxi_payment_order WHERE id = %s FOR UPDATE', self.id))
+        self.invalidate_recordset(['status'])
+        return self.status == 'paid'
 
     def _mark_paid_from_client(self, razorpay_payment_id, razorpay_signature):
         """Called from the app-facing /verify endpoint. Returns True/False;
@@ -89,7 +116,7 @@ class BxiPaymentOrder(models.Model):
         caller can tell "signature was wrong" apart from "something broke".
         """
         self.ensure_one()
-        if self.status == 'paid':
+        if self._lock_and_check_paid():
             return True
         client = self.env['bxi.razorpay.client'].sudo()
         if not client.verify_payment_signature(self.razorpay_order_id, razorpay_payment_id, razorpay_signature):
@@ -106,7 +133,7 @@ class BxiPaymentOrder(models.Model):
         signature already authenticates the whole payload.
         """
         self.ensure_one()
-        if self.status == 'paid':
+        if self._lock_and_check_paid():
             return True
         self.write({'razorpay_payment_id': razorpay_payment_id})
         self._reconcile_payment()

@@ -2,7 +2,7 @@
 
 {
     'name': 'Orbix Online Fee Payment',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.1.0',
     'category': 'Education',
     'summary': 'Razorpay backend integration for parent fee payments via the Orbix mobile app',
     'description': """

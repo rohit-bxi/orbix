@@ -2,7 +2,7 @@
 
 {
     'name': 'Orbix Parent-Teacher Messaging',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.0.1',
     'category': 'Education',
     'summary': 'Direct messaging between a parent and a teacher about a specific student, via the Orbix API',
     'description': """

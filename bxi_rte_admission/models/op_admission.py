@@ -457,3 +457,80 @@ class OpAdmission(models.Model):
             admission.message_post(
                 body=_('SLA alert: RTE document verification is overdue '
                        '(deadline was %s).') % admission.doc_verification_deadline)
+
+    # ------------------------------------------------------------------
+    # Online application - shared by the /my/rte/apply portal form and the
+    # mobile app's /api/v1/admissions/rte/apply, so both apply the same
+    # checks and build the same records.
+    # ------------------------------------------------------------------
+    RTE_APPLICATION_REQUIRED = ('first_name', 'last_name', 'birth_date', 'email', 'mobile')
+    RTE_APPLICATION_FIELDS = (
+        'rte_area_type', 'rte_ward', 'rte_urban_body', 'rte_village', 'rte_gram_panchayat',
+        'rte_aadhaar_number', 'rte_aadhaar_enrollment_number', 'rte_religion', 'rte_caste_category',
+        'rte_cwsn_category', 'rte_father_aadhaar', 'rte_mother_aadhaar', 'rte_guardian_aadhaar',
+        'rte_pincode', 'rte_block', 'rte_district',
+    )
+
+    @api.model
+    def _rte_application_errors(self, values):
+        """{field: 'missing' | 'already_admitted'} for an application's
+        applicant fields (school choices are validated by the caller).
+        Para 4.4: a child already holding an RTE seat cannot apply again."""
+        error = {name: 'missing' for name in self.RTE_APPLICATION_REQUIRED if not values.get(name)}
+        if not (values.get('rte_aadhaar_number') or values.get('rte_aadhaar_enrollment_number')):
+            error['rte_aadhaar_number'] = 'missing'
+        if error:
+            return error
+        aadhaar_domain = []
+        if values.get('rte_aadhaar_number'):
+            aadhaar_domain.append(('rte_aadhaar_number', '=', values['rte_aadhaar_number']))
+        if values.get('rte_aadhaar_enrollment_number'):
+            aadhaar_domain.append(('rte_aadhaar_enrollment_number', '=', values['rte_aadhaar_enrollment_number']))
+        or_domain = ['|'] * (len(aadhaar_domain) - 1) + aadhaar_domain
+        if self.sudo().search([
+            ('is_rte_applicant', '=', True), ('rte_state', 'in', RTE_ACTIVE_SEAT_STATES),
+        ] + or_domain, limit=1):
+            error['rte_aadhaar_number'] = 'already_admitted'
+        return error
+
+    @api.model
+    def _rte_create_application(self, partner, values, choice_ids):
+        """Create the RTE application for `partner` (the applying parent's
+        contact) with `choice_ids` as the ranked school preferences, after
+        _rte_application_errors found nothing. Creates the op.parent for
+        `partner` on first application."""
+        register = self.env['op.admission.register'].sudo().search(
+            [('course_id', '=', choice_ids[0])], limit=1)
+        if not register:
+            register = self.env['op.admission.register'].sudo().search([], limit=1)
+        parent = self.env['op.parent'].sudo().search([('name', '=', partner.id)], limit=1)
+        if not parent:
+            relationship = self.env['op.parent.relationship'].sudo().search([], limit=1)
+            parent = self.env['op.parent'].sudo().create({
+                'name': partner.id,
+                'email': values.get('email'),
+                'mobile': values.get('mobile'),
+                'relationship_id': relationship.id if relationship else False,
+            })
+        if values.get('rte_category'):
+            parent.write({'rte_category': values['rte_category']})
+        admission_vals = {
+            'name': '%s %s' % (values.get('first_name'), values.get('last_name')),
+            'first_name': values.get('first_name'),
+            'last_name': values.get('last_name'),
+            'birth_date': values.get('birth_date'),
+            'email': values.get('email'),
+            'mobile': values.get('mobile'),
+            'gender': values.get('gender') or 'm',
+            'course_id': choice_ids[0],
+            'register_id': register.id if register else False,
+            'partner_id': partner.id,
+            'is_rte_applicant': True,
+            'application_date': fields.Datetime.now(),
+            'rte_preference_ids': [
+                (0, 0, {'course_id': course_id, 'sequence': (idx + 1) * 10})
+                for idx, course_id in enumerate(choice_ids)
+            ],
+        }
+        admission_vals.update({name: values.get(name) or False for name in self.RTE_APPLICATION_FIELDS})
+        return self.sudo().create(admission_vals)

@@ -2,13 +2,25 @@
 # Copyright (c) 2026 BXI Technology Pvt. Ltd. All Rights Reserved.
 # License OPL-1 (Odoo Proprietary License v1.0, see LICENSE file for full text).
 from odoo import http
+from odoo.fields import Domain
 from odoo.http import request
 
 from odoo.addons.bxi_api.controllers.auth import api_error, api_response, call_action, require_auth
 
-from .common import parse_pagination, safe_create
+from .common import audience_domain, parse_pagination, safe_create
 
 MANAGER_GROUP = 'bxi_school_announcement.group_announcement_manager'
+
+# Who receives which target_audience - mirrors bxi.announcement's own
+# _resolve_recipient_partners; 'specific_class' is matched per class in
+# audience_domain (parents see their children's classes too).
+AUDIENCES_BY_ROLE = {
+    '*': ('everyone',),
+    'student': ('all_students',),
+    'parent': ('all_parents',),
+    'teacher': ('all_teachers',),
+    'staff': ('all_teachers',),
+}
 
 CREATE_FIELDS = (
     'title', 'category', 'body', 'priority', 'target_audience', 'course_ids', 'batch_ids',
@@ -18,6 +30,12 @@ CREATE_FIELDS = (
 
 def _is_announcement_manager(user):
     return user.has_group(MANAGER_GROUP)
+
+
+def _visible_domain(env):
+    if _is_announcement_manager(env.user):
+        return Domain.TRUE
+    return Domain.AND([Domain('state', '=', 'published'), audience_domain(env, AUDIENCES_BY_ROLE)])
 
 
 def _announcement_dict(announcement):
@@ -44,7 +62,7 @@ class BxiApiSupportAnnouncementController(http.Controller):
         limit, offset, error = parse_pagination(kwargs)
         if error:
             return error
-        domain = [] if _is_announcement_manager(request.env.user) else [('state', '=', 'published')]
+        domain = _visible_domain(request.env)
         Announcement = request.env['bxi.announcement'].sudo()
         total = Announcement.search_count(domain)
         announcements = Announcement.search(domain, limit=limit, offset=offset, order='create_date desc')
@@ -58,7 +76,7 @@ class BxiApiSupportAnnouncementController(http.Controller):
         announcement = request.env['bxi.announcement'].sudo().browse(announcement_id)
         if not announcement.exists():
             return api_error('Announcement not found.', status=404, code='not_found')
-        if announcement.state != 'published' and not _is_announcement_manager(request.env.user):
+        if not announcement.filtered_domain(_visible_domain(request.env)):
             return api_error('Not authorized for this announcement.', status=403, code='forbidden')
         return api_response(_announcement_dict(announcement))
 

@@ -2,7 +2,7 @@
 
 {
     'name': 'Student Attendance',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.1.0',
     'category': 'Education',
     'summary': 'Student check-in/out on the standard Attendances kiosk, filterable by Student/Class/Section/Date',
     'description': """
@@ -20,6 +20,11 @@
           something to attach to.
         - Student Attendance list/search filterable by Student, Class,
           Section and Date.
+        - hr.attendance is the single attendance system of record: the
+          portal and the mobile app read it through
+          op.student._get_attendance_rows(). OpenEduCat attendance sheet
+          history is copied in once, and the old Class Attendances menu is
+          limited to administrators so new marks don't land there.
     """,
     'author': 'BXI Technology Pvt. Ltd.',
     'maintainer': 'BXI Technology Pvt. Ltd.',
@@ -31,6 +36,7 @@
         'hr_attendance',
         'openeducat_core',
         'openeducat_timetable',
+        'openeducat_attendance',
         'bxi_class_timetable_inhencement',
     ],
     'data': [
@@ -39,6 +45,7 @@
         'data/ir_cron_data.xml',
         'views/hr_attendance_views.xml',
         'views/student_attendance_menu.xml',
+        'views/legacy_attendance_menu.xml',
     ],
     'post_init_hook': '_create_student_employees',
     'installable': True,

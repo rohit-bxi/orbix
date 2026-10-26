@@ -4,3 +4,7 @@
 from . import res_config_settings
 from . import msg91_client
 from . import otp_request
+from . import res_users
+from . import fcm_client
+from . import api_device
+from . import notification

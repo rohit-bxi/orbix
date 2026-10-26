@@ -4,7 +4,9 @@
 from odoo import fields, http
 from odoo.http import request
 
-from odoo.addons.bxi_api.controllers.auth import api_error, api_response, call_action, require_auth
+from odoo.addons.bxi_api.controllers.auth import (
+    api_error, api_file_response, api_response, call_action, rate_limit, require_auth,
+)
 
 from .common import get_own_student_ids, parse_pagination, safe_create, user_can_access_student
 
@@ -57,6 +59,7 @@ class BxiApiSupportCertificateController(http.Controller):
             meta={'total': total, 'limit': limit, 'offset': offset})
 
     @http.route('/api/v1/certificates/verify', type='http', auth='public', methods=['GET'], csrf=False)
+    @rate_limit('certificate_verify', limit=30)
     def verify_certificate(self, code=None, **kwargs):
         if not code:
             return api_error('code is required.', status=400, code='missing_code')
@@ -86,6 +89,23 @@ class BxiApiSupportCertificateController(http.Controller):
                 and user_can_access_student(request.env, cert.student_id, is_staff=_is_certificate_staff)):
             return api_error('Not authorized for this certificate.', status=403, code='forbidden')
         return api_response(_certificate_dict(cert))
+
+    @http.route('/api/v1/certificates/<int:certificate_id>/pdf', type='http', auth='public', methods=['GET'], csrf=False)
+    @require_auth
+    def download_certificate(self, certificate_id, **kwargs):
+        """The issued PDF - the same file /my/certificates/<id>/download
+        serves on the portal; families only once it is issued."""
+        cert = request.env['op.certificate'].sudo().browse(certificate_id)
+        if not cert.exists():
+            return api_error('Certificate not found.', status=404, code='not_found')
+        if not _is_certificate_staff(request.env.user) and not (
+                cert.state == 'issued'
+                and user_can_access_student(request.env, cert.student_id, is_staff=_is_certificate_staff)):
+            return api_error('Not authorized for this certificate.', status=403, code='forbidden')
+        if not cert.attachment_id:
+            return api_error('No PDF has been issued for this certificate yet.', status=404, code='no_pdf')
+        attachment = cert.attachment_id.sudo()
+        return api_file_response(attachment.raw or b'', attachment.name or f'{cert.certificate_number}.pdf')
 
     @http.route('/api/v1/certificates', type='http', auth='public', methods=['POST'], csrf=False)
     @require_auth

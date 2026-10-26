@@ -2,11 +2,12 @@
 # Copyright (c) 2026 BXI Technology Pvt. Ltd. All Rights Reserved.
 # License OPL-1 (Odoo Proprietary License v1.0, see LICENSE file for full text).
 from odoo import http
+from odoo.exceptions import UserError
 from odoo.http import request
 
-from odoo.addons.bxi_api.controllers.auth import api_error, api_response, call_action, require_auth
+from odoo.addons.bxi_api.controllers.auth import api_error, api_response, call_action, parse_int, require_auth
 
-from .common import get_own_student_ids, parse_pagination, safe_create
+from .common import date_str, get_own_student_ids, parse_amount, parse_pagination, safe_create
 
 STAFF_GROUP = 'bxi_school_canteen_management.group_canteen_staff'
 MANAGER_GROUP = 'bxi_school_canteen_management.group_canteen_manager'
@@ -201,35 +202,60 @@ class BxiApiSupportCanteenController(http.Controller):
             return api_error('Not authorized for this wallet.', status=403, code='forbidden')
         return api_response(_wallet_dict(wallet))
 
+    @http.route('/api/v1/canteen/wallets/<int:wallet_id>/transactions', type='http', auth='public', methods=['GET'], csrf=False)
+    @require_auth
+    def list_wallet_transactions(self, wallet_id, **kwargs):
+        wallet = request.env['bxi.canteen.wallet'].sudo().browse(wallet_id)
+        if not wallet.exists():
+            return api_error('Wallet not found.', status=404, code='not_found')
+        if not _can_access_patron(request.env, wallet):
+            return api_error('Not authorized for this wallet.', status=403, code='forbidden')
+        limit, offset, error = parse_pagination(kwargs)
+        if error:
+            return error
+        Transaction = request.env['bxi.canteen.wallet.transaction'].sudo()
+        domain = [('wallet_id', '=', wallet.id), ('state', '=', 'posted')]
+        total = Transaction.search_count(domain)
+        transactions = Transaction.search(domain, limit=limit, offset=offset, order='date desc, id desc')
+        return api_response({
+            'wallet': _wallet_dict(wallet),
+            'transactions': [{
+                'id': t.id,
+                'name': t.name,
+                'date': date_str(t.date),
+                'transaction_type': t.transaction_type,
+                'amount': t.amount,
+                'payment_method': t.payment_method,
+                'order_id': t.order_id.id or None,
+                'note': t.note,
+            } for t in transactions],
+        }, meta={'total': total, 'limit': limit, 'offset': offset})
+
     @http.route('/api/v1/canteen/wallet/topup', type='http', auth='public', methods=['POST'], csrf=False)
     @require_auth
     def topup_wallet(self, **kwargs):
+        """Cashier top-up (cash/card taken at the counter). Families top up
+        through /canteen/wallet/topup-order + /payments/verify instead, so
+        the wallet is only ever credited for money actually received."""
+        if not _is_canteen_staff(request.env.user):
+            return api_error(
+                'Only canteen staff can record a top-up. Use /canteen/wallet/topup-order to pay online.',
+                status=403, code='forbidden')
         payload = request.get_json_data() or {}
-        student_id = payload.get('student_id')
-        faculty_id = payload.get('faculty_id')
         if payload.get('amount') is None:
             return api_error('amount is required.', status=400, code='missing_amount')
-        if not student_id and not faculty_id:
-            return api_error('student_id or faculty_id is required.', status=400, code='missing_patron')
-
-        user = request.env.user
-        if student_id and not _is_canteen_staff(user) and int(student_id) not in get_own_student_ids(request.env):
-            return api_error('Not authorized for this student.', status=403, code='forbidden')
-        if faculty_id and not _is_canteen_staff(user):
-            faculty = request.env['op.faculty'].sudo().browse(int(faculty_id))
-            if faculty.user_id.id != user.id:
-                return api_error('Not authorized for this faculty member.', status=403, code='forbidden')
+        student, faculty, error = self._resolve_patron(payload)
+        if error:
+            return error
 
         vals = {
-            'patron_type': 'faculty' if faculty_id else 'student',
+            'patron_type': 'faculty' if faculty else 'student',
+            'student_id': student.id if student else False,
+            'faculty_id': faculty.id if faculty else False,
             'amount': payload['amount'],
             'payment_method': payload.get('payment_method', 'cash'),
             'post_to_accounting': payload.get('post_to_accounting', False),
         }
-        if student_id:
-            vals['student_id'] = student_id
-        if faculty_id:
-            vals['faculty_id'] = faculty_id
         if payload.get('journal_id'):
             vals['journal_id'] = payload['journal_id']
         wizard, error = safe_create(request.env['bxi.canteen.wallet.topup.wizard'].sudo(), vals)
@@ -238,6 +264,62 @@ class BxiApiSupportCanteenController(http.Controller):
         _, error = call_action(wizard, 'action_topup')
         if error:
             return error
-        patron_domain = [('student_id', '=', student_id)] if student_id else [('faculty_id', '=', faculty_id)]
+        patron_domain = [('student_id', '=', student.id)] if student else [('faculty_id', '=', faculty.id)]
         wallet = request.env['bxi.canteen.wallet'].sudo().search(patron_domain, limit=1)
         return api_response(_wallet_dict(wallet))
+
+    @http.route('/api/v1/canteen/wallet/topup-order', type='http', auth='public', methods=['POST'], csrf=False)
+    @require_auth
+    def create_topup_order(self, **kwargs):
+        """Start an online top-up: returns a Razorpay order the app opens
+        checkout for. The wallet is credited once /payments/verify (or the
+        Razorpay webhook) confirms the payment."""
+        payload = request.get_json_data() or {}
+        amount, error = parse_amount(payload.get('amount'))
+        if error:
+            return error
+        student, faculty, error = self._resolve_patron(payload)
+        if error:
+            return error
+        try:
+            order = request.env['bxi.payment.order']._create_for_canteen_topup(
+                amount, request.env.user, student=student, faculty=faculty)
+        except UserError as exc:
+            return api_error(str(exc), status=400, code='invalid_amount')
+        if not order:
+            return api_error('Could not create the payment order with the gateway.', status=502, code='gateway_error')
+        return api_response({
+            'payment_order_id': order.id,
+            'razorpay_order_id': order.razorpay_order_id,
+            'amount': order.amount,
+            'currency': order.currency_id.name,
+        }, status=201)
+
+    @staticmethod
+    def _resolve_patron(payload):
+        """(student, faculty, error) for a top-up payload naming exactly one
+        patron the caller may act for (any patron, for canteen staff)."""
+        student_id = payload.get('student_id')
+        faculty_id = payload.get('faculty_id')
+        if not student_id and not faculty_id:
+            return None, None, api_error('student_id or faculty_id is required.', status=400, code='missing_patron')
+        user = request.env.user
+        if student_id:
+            student_id, error = parse_int(student_id, 'student_id')
+            if error:
+                return None, None, error
+            student = request.env['op.student'].sudo().browse(student_id)
+            if not student.exists():
+                return None, None, api_error('Student not found.', status=404, code='not_found')
+            if not _is_canteen_staff(user) and student.id not in get_own_student_ids(request.env):
+                return None, None, api_error('Not authorized for this student.', status=403, code='forbidden')
+            return student, None, None
+        faculty_id, error = parse_int(faculty_id, 'faculty_id')
+        if error:
+            return None, None, error
+        faculty = request.env['op.faculty'].sudo().browse(faculty_id)
+        if not faculty.exists():
+            return None, None, api_error('Teacher not found.', status=404, code='not_found')
+        if not _is_canteen_staff(user) and faculty.user_id.id != user.id:
+            return None, None, api_error('Not authorized for this faculty member.', status=403, code='forbidden')
+        return None, faculty, None

@@ -5,8 +5,9 @@
         <field name="model">bxi.payment.order</field>
         <field name="arch" type="xml">
             <list string="Online Payment Orders" create="false" edit="false" delete="false">
+                <field name="purpose"/>
                 <field name="student_id"/>
-                <field name="fees_detail_id"/>
+                <field name="fees_detail_id" optional="show"/>
                 <field name="amount"/>
                 <field name="razorpay_order_id"/>
                 <field name="razorpay_payment_id"/>

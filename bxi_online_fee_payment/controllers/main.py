@@ -2,11 +2,11 @@
 # Copyright (c) 2026 BXI Technology Pvt. Ltd. All Rights Reserved.
 # License OPL-1 (Odoo Proprietary License v1.0, see LICENSE file for full text).
 
-from odoo import http
+from odoo import fields, http
 from odoo.exceptions import UserError
 from odoo.http import request
 
-from odoo.addons.bxi_api.controllers.auth import api_error, api_response, require_auth
+from odoo.addons.bxi_api.controllers.auth import api_error, api_response, parse_int, require_auth
 
 
 def _user_can_access_student(env, student):
@@ -36,6 +36,38 @@ class BxiOnlineFeePaymentController(http.Controller):
             return api_error('Not authorized for this student.', status=403, code='forbidden')
 
         return api_response(student.get_fee_payment_summary())
+
+    @http.route('/api/v1/payments/orders', type='http', auth='public', methods=['GET'], csrf=False)
+    @require_auth
+    def list_orders(self, student_id=None, **kwargs):
+        """Online payment attempts: for one student (family or staff), or -
+        without student_id - every order the caller started."""
+        Order = request.env['bxi.payment.order'].sudo()
+        if student_id:
+            student_id, error = parse_int(student_id, 'student_id')
+            if error:
+                return error
+            student = request.env['op.student'].sudo().browse(student_id)
+            if not student.exists():
+                return api_error('Student not found.', status=404, code='not_found')
+            if not _user_can_access_student(request.env, student):
+                return api_error('Not authorized for this student.', status=403, code='forbidden')
+            domain = [('student_id', '=', student.id)]
+        else:
+            domain = [('user_id', '=', request.env.user.id)]
+        orders = Order.search(domain, limit=100)
+        return api_response({'orders': [{
+            'id': order.id,
+            'purpose': order.purpose,
+            'student_id': order.student_id.id or None,
+            'fees_detail_id': order.fees_detail_id.id or None,
+            'amount': order.amount,
+            'currency': order.currency_id.name,
+            'status': order.status,
+            'razorpay_order_id': order.razorpay_order_id,
+            'razorpay_payment_id': order.razorpay_payment_id or None,
+            'created_at': fields.Datetime.to_string(order.create_date),
+        } for order in orders]})
 
     @http.route('/api/v1/payments/create-order', type='http', auth='public', methods=['POST'], csrf=False)
     @require_auth
