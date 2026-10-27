@@ -4,3 +4,4 @@
 from . import test_api_auth
 from . import test_api_token_model
 from . import test_api_account
+from . import test_api_cors
