@@ -37,3 +37,6 @@ from . import people
 from . import visitor
 from . import dashboard
 from . import subject_registration
+from . import admin_classes
+from . import admin_fees
+from . import admin_events

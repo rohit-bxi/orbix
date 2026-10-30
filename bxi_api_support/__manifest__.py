@@ -2,7 +2,7 @@
 
 {
     'name': 'Orbix API Support',
-    'version': '19.0.5.0.0',
+    'version': '19.0.5.1.0',
     'category': 'Education',
     'summary': 'REST API for the Orbix mobile app across every Orbix school process',
     'description': """
@@ -31,6 +31,9 @@
         library circulation, events, calendar, the teacher app (today,
         classes, bulk attendance, leave, activity log), admissions,
         people, visitors, dashboards and elective registration.
+        Admin dashboard: classes and sections, fees across students
+        (collection by class, defaulters, fee categories) and events -
+        lists with summaries, plus create/edit.
     """,
     'author': 'BXI Technology Pvt. Ltd.',
     'maintainer': 'BXI Technology Pvt. Ltd.',

@@ -29,3 +29,4 @@ from . import test_employee_public_fields
 from . import test_teacher_api
 from . import test_operations_api
 from . import test_route_smoke
+from . import test_admin_dashboard_api
