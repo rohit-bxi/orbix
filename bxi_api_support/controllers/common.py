@@ -23,8 +23,10 @@ bxi_parent_data_api convention - only correct for that same class of
 low-sensitivity data, not for anything financial or private.
 """
 
+import psycopg2
+
 from odoo import fields
-from odoo.exceptions import UserError
+from odoo.exceptions import AccessError, UserError
 from odoo.fields import Domain
 from odoo.http import request
 
@@ -83,6 +85,16 @@ def ref(record):
 
 def running_enrollment(student):
     return student.course_detail_ids.filtered(lambda line: line.state == 'running')[:1]
+
+
+def running_enrollments(env, students):
+    """{student id: running op.student.course} for many students at once,
+    the latest when a student has several."""
+    result = {}
+    for line in env['op.student.course'].sudo().search(
+            [('student_id', 'in', students.ids), ('state', '=', 'running')], order='id desc'):
+        result.setdefault(line.student_id.id, line)
+    return result
 
 
 # Staff who may open any student's records (profile, homework, results,
@@ -254,3 +266,98 @@ def parse_pagination(kwargs, default_limit=50, max_limit=200):
             return None, None, error
         offset = max(0, offset)
     return limit, offset, None
+
+
+def is_true(value):
+    """A query-string flag: ?x=1 / ?x=true."""
+    return value in ('1', 'true', 'True')
+
+
+def parse_sort(value, columns, default):
+    """`sort=<column> [asc|desc]` limited to `columns`. Returns
+    ((column, direction), None) or (None, api_error(...))."""
+    parts = (value or default).split()
+    column = parts[0]
+    direction = parts[1].lower() if len(parts) > 1 else 'asc'
+    if column not in columns or direction not in ('asc', 'desc') or len(parts) > 2:
+        return None, api_error(
+            'sort must be one of %s, optionally followed by asc or desc.' % ', '.join(sorted(columns)),
+            status=400, code='invalid_sort')
+    return (column, direction), None
+
+
+def parse_date(value, field_name):
+    """(date, None) or (None, api_error(...)) for a YYYY-MM-DD value."""
+    try:
+        return fields.Date.to_date(value), None
+    except (TypeError, ValueError):
+        return None, api_error('%s must be YYYY-MM-DD.' % field_name, status=400, code='invalid_%s' % field_name)
+
+
+def parse_datetime(value, field_name):
+    """(datetime, None) or (None, api_error(...)) for a UTC
+    'YYYY-MM-DD HH:MM:SS' value - the format responses use. An ISO 'T'
+    separator and a trailing 'Z' are accepted too."""
+    try:
+        return fields.Datetime.to_datetime(str(value).replace('T', ' ').rstrip('Z')), None
+    except (TypeError, ValueError):
+        return None, api_error(
+            '%s must be a UTC date-time, YYYY-MM-DD HH:MM:SS.' % field_name,
+            status=400, code='invalid_%s' % field_name)
+
+
+def check_selection(model, field_name, value, key=None):
+    """None when `value` is one of the selection field's keys, else an
+    api_error(...) naming the allowed values."""
+    allowed = model._fields[field_name].get_values(model.env)
+    if value in allowed:
+        return None
+    key = key or field_name
+    return api_error('%s must be one of %s.' % (key, ', '.join(allowed)), status=400, code='invalid_%s' % key)
+
+
+def resolve_record(env, model, value, field_name):
+    """An id from a payload/query string as an existing record (sudo).
+    Returns (record, None) - an empty recordset for a blank value - or
+    (None, api_error(...)) for a bad or unknown id."""
+    if value in (None, '', False):
+        return env[model].sudo(), None
+    record_id, error = parse_int(value, field_name)
+    if error:
+        return None, error
+    record = env[model].sudo().browse(record_id).exists()
+    if not record:
+        return None, api_error('%s %s does not exist.' % (field_name, record_id), status=400,
+                               code='invalid_%s' % field_name)
+    return record, None
+
+
+def resolve_records(env, model, values, field_name):
+    """resolve_record for a JSON id list: (records, None) or (None, api_error(...))."""
+    ids, error = parse_ids(values or [], field_name)
+    if error:
+        return None, error
+    records = env[model].sudo().browse(ids).exists()
+    if len(records) != len(set(ids)):
+        missing = sorted(set(ids) - set(records.ids))
+        return None, api_error('%s %s do not exist.' % (field_name, missing), status=400,
+                               code='invalid_%s' % field_name)
+    return records, None
+
+
+def atomic(func):
+    """Run func() in a savepoint, so a create/write touching several
+    records is all-or-nothing. A model check that fails (or a duplicate
+    the database rejects) rolls back everything func() wrote and comes
+    back as a 400 envelope. Returns (result, None) or (None, api_error(...))."""
+    try:
+        with request.env.cr.savepoint():
+            return func(), None
+    except AccessError as exc:
+        return None, api_error(str(exc), status=403, code='forbidden')
+    except UserError as exc:
+        return None, api_error(str(exc), status=400, code='validation_error')
+    except psycopg2.IntegrityError as exc:
+        return None, api_error(
+            'This conflicts with an existing record: %s' % (exc.diag.message_primary or exc),
+            status=400, code='conflict')

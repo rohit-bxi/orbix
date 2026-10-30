@@ -65,6 +65,12 @@ MASTERS = {
     'visitor-categories': {'model': 'visitor.category', 'fields': ['name'], 'order': 'name', 'staff': True},
     'visit-hosts': {'model': 'hr.employee', 'fields': ['name', 'department_id', 'job_title', 'work_phone'],
                     'domain': [('employee_type', '!=', 'student')], 'order': 'name', 'staff': True},
+    'fee-categories': {'model': 'bxi.fee.category', 'fields': ['name', 'code', 'default_frequency', 'product_id'],
+                       'order': 'sequence, name'},
+    # Products a fee category or a paid event can bill through.
+    'service-products': {'model': 'product.product', 'fields': ['name', 'default_code', 'list_price'],
+                         'domain': [('type', '=', 'service'), ('sale_ok', '=', True)], 'order': 'name',
+                         'staff': True},
     'payment-journals': {'model': 'account.journal', 'fields': ['name', 'code', 'type'],
                          'domain': [('type', 'in', ('bank', 'cash'))], 'order': 'name', 'staff': True},
     'countries': {'model': 'res.country', 'fields': ['name', 'code'], 'order': 'name'},

@@ -21,6 +21,8 @@ LIST_ROUTES = [
     '/api/v1/subject-registrations', '/api/v1/academic/ptm-meetings/my', '/api/v1/transport/vehicles',
     '/api/v1/transport/drivers', '/api/v1/payments/orders', '/api/v1/auth/sessions',
     '/api/v1/announcements', '/api/v1/notices', '/api/v1/dashboards/fees', '/api/v1/dashboards/health',
+    '/api/v1/admin/classes', '/api/v1/admin/fees', '/api/v1/admin/fees/by-class', '/api/v1/admin/fees/defaulters',
+    '/api/v1/admin/fee-categories', '/api/v1/admin/events', '/api/v1/admin/events/options',
 ]
 # Routes taking a record id - an unknown id must give a clean 4xx.
 MISSING_ID_ROUTES = [
@@ -46,6 +48,11 @@ MISSING_ID_ROUTES = [
     ('GET', '/api/v1/canteen/wallets/999999/transactions'), ('POST', '/api/v1/notifications/999999/read'),
     ('GET', '/api/v1/attendance/students/999999/summary'), ('POST', '/api/v1/attendance/sessions/999999/bulk-mark'),
     ('GET', '/api/v1/teacher/classes/999999/students'),
+    ('GET', '/api/v1/admin/classes/999999'), ('POST', '/api/v1/admin/classes/999999/update'),
+    ('GET', '/api/v1/admin/sections/999999/students'), ('POST', '/api/v1/admin/sections/999999/update'),
+    ('POST', '/api/v1/admin/fee-categories/999999/update'), ('GET', '/api/v1/admin/events/999999'),
+    ('POST', '/api/v1/admin/events/999999/update'), ('POST', '/api/v1/admin/events/999999/post-announcement'),
+    ('POST', '/api/v1/admin/events/999999/attendance'),
 ]
 
 

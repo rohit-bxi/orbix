@@ -13077,6 +13077,727 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "Admin Dashboard (bxi_api_support)",
+      "description": "Admin-dashboard lists and forms: classes and sections, fees across students (collection by class, defaulters, fee categories) and events (figures, create/edit, announcement, attendance). Each list returns items, meta (total/limit/offset) and a summary over every matching record.",
+      "item": [
+        {
+          "name": "Admin: List Classes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/classes?q=&active=1&expand=sections&sort=name asc&limit=50&offset=0",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "classes"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": ""
+                },
+                {
+                  "key": "active",
+                  "value": "1"
+                },
+                {
+                  "key": "expand",
+                  "value": "sections"
+                },
+                {
+                  "key": "sort",
+                  "value": "name asc"
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
+            },
+            "description": "Classes with section count, students, capacity, fill % and sections without a class teacher, plus a summary over every matching class. Filters: q, department_id, program_id, academic_year_id, active (1/0/all); expand=sections; sort=name|code|department [asc|desc]. Academic coordinators, back-office admins."
+          },
+          "response": []
+        },
+        {
+          "name": "Admin: Get Class",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/classes/:course_id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "classes",
+                ":course_id"
+              ],
+              "variable": [
+                {
+                  "key": "course_id",
+                  "value": "{{course_id}}"
+                }
+              ]
+            },
+            "description": "A class with every section (classroom, class teacher, strength, subject teachers from the timetable) and its subjects with their mapped teachers."
+          },
+          "response": []
+        },
+        {
+          "name": "Admin: Section Students",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/sections/:batch_id/students",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "sections",
+                ":batch_id",
+                "students"
+              ],
+              "variable": [
+                {
+                  "key": "batch_id",
+                  "value": "{{batch_id}}"
+                }
+              ]
+            },
+            "description": "A section's current students by roll number with their parents' contact details."
+          },
+          "response": []
+        },
+        {
+          "name": "Admin: Create Class",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/classes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "classes"
+              ]
+            },
+            "description": "Create a class and, optionally, its sections in one go (all or nothing). Section code is generated from the class code when left out; dates default to the current academic year. Back-office admins and academic managers.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Grade 9\",\n  \"code\": \"G9\",\n  \"department_id\": null,\n  \"program_id\": null,\n  \"evaluation_type\": \"normal\",\n  \"subject_ids\": [\n    1\n  ],\n  \"sections\": [\n    {\n      \"name\": \"A\",\n      \"capacity\": 30,\n      \"class_teacher_id\": 1\n    },\n    {\n      \"name\": \"B\",\n      \"capacity\": 30\n    }\n  ]\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Admin: Update Class",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/classes/:course_id/update",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "classes",
+                ":course_id",
+                "update"
+              ],
+              "variable": [
+                {
+                  "key": "course_id",
+                  "value": "{{course_id}}"
+                }
+              ]
+            },
+            "description": "Any create field except sections; \"active\": false archives the class.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Grade IX\",\n  \"subject_ids\": [\n    1,\n    2\n  ],\n  \"active\": true\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Admin: Create Section",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/sections",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "sections"
+              ]
+            },
+            "description": "Add a section to a class.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"class_id\": 1,\n  \"name\": \"C\",\n  \"code\": \"G9-C\",\n  \"capacity\": 30,\n  \"class_teacher_id\": 1,\n  \"start_date\": \"2026-04-01\",\n  \"end_date\": \"2027-03-31\",\n  \"description\": \"\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Admin: Update Section",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/sections/:batch_id/update",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "sections",
+                ":batch_id",
+                "update"
+              ],
+              "variable": [
+                {
+                  "key": "batch_id",
+                  "value": "{{batch_id}}"
+                }
+              ]
+            },
+            "description": "Any create field except class_id; \"active\": false archives the section.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"capacity\": 32,\n  \"class_teacher_id\": 1\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Admin: List Fees",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/fees?course_id=&collection_status=&overdue=0&due_from=&due_to=&q=&sort=due_date desc&limit=50&offset=0",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "fees"
+              ],
+              "query": [
+                {
+                  "key": "course_id",
+                  "value": ""
+                },
+                {
+                  "key": "collection_status",
+                  "value": ""
+                },
+                {
+                  "key": "overdue",
+                  "value": "0"
+                },
+                {
+                  "key": "due_from",
+                  "value": ""
+                },
+                {
+                  "key": "due_to",
+                  "value": ""
+                },
+                {
+                  "key": "q",
+                  "value": ""
+                },
+                {
+                  "key": "sort",
+                  "value": "due_date desc"
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
+            },
+            "description": "Every student's fee lines with class/section, plus a summary (payable, collected, pending, overdue, count by status) over every matching line. Filters: student_id, course_id, batch_id, structure_id, category_id, academic_year_id, state (cancelled lines hidden by default), collection_status, overdue=1, due_from/due_to, q (student name or registration number); sort=due_date|student|total_payable|amount_paid|amount_pending|days_overdue|status [asc|desc]. Fee staff."
+          },
+          "response": []
+        },
+        {
+          "name": "Admin: Fee Collection By Class",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/fees/by-class?group_by=class&academic_year_id=",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "fees",
+                "by-class"
+              ],
+              "query": [
+                {
+                  "key": "group_by",
+                  "value": "class"
+                },
+                {
+                  "key": "academic_year_id",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Students billed, payable, collected, pending, overdue and collection % per class (group_by=section for per section). Takes the List Fees filters."
+          },
+          "response": []
+        },
+        {
+          "name": "Admin: Fee Defaulters",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/fees/defaulters?min_days=&course_id=&sort=overdue_amount desc&limit=50&offset=0",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "fees",
+                "defaulters"
+              ],
+              "query": [
+                {
+                  "key": "min_days",
+                  "value": ""
+                },
+                {
+                  "key": "course_id",
+                  "value": ""
+                },
+                {
+                  "key": "sort",
+                  "value": "overdue_amount desc"
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
+            },
+            "description": "One row per student with an overdue balance: amount, oldest due date, days overdue and parent contacts. min_days filters by lateness; takes the List Fees filters; sort=overdue_amount|days_overdue|oldest_due_date|student [asc|desc]."
+          },
+          "response": []
+        },
+        {
+          "name": "Admin: List Fee Categories",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/fee-categories?active=1&q=",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "fee-categories"
+              ],
+              "query": [
+                {
+                  "key": "active",
+                  "value": "1"
+                },
+                {
+                  "key": "q",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Fee categories with how many fee structures use each. active=1/0/all, q."
+          },
+          "response": []
+        },
+        {
+          "name": "Admin: Create Fee Category",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/fee-categories",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "fee-categories"
+              ]
+            },
+            "description": "product_id is the product that carries the income account (see /masters/service-products).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Lab Fee\",\n  \"code\": \"LAB\",\n  \"product_id\": 1,\n  \"default_frequency\": \"annual\",\n  \"is_refundable\": false,\n  \"sequence\": 10\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Admin: Update Fee Category",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/fee-categories/:fee_category_id/update",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "fee-categories",
+                ":fee_category_id",
+                "update"
+              ],
+              "variable": [
+                {
+                  "key": "fee_category_id",
+                  "value": "{{fee_category_id}}"
+                }
+              ]
+            },
+            "description": "Any create field; \"active\": false archives the category.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"default_frequency\": \"monthly\",\n  \"active\": true\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Admin: List Events",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/events?status=upcoming&date_from=&date_to=&category=&sort=date_begin desc&limit=50&offset=0",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "events"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "upcoming"
+                },
+                {
+                  "key": "date_from",
+                  "value": ""
+                },
+                {
+                  "key": "date_to",
+                  "value": ""
+                },
+                {
+                  "key": "category",
+                  "value": ""
+                },
+                {
+                  "key": "sort",
+                  "value": "date_begin desc"
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
+            },
+            "description": "Every event with status, seats, registration counts, pending permission slips and payment figures, plus a summary. Filters: q, category, status (upcoming/ongoing/past/cancelled), date_from/date_to (UTC days), venue_id, course_id, batch_id, academic_year_id; sort=date_begin|name|category|venue [asc|desc]. Event coordinators."
+          },
+          "response": []
+        },
+        {
+          "name": "Admin: Event Form Options",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/events/options",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "events",
+                "options"
+              ]
+            },
+            "description": "Event categories, audiences, statuses and the default timezone for the event form."
+          },
+          "response": []
+        },
+        {
+          "name": "Admin: Get Event",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/events/:event_id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "events",
+                ":event_id"
+              ],
+              "variable": [
+                {
+                  "key": "event_id",
+                  "value": "{{event_id}}"
+                }
+              ]
+            },
+            "description": "An event with its figures and every registration (student, class, section, parent, slip, invoice, attended)."
+          },
+          "response": []
+        },
+        {
+          "name": "Admin: Create Event",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/events",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "events"
+              ]
+            },
+            "description": "Dates are UTC (YYYY-MM-DD HH:MM:SS). A paid event needs fee_product_id. Venue double-booking is refused.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Annual Sports Day\",\n  \"date_begin\": \"2026-12-12 03:30:00\",\n  \"date_end\": \"2026-12-12 09:30:00\",\n  \"category\": \"sports_day\",\n  \"target_audience\": \"specific_class\",\n  \"course_ids\": [\n    1\n  ],\n  \"batch_ids\": [],\n  \"coordinator_ids\": [\n    1\n  ],\n  \"venue_id\": null,\n  \"seats_limited\": true,\n  \"seats_max\": 200,\n  \"is_paid\": false,\n  \"fee_product_id\": null,\n  \"requires_permission_slip\": true,\n  \"offers_transport\": false,\n  \"description\": \"<p>Track and field events.</p>\",\n  \"timezone\": \"Asia/Kolkata\",\n  \"academic_year_id\": null,\n  \"academic_term_id\": null\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Admin: Update Event",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/events/:event_id/update",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "events",
+                ":event_id",
+                "update"
+              ],
+              "variable": [
+                {
+                  "key": "event_id",
+                  "value": "{{event_id}}"
+                }
+              ]
+            },
+            "description": "Any create field; only the ones sent change.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"seats_max\": 250,\n  \"venue_id\": 1\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Admin: Post Event Announcement",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/events/:event_id/post-announcement",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "events",
+                ":event_id",
+                "post-announcement"
+              ],
+              "variable": [
+                {
+                  "key": "event_id",
+                  "value": "{{event_id}}"
+                }
+              ]
+            },
+            "description": "Creates the event's announcement as a draft (201), or returns the existing one (200); publish it with /announcements/:announcement_id/publish."
+          },
+          "response": []
+        },
+        {
+          "name": "Admin: Mark Event Attendance",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/events/:event_id/attendance",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "events",
+                ":event_id",
+                "attendance"
+              ],
+              "variable": [
+                {
+                  "key": "event_id",
+                  "value": "{{event_id}}"
+                }
+              ]
+            },
+            "description": "Mark confirmed registrations attended (\"attended\": false undoes it). Event coordinators and the event's duty teachers.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"registration_ids\": [\n    1\n  ],\n  \"attended\": true\n}"
+            }
+          },
+          "response": []
+        }
+      ]
     }
   ],
   "auth": {
@@ -13404,6 +14125,10 @@
     },
     {
       "key": "visitor_id",
+      "value": "1"
+    },
+    {
+      "key": "fee_category_id",
       "value": "1"
     }
   ]
