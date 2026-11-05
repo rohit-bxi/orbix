@@ -56,6 +56,33 @@ class TestBxiOtpLogin(HttpCase):
         me = self.url_open('/api/v1/auth/me', headers={'Authorization': f"Bearer {data['token']}"})
         self.assertEqual(me.json()['data']['id'], self.user.id)
 
+    def test_otp_login_records_method(self):
+        code = self._request_otp('9812345678')
+        resp = self.url_open('/api/v1/auth/otp-login', json={'phone': '9812345678', 'otp': code})
+        self.assertEqual(resp.json()['data']['auth_method'], 'otp')
+        Token = self.env['bxi.api.token']
+        token = Token.sudo().search([('token_hash', '=', Token._hash(resp.json()['data']['token']))])
+        self.assertEqual(token.auth_method, 'otp')
+
+    def test_step_up_with_otp_sent_to_own_phone(self):
+        raw = self.env['bxi.api.token']._issue_for_user(self.user, step_up_required=True)
+        headers = {'Authorization': f'Bearer {raw}'}
+        resp = self.url_open('/api/v1/auth/step-up/otp-request', headers=headers, json={}, method='POST')
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(resp.json()['data']['phone_hint'].endswith('5678'))
+        self.assertEqual(CAPTURED['phone'], self.user.phone)
+
+        resp = self.url_open('/api/v1/auth/step-up', headers=headers, json={'otp': '000000'})
+        self.assertEqual(resp.status_code, 401)
+        resp = self.url_open('/api/v1/auth/step-up', headers=headers, json={'otp': CAPTURED['code']})
+        self.assertEqual(resp.status_code, 200)
+
+    def test_login_otp_cannot_be_used_for_step_up(self):
+        code = self._request_otp(self.user.phone)
+        raw = self.env['bxi.api.token']._issue_for_user(self.user, step_up_required=True)
+        resp = self.url_open('/api/v1/auth/step-up', headers={'Authorization': f'Bearer {raw}'}, json={'otp': code})
+        self.assertEqual(resp.status_code, 401)
+
     def test_otp_login_wrong_code_rejected_without_revealing_account(self):
         self._request_otp('9812345678')
         resp = self.url_open('/api/v1/auth/otp-login', json={'phone': '9812345678', 'otp': '000000'})

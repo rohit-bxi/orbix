@@ -201,13 +201,58 @@ class TestBxiIdentityVerification(HttpCase):
     def test_link_student_adds_to_parent(self):
         new_student = self.env['op.student'].create({
             'first_name': 'Sibling', 'last_name': 'Checked', 'gr_no': 'ID-002', 'gender': 'm',
+            'birth_date': '2016-04-12',
         })
         resp = self.url_open('/api/v1/identity/link-student', headers=self._headers('id_parent', 'ParentPass1!'), json={
-            'student_id': new_student.id,
+            'gr_no': 'ID-002', 'birth_date': '2016-04-12',
         })
         self.assertEqual(resp.status_code, 200)
         self.assertIn(new_student.id, resp.json()['data']['linked_student_ids'])
         self.assertIn(new_student.id, self.parent.student_ids.ids)
+
+    def test_link_student_by_id_alone_rejected(self):
+        # The old contract (student_id only) let any parent attach any child.
+        new_student = self.env['op.student'].create({
+            'first_name': 'Stranger', 'last_name': 'Checked', 'gr_no': 'ID-004', 'gender': 'm',
+            'birth_date': '2016-04-12',
+        })
+        resp = self.url_open('/api/v1/identity/link-student', headers=self._headers('id_parent', 'ParentPass1!'), json={
+            'student_id': new_student.id,
+        })
+        self.assertEqual(resp.status_code, 400)
+        self.assertNotIn(new_student.id, self.parent.student_ids.ids)
+
+    def test_link_student_wrong_birth_date_rejected(self):
+        new_student = self.env['op.student'].create({
+            'first_name': 'Stranger', 'last_name': 'Checked', 'gr_no': 'ID-005', 'gender': 'm',
+            'birth_date': '2016-04-12',
+        })
+        resp = self.url_open('/api/v1/identity/link-student', headers=self._headers('id_parent', 'ParentPass1!'), json={
+            'gr_no': 'ID-005', 'birth_date': '2016-04-13',
+        })
+        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(resp.json()['error']['code'], 'verification_failed')
+        self.assertNotIn(new_student.id, self.parent.student_ids.ids)
+
+    def test_link_student_without_recorded_birth_date_rejected(self):
+        # cls.student-like records with no date of birth can't be self-linked at all.
+        new_student = self.env['op.student'].create({
+            'first_name': 'Undated', 'last_name': 'Checked', 'gr_no': 'ID-006', 'gender': 'm',
+        })
+        resp = self.url_open('/api/v1/identity/link-student', headers=self._headers('id_parent', 'ParentPass1!'), json={
+            'gr_no': 'ID-006', 'birth_date': '2016-04-12',
+        })
+        self.assertEqual(resp.status_code, 403)
+        self.assertNotIn(new_student.id, self.parent.student_ids.ids)
+
+    def test_plain_internal_user_is_not_staff(self):
+        # Family accounts are often internal users here: base.group_user alone
+        # must not unlock other people's identity records.
+        mail_new_test_user(self.env, login='id_internal', groups='base.group_user', password='InternalPass1!')
+        resp = self.url_open('/api/v1/identity/face/submit', headers=self._headers('id_internal', 'InternalPass1!'), json={
+            'subject_type': 'student', 'subject_id': self.student.id, 'image': _tiny_png_base64(),
+        })
+        self.assertEqual(resp.status_code, 403)
 
     def test_unlink_student_removes_from_parent(self):
         second_student = self.env['op.student'].create({
@@ -235,9 +280,10 @@ class TestBxiIdentityVerification(HttpCase):
 
     def test_link_student_not_found(self):
         resp = self.url_open('/api/v1/identity/link-student', headers=self._headers('id_parent', 'ParentPass1!'), json={
-            'student_id': 999999,
+            'gr_no': 'NO-SUCH-NUMBER', 'birth_date': '2016-04-12',
         })
-        self.assertEqual(resp.status_code, 404)
+        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(resp.json()['error']['code'], 'verification_failed')
 
     def test_unlink_student_missing_fields_rejected(self):
         resp = self.url_open(

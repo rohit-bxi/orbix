@@ -1,0 +1,11 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_bxi_face_enrolment_system,bxi.face.enrolment system,model_bxi_face_enrolment,base.group_system,1,1,1,1
+access_bxi_face_enrolment_manager,bxi.face.enrolment manager,model_bxi_face_enrolment,group_face_manager,1,0,0,0
+access_bxi_face_template_system,bxi.face.template system,model_bxi_face_template,base.group_system,1,1,1,1
+access_bxi_face_consent_system,bxi.face.consent system,model_bxi_face_consent,base.group_system,1,1,1,1
+access_bxi_face_consent_manager,bxi.face.consent manager,model_bxi_face_consent,group_face_manager,1,0,0,0
+access_bxi_face_challenge_system,bxi.face.challenge system,model_bxi_face_challenge,base.group_system,1,1,1,1
+access_bxi_face_kiosk_system,bxi.face.kiosk system,model_bxi_face_kiosk,base.group_system,1,1,1,1
+access_bxi_face_kiosk_manager,bxi.face.kiosk manager,model_bxi_face_kiosk,group_face_manager,1,0,0,0
+access_bxi_face_login_attempt_system,bxi.face.login.attempt system,model_bxi_face_login_attempt,base.group_system,1,1,1,1
+access_bxi_face_login_attempt_manager,bxi.face.login.attempt manager,model_bxi_face_login_attempt,group_face_manager,1,0,0,0

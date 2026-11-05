@@ -6,7 +6,7 @@ from odoo import fields, http
 from odoo.exceptions import AccessDenied, UserError
 from odoo.http import request
 
-from .auth import api_error, api_response, get_current_token, require_auth
+from .auth import api_error, api_response, get_current_token, rate_limit, require_auth, require_step_up
 
 
 def _token_dict(token, current):
@@ -17,6 +17,7 @@ def _token_dict(token, current):
         'created_at': fields.Datetime.to_string(token.create_date),
         'last_used_at': token.last_used_at and fields.Datetime.to_string(token.last_used_at),
         'expires_at': token.expires_at and fields.Datetime.to_string(token.expires_at),
+        'auth_method': token.auth_method,
         'is_current': token.id == current.id,
     }
 
@@ -43,13 +44,17 @@ class BxiApiAuthController(http.Controller):
         return api_response(self._issue_login_response(user, payload.get('device_name')))
 
     @staticmethod
-    def _issue_login_response(user, device_name=None):
-        """Shared by password login and OTP login (bxi_notification_gateway)
-        so both hand back exactly the same shape."""
-        raw_token = request.env['bxi.api.token']._issue_for_user(user, name=device_name)
+    def _issue_login_response(user, device_name=None, auth_method='password', **token_options):
+        """Shared by password, OTP (bxi_notification_gateway) and face
+        (bxi_face_auth) login so all hand back exactly the same shape.
+        `token_options` go to bxi.api.token._issue_for_user (ttl_days,
+        ttl_minutes, step_up_required)."""
+        raw_token = request.env['bxi.api.token']._issue_for_user(
+            user, name=device_name, auth_method=auth_method, **token_options)
         return {
             'token': raw_token,
             'user': user._get_bxi_api_profile(),
+            'auth_method': auth_method,
         }
 
     @http.route('/api/v1/auth/logout', type='http', auth='public', methods=['POST'], csrf=False)
@@ -78,12 +83,33 @@ class BxiApiAuthController(http.Controller):
 
     @http.route('/api/v1/auth/sessions/<int:session_id>/revoke', type='http', auth='public', methods=['POST'], csrf=False)
     @require_auth
+    @require_step_up
     def revoke_session(self, session_id, **kwargs):
         token = request.env['bxi.api.token'].sudo().browse(session_id)
         if not token.exists() or token.user_id.id != request.env.user.id:
             return api_error('Session not found.', status=404, code='not_found')
         token.action_revoke()
         return api_response({'revoked': True, 'id': session_id})
+
+    @http.route('/api/v1/auth/step-up', type='http', auth='public', methods=['POST'], csrf=False)
+    @rate_limit('step_up', limit=10)
+    @require_auth
+    def step_up(self, **kwargs):
+        """Confirm the password (or, with bxi_notification_gateway, an OTP
+        from /api/v1/auth/step-up/otp-request) on the current session, so
+        routes guarded by require_step_up/require_recent_auth accept it for
+        the next few minutes."""
+        payload = request.get_json_data() or {}
+        ok, code = request.env.user._bxi_check_step_up(payload)
+        if not ok:
+            status = 400 if code == 'missing_credentials' else 401
+            return api_error('Confirmation failed.', status=status, code=code)
+        token = get_current_token()
+        token._mark_verified()
+        return api_response({
+            'verified': True,
+            'verified_until': fields.Datetime.to_string(token.verified_until),
+        })
 
     @http.route('/api/v1/auth/password/change', type='http', auth='public', methods=['POST'], csrf=False)
     @require_auth

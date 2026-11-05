@@ -6,7 +6,7 @@ from odoo import http
 from odoo.exceptions import UserError
 from odoo.http import request
 
-from odoo.addons.bxi_api.controllers.auth import api_error, api_response, rate_limit
+from odoo.addons.bxi_api.controllers.auth import api_error, api_response, rate_limit, require_auth
 from odoo.addons.bxi_api.controllers.main import BxiApiAuthController
 
 
@@ -68,7 +68,23 @@ class BxiOtpController(http.Controller):
         user, error = _resolve_single_user(phone)
         if error:
             return error
-        return api_response(BxiApiAuthController._issue_login_response(user, payload.get('device_name')))
+        return api_response(BxiApiAuthController._issue_login_response(
+            user, payload.get('device_name'), auth_method='otp'))
+
+    @http.route('/api/v1/auth/step-up/otp-request', type='http', auth='public', methods=['POST'], csrf=False)
+    @rate_limit('step_up_otp', limit=5)
+    @require_auth
+    def request_step_up_otp(self, **kwargs):
+        """Text an OTP to the logged-in account's own phone, to be sent to
+        POST /api/v1/auth/step-up as `otp`. The number is never taken from
+        the request, so this can't be pointed at someone else's phone."""
+        phone = request.env.user.sudo()._bxi_get_otp_phone()
+        if not phone:
+            return api_error('No phone number is registered on this account. Use your password.',
+                             status=400, code='no_phone')
+        sent = request.env['bxi.otp.request'].sudo()._generate_and_send(phone, purpose='step_up')
+        digits = ''.join(ch for ch in phone if ch.isdigit())
+        return api_response({'sent': sent, 'phone_hint': '******' + digits[-4:] if digits else None})
 
     @http.route('/api/v1/auth/password/forgot', type='http', auth='public', methods=['POST'], csrf=False)
     @rate_limit('password_forgot', limit=5)

@@ -2,11 +2,13 @@
 # Copyright (c) 2026 BXI Technology Pvt. Ltd. All Rights Reserved.
 # License OPL-1 (Odoo Proprietary License v1.0, see LICENSE file for full text).
 
-from odoo import http
+from odoo import fields, http
 from odoo.exceptions import UserError
 from odoo.http import request
 
-from odoo.addons.bxi_api.controllers.auth import api_error, api_response, require_auth
+from odoo.addons.bxi_api.controllers.auth import api_error, api_response, rate_limit, require_auth, require_step_up
+
+REVIEWER_GROUPS = ('bxi_identity_verification.group_identity_reviewer', 'base.group_system')
 
 SUBJECT_MODELS = {
     'student': 'op.student',
@@ -20,8 +22,13 @@ def _own_parent_record(env):
 
 def _resolve_subject(env, subject_type, subject_id):
     """Returns (subject_record, error_response). Enforces that the caller
-    is either staff, the parent record itself, or a parent linked to the
-    student in question.
+    is either an identity reviewer, the parent record itself, or a parent
+    linked to the student in question.
+
+    "Staff" here means the Identity Reviewer group, not base.group_user:
+    family accounts are often internal users in this deployment, and a
+    plain internal user must not be able to read or replace the Aadhaar
+    number or face photo of someone else's child.
     """
     model_name = SUBJECT_MODELS.get(subject_type)
     if not model_name:
@@ -31,7 +38,7 @@ def _resolve_subject(env, subject_type, subject_id):
     if not subject.exists():
         return None, api_error('Record not found.', status=404, code='not_found')
 
-    if env.user.has_group('base.group_user'):
+    if any(env.user.has_group(group) for group in REVIEWER_GROUPS):
         return subject, None
 
     own_parent = _own_parent_record(env)
@@ -60,6 +67,7 @@ class BxiIdentityVerificationController(http.Controller):
 
     @http.route('/api/v1/identity/aadhar/submit', type='http', auth='public', methods=['POST'], csrf=False)
     @require_auth
+    @require_step_up
     def submit_aadhar(self, **kwargs):
         payload = request.get_json_data()
         subject_type = payload.get('subject_type')
@@ -79,6 +87,7 @@ class BxiIdentityVerificationController(http.Controller):
 
     @http.route('/api/v1/identity/face/submit', type='http', auth='public', methods=['POST'], csrf=False)
     @require_auth
+    @require_step_up
     def submit_face(self, **kwargs):
         payload = request.get_json_data()
         subject_type = payload.get('subject_type')
@@ -97,25 +106,45 @@ class BxiIdentityVerificationController(http.Controller):
         return api_response({'face_verification_status': subject.face_verification_status})
 
     @http.route('/api/v1/identity/link-student', type='http', auth='public', methods=['POST'], csrf=False)
+    @rate_limit('link_student', limit=10)
     @require_auth
+    @require_step_up
     def link_student(self, **kwargs):
+        """Add a child to the calling parent's account. The parent proves
+        they know the child by sending the registration number (`gr_no`)
+        and date of birth exactly as the school recorded them; a student
+        id alone (a guessable sequence number) is not enough. Any mismatch
+        - unknown number, wrong date, or a record without a date of birth -
+        gets the same answer, so the route can't be used to look students up.
+        """
         payload = request.get_json_data()
-        student_id = payload.get('student_id')
-        if not student_id:
-            return api_error('student_id is required.', status=400, code='missing_fields')
-
         parent = _own_parent_record(request.env)
         if not parent:
             return api_error('No parent record is linked to this account.', status=403, code='not_a_parent')
-        student = request.env['op.student'].sudo().browse(int(student_id))
-        if not student.exists():
-            return api_error('Student not found.', status=404, code='not_found')
 
-        parent.sudo().write({'student_ids': [(4, student.id)]})
+        gr_no = (payload.get('gr_no') or '').strip()
+        birth_date_raw = (payload.get('birth_date') or '').strip()
+        if not gr_no or not birth_date_raw:
+            return api_error('gr_no and birth_date are required.', status=400, code='missing_fields')
+        try:
+            birth_date = fields.Date.from_string(birth_date_raw)
+        except ValueError:
+            return api_error('birth_date must be a date (YYYY-MM-DD).', status=400, code='invalid_birth_date')
+
+        students = request.env['op.student'].sudo().search([('gr_no', '=', gr_no)], limit=2)
+        student_id = payload.get('student_id')
+        if (len(students) != 1 or not students.birth_date or students.birth_date != birth_date
+                or (student_id and str(student_id) != str(students.id))):
+            return api_error(
+                "These details don't match the school's records. Please contact the school office.",
+                status=403, code='verification_failed')
+
+        parent.sudo().write({'student_ids': [(4, students.id)]})
         return api_response({'linked_student_ids': parent.student_ids.ids})
 
     @http.route('/api/v1/identity/unlink-student', type='http', auth='public', methods=['POST'], csrf=False)
     @require_auth
+    @require_step_up
     def unlink_student(self, **kwargs):
         payload = request.get_json_data()
         student_id = payload.get('student_id')
