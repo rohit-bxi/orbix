@@ -26,6 +26,7 @@ class BxiOtpRequest(models.Model):
     purpose = fields.Selection([
         ('login', 'Login'),
         ('password_reset', 'Password Reset'),
+        ('step_up', 'Confirm Sensitive Action'),
     ], required=True, default='login')
     code_hash = fields.Char(required=True)
     expires_at = fields.Datetime(required=True)

@@ -2,7 +2,7 @@
 
 {
     'name': 'Orbix API',
-    'version': '19.0.1.2.0',
+    'version': '19.0.1.3.0',
     'category': 'Education',
     'summary': 'Token-authenticated REST API layer for the Orbix mobile app',
     'description': """
@@ -17,6 +17,9 @@
           response/error envelope.
         - Login (username/password), logout and a `me` endpoint to confirm
           who a token resolves to.
+        - Login method on every session (password, OTP, face...) and a
+          step-up confirmation (`/api/v1/auth/step-up`) that sensitive
+          routes can require from sessions opened by a weaker method.
 
         Every other Orbix API module (notifications, payments, messaging,
         etc.) depends on this one and reuses its auth decorator and

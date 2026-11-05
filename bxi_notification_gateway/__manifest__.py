@@ -2,7 +2,7 @@
 
 {
     'name': 'Orbix Notification Gateway',
-    'version': '19.0.1.1.0',
+    'version': '19.0.1.2.0',
     'category': 'Education',
     'summary': 'SMS/OTP (MSG91) and push (FCM) notifications for the Orbix mobile app',
     'description': """
@@ -20,7 +20,9 @@
           not by MSG91 - MSG91 is only used to deliver the SMS).
         - `/api/v1/otp/request` and `/api/v1/otp/verify` endpoints, plus
           OTP login (`/api/v1/auth/otp-login`) and OTP password reset
-          (`/api/v1/auth/password/forgot` + `/reset`).
+          (`/api/v1/auth/password/forgot` + `/reset`), and OTP as the
+          step-up confirmation for phone-only accounts
+          (`/api/v1/auth/step-up/otp-request`).
         - Push notifications: app device registry (bxi.api.device), the
           per-user in-app inbox (bxi.notification, created via
           `_notify(...)`) and the FCM HTTP v1 sender a cron uses to

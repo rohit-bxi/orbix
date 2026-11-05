@@ -33,6 +33,19 @@ class ResUsers(models.Model):
         self.ensure_one()
         return self.phone
 
+    def _bxi_check_step_up(self, payload):
+        """Accept an OTP (sent by /api/v1/auth/step-up/otp-request to this
+        account's own phone) instead of a password, for parents who only
+        ever log in by phone."""
+        code = (payload.get('otp') or '').strip()
+        if code and not payload.get('password'):
+            phone = self._bxi_get_otp_phone()
+            if not phone:
+                return False, 'no_phone'
+            ok, reason = self.env['bxi.otp.request'].sudo()._verify(phone, code, purpose='step_up')
+            return (True, None) if ok else (False, reason or 'invalid_code')
+        return super()._bxi_check_step_up(payload)
+
     @api.model
     def _bxi_partner_ids_with_phone(self, table, column, phone):
         """Ids of `table` rows whose `column` is the same number as `phone`

@@ -8,6 +8,7 @@
                 <field name="user_id"/>
                 <field name="name"/>
                 <field name="token_last4" string="Ends with"/>
+                <field name="auth_method"/>
                 <field name="expires_at"/>
                 <field name="last_used_at"/>
                 <field name="active" widget="boolean_toggle"/>

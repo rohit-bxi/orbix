@@ -180,6 +180,40 @@ def require_auth(func):
     return wrapper
 
 
+def require_step_up(func):
+    """Use below @require_auth on sensitive routes. A session opened by a
+    weaker login method (face login: token.step_up_required) must first
+    confirm the password or an OTP via POST /api/v1/auth/step-up; for the
+    next few minutes it may then call the route. Sessions opened with a
+    password or OTP pass straight through.
+    """
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        token = get_current_token()
+        if token and token.step_up_required and not token._is_recently_verified():
+            return api_error(
+                'Confirm your password or OTP to continue.', status=403, code='step_up_required')
+        return func(*args, **kwargs)
+    return wrapper
+
+
+def require_recent_auth(func):
+    """Use below @require_auth on the most sensitive routes (e.g. face
+    enrolment). Every session, however it was opened, must have confirmed
+    the password or an OTP in the last few minutes - logging in with a
+    password or OTP counts - so a long-lived stolen token alone isn't
+    enough.
+    """
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        token = get_current_token()
+        if not token or not token._is_recently_verified():
+            return api_error(
+                'Confirm your password or OTP to continue.', status=403, code='step_up_required')
+        return func(*args, **kwargs)
+    return wrapper
+
+
 def get_current_token():
     """The bxi.api.token (sudo) the current @require_auth request came in
     with, or an empty recordset outside such a request."""

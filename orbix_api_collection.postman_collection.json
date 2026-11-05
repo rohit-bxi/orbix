@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "586e672d-27b2-43c5-a9e6-15346efaafbe",
     "name": "Orbix School ERP API",
-    "description": "API collection for all Orbix custom Odoo 19 modules: bxi_api (auth, sessions, password), bxi_notification_gateway (OTP, OTP login, password reset), bxi_online_fee_payment and the full bxi_api_support surface - profile & master data, push devices and the notification inbox, fees, exemptions, refunds, scholarships, attendance (hr.attendance), homework, offline exams, digital assessments, library circulation, events, calendar, the teacher app (today, classes, leave, activity log), academic management, lesson plans, timetable admin, admissions and RTE, certificates, announcements & notices (filtered by audience), onboarding, canteen, uniform, transport, health, lab, visitors, dashboards, people and elective registration.\n\nAuth: call 'Login' (or 'OTP Login') first - it saves the returned token into the {{token}} collection variable, used as a Bearer token on every other request via the collection-level Authorization. Update the id-like collection variables (student_id, exam_id, refund_id, ...) to point at real records in your database before running requests that use them. Binary endpoints (PDFs, photos) return the file, not the JSON envelope. Uploads accept multipart/form-data or JSON `attachments: [{name, data (base64), mimetype}]`.",
+    "description": "API collection for all Orbix custom Odoo 19 modules: bxi_api (auth, sessions, password, step-up), bxi_notification_gateway (OTP, OTP login, password reset), bxi_online_fee_payment and the full bxi_api_support surface - profile & master data, push devices and the notification inbox, fees, exemptions, refunds, scholarships, attendance (hr.attendance), homework, offline exams, digital assessments, library circulation, events, calendar, the teacher app (today, classes, leave, activity log), academic management, lesson plans, timetable admin, admissions and RTE, certificates, announcements & notices (filtered by audience), onboarding, canteen, uniform, transport, health, lab, visitors, dashboards, people and elective registration.\n\nAuth: call 'Login' (or 'OTP Login') first - it saves the returned token into the {{token}} collection variable, used as a Bearer token on every other request via the collection-level Authorization. Update the id-like collection variables (student_id, exam_id, refund_id, ...) to point at real records in your database before running requests that use them. Binary endpoints (PDFs, photos) return the file, not the JSON envelope. Uploads accept multipart/form-data or JSON `attachments: [{name, data (base64), mimetype}]`. Face login (bxi_face_auth): challenge, then face login - from the face alone (the answer's identity.role says student, teacher, parent or staff), with a remembered login_hint, or on a registered kiosk - plus identify-without-login, self/parent enrolment and consent, and the admin review/kiosk/settings API. Sessions opened by face must call Auth > Step-up before sensitive actions (403 step_up_required).",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "57337989",
     "_collection_link": "https://go.postman.co/collection/57337989-586e672d-27b2-43c5-a9e6-15346efaafbe?source=collection_link"
@@ -58,7 +58,7 @@
                 "login"
               ]
             },
-            "description": "Public. Returns a bearer token on success (401 invalid_credentials, 400 missing_credentials)."
+            "description": "Public. Returns a bearer token and the user profile on success, plus auth_method \"password\" (401 invalid_credentials, 400 missing_credentials). A password session counts as recently confirmed for 10 minutes, which is what Face Enroll needs."
           },
           "response": []
         },
@@ -121,7 +121,7 @@
                 "sessions"
               ]
             },
-            "description": "Active tokens of the caller (one per device), with is_current on the token making this call."
+            "description": "Active tokens of the caller (one per device), with is_current on the token making this call. Each session also shows auth_method: password, otp, face or face_kiosk."
           },
           "response": []
         },
@@ -155,7 +155,7 @@
                 }
               ]
             },
-            "description": "Log a device out. Only the caller's own tokens (404 otherwise).",
+            "description": "Log a device out. Only the caller's own tokens (404 otherwise). Face-login sessions must confirm first via Auth > Step-up (403 step_up_required).",
             "body": {
               "mode": "raw",
               "raw": "{}"
@@ -193,6 +193,36 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "Step-up (confirm password)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/step-up",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "step-up"
+              ]
+            },
+            "description": "Requires auth. Confirms the password on the current session so routes that answered 403 step_up_required (face-login sessions) accept it for the next 10 minutes. 401 invalid_credentials, 400 missing_credentials. With bxi_notification_gateway, {\"otp\": \"123456\"} works too (see Step-up OTP Request).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"password\": \"...\"\n}"
+            }
+          },
+          "response": []
         }
       ]
     },
@@ -227,7 +257,7 @@
                 }
               ]
             },
-            "description": "Requires auth. Caller must be staff, the parent record itself, or a parent linked to the student."
+            "description": "Requires auth. Caller must be staff, the parent record itself, or a parent linked to the student. Staff here means Identity Reviewers and system admins only; anyone else may act only on their own parent record or their linked children (403 forbidden)."
           },
           "response": []
         },
@@ -258,7 +288,7 @@
                 "submit"
               ]
             },
-            "description": "Requires auth."
+            "description": "Requires auth. Staff here means Identity Reviewers and system admins only; anyone else may act only on their own parent record or their linked children (403 forbidden). Face-login sessions must confirm first via Auth > Step-up (403 step_up_required)."
           },
           "response": []
         },
@@ -289,7 +319,7 @@
                 "submit"
               ]
             },
-            "description": "Requires auth."
+            "description": "Requires auth. Staff here means Identity Reviewers and system admins only; anyone else may act only on their own parent record or their linked children (403 forbidden). Face-login sessions must confirm first via Auth > Step-up (403 step_up_required)."
           },
           "response": []
         },
@@ -305,7 +335,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"student_id\": {{student_id}}\n}"
+              "raw": "{\n  \"gr_no\": \"STU-0001\",\n  \"birth_date\": \"2015-04-12\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/v1/identity/link-student",
@@ -319,7 +349,7 @@
                 "link-student"
               ]
             },
-            "description": "Requires auth. Caller must have an op.parent record (403 not_a_parent otherwise)."
+            "description": "Requires auth; caller must have an op.parent record (403 not_a_parent). The parent proves they know the child: gr_no (registration number) and birth_date exactly as the school recorded them (student_id optional). 403 verification_failed on any mismatch or if the student has no date of birth on record; 400 missing_fields / invalid_birth_date. Face-login sessions need step-up first (403 step_up_required)."
           },
           "response": []
         },
@@ -349,7 +379,7 @@
                 "unlink-student"
               ]
             },
-            "description": "Requires auth."
+            "description": "Requires auth. Face-login sessions must confirm first via Auth > Step-up (403 step_up_required)."
           },
           "response": []
         }
@@ -584,7 +614,7 @@
                 "otp-login"
               ]
             },
-            "description": "Second step after Request OTP. Same response as Login; saves {{token}}. 404 no_account, 409 ambiguous_phone (number shared by two accounts). Rate limited.",
+            "description": "Second step after Request OTP. Same response as Login; saves {{token}}. 404 no_account, 409 ambiguous_phone (number shared by two accounts). Rate limited. Response has auth_method \"otp\"; the session counts as recently confirmed for 10 minutes.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"phone\": \"9876543210\",\n  \"otp\": \"123456\",\n  \"device_name\": \"Postman\"\n}"
@@ -659,6 +689,67 @@
             },
             "auth": {
               "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Step-up OTP Request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/step-up/otp-request",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "step-up",
+                "otp-request"
+              ]
+            },
+            "description": "Requires auth. Texts an OTP (purpose step_up) to the logged-in account's own phone; returns {sent, phone_hint}. Then POST /api/v1/auth/step-up {\"otp\": \"...\"}. 400 no_phone if the account has no number.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Step-up with OTP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/step-up",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "step-up"
+              ]
+            },
+            "description": "Requires auth. Same as Auth > Step-up, with the OTP from Step-up OTP Request instead of a password.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"otp\": \"123456\"\n}"
             }
           },
           "response": []
@@ -13798,6 +13889,926 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "Face Login (bxi_face_auth)",
+      "description": "Face-recognition login (see bxi_face_auth/README.md).",
+      "item": [
+        {
+          "name": "Face Login Challenge",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const data = pm.response.json().data || {};",
+                  "  if (data.challenge_id !== undefined) pm.collectionVariables.set('challenge_id', data.challenge_id);",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/face-login/challenge",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "face-login",
+                "challenge"
+              ]
+            },
+            "description": "Public. Step 1: {challenge_id, actions (center first, then left/right in random order), expires_in: 60}. Single use.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Face Login (face only)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const data = pm.response.json().data || {};",
+                  "  if (data.token !== undefined) pm.collectionVariables.set('token', data.token);",
+                  "  if (data.selection_token !== undefined) pm.collectionVariables.set('selection_token', data.selection_token);",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/face-login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "face-login"
+              ]
+            },
+            "description": "Public. No login_hint: the server identifies the person from the face alone (school-wide search, stricter threshold + score gap) and answers with the token plus identity: {user_id, name, role (student/teacher/parent/staff), roles, student {id, name, gr_no, class, section} | teacher {id, name} | parent {id, name, children}}. 400 missing_login_hint when the school switched face-only login off (auto_identify_enabled).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"challenge_id\": \"{{challenge_id}}\",\n  \"device_name\": \"Postman\",\n  \"frames\": [\n    {\n      \"action\": \"center\",\n      \"image\": \"<base64 JPEG>\"\n    },\n    {\n      \"action\": \"right\",\n      \"image\": \"<base64 JPEG>\"\n    },\n    {\n      \"action\": \"left\",\n      \"image\": \"<base64 JPEG>\"\n    }\n  ]\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Face Login (with login hint)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const data = pm.response.json().data || {};",
+                  "  if (data.token !== undefined) pm.collectionVariables.set('token', data.token);",
+                  "  if (data.selection_token !== undefined) pm.collectionVariables.set('selection_token', data.selection_token);",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/face-login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "face-login"
+              ]
+            },
+            "description": "Public. One photo per challenge action (base64 JPEG/PNG; or multipart with file parts named center/left/right). login_hint (optional) = login, phone or student registration number the app remembered: only that account is compared and failures count towards its lockout. Success = same as /auth/login plus auth_method \"face\" and identity (role student/teacher/parent + record) (session needs step-up for sensitive routes). Or {selection_required, selection_token, accounts} when one face has several accounts. Errors: challenge_expired, invalid_frames, missing_login_hint, invalid_image, no_face, multiple_faces, poor_quality (400, with error.action), liveness_failed / face_not_recognised (401), ambiguous (409), locked (423), face_engine_unavailable (503).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"challenge_id\": \"{{challenge_id}}\",\n  \"login_hint\": \"{{login_hint}}\",\n  \"device_name\": \"Postman\",\n  \"frames\": [\n    {\n      \"action\": \"center\",\n      \"image\": \"<base64 JPEG>\"\n    },\n    {\n      \"action\": \"right\",\n      \"image\": \"<base64 JPEG>\"\n    },\n    {\n      \"action\": \"left\",\n      \"image\": \"<base64 JPEG>\"\n    }\n  ]\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Face Login (kiosk)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const data = pm.response.json().data || {};",
+                  "  if (data.token !== undefined) pm.collectionVariables.set('token', data.token);",
+                  "  if (data.selection_token !== undefined) pm.collectionVariables.set('selection_token', data.selection_token);",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Kiosk-Key",
+                "value": "{{kiosk_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/face-login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "face-login"
+              ]
+            },
+            "description": "Public, from a registered kiosk: X-Kiosk-Key header instead of login_hint; searches everyone enrolled at the school. auth_method \"face_kiosk\", short session. 401 invalid_kiosk, 403 face_login_disabled. Answer includes identity, limited to the roles allowed on the kiosk.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"challenge_id\": \"{{challenge_id}}\",\n  \"device_name\": \"Library tablet\",\n  \"frames\": [\n    {\n      \"action\": \"center\",\n      \"image\": \"<base64 JPEG>\"\n    },\n    {\n      \"action\": \"right\",\n      \"image\": \"<base64 JPEG>\"\n    },\n    {\n      \"action\": \"left\",\n      \"image\": \"<base64 JPEG>\"\n    }\n  ]\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Face Login: Choose Account",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const data = pm.response.json().data || {};",
+                  "  if (data.token !== undefined) pm.collectionVariables.set('token', data.token);",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/face-login/select",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "face-login",
+                "select"
+              ]
+            },
+            "description": "Public. Only after selection_required: pick one of the offered accounts (valid 120 s, single use). 400 selection_expired / invalid_account. Response includes identity for the chosen account.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"selection_token\": \"{{selection_token}}\",\n  \"user_id\": 0\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Face Identify (no login)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/face/identify",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "face",
+                "identify"
+              ]
+            },
+            "description": "Face Login Manager bearer token, or a kiosk's X-Kiosk-Key header. Same challenge + photos as face login; no session is created. {identified, reason (face_not_recognised/ambiguous when not identified), identity (role student/teacher/parent + record), accounts}. 401 unauthorized / invalid_kiosk, 403 forbidden / face_login_disabled, plus the photo and liveness errors.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"challenge_id\": \"{{challenge_id}}\",\n  \"frames\": [\n    {\n      \"action\": \"center\",\n      \"image\": \"<base64 JPEG>\"\n    },\n    {\n      \"action\": \"right\",\n      \"image\": \"<base64 JPEG>\"\n    },\n    {\n      \"action\": \"left\",\n      \"image\": \"<base64 JPEG>\"\n    }\n  ]\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Face Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/face/status",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "face",
+                "status"
+              ]
+            },
+            "description": "Requires auth. {face_login_enabled, self, children}. state: none / pending / active / rejected / expired; can_use_face_login, unavailable_reason, enrolled_at, expires_at, pending_since, reject_reason; children also student_id, name, has_account, consent."
+          },
+          "response": []
+        },
+        {
+          "name": "Face Enroll (self)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const data = pm.response.json().data || {};",
+                  "  if (data.enrolment_id !== undefined) pm.collectionVariables.set('face_enrolment_id', data.enrolment_id);",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/face/enroll",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "face",
+                "enroll"
+              ]
+            },
+            "description": "Requires auth and a password/OTP confirmation in the last 10 minutes (a fresh password/OTP login counts; else 403 step_up_required). 3-5 photos, at least one looking straight. Creates a pending enrolment for staff review. Students need a parent's consent first. Errors: consent_required, no_frontal_face, inconsistent_faces, role_not_allowed, disabled, photo errors (with error.frame).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"consent\": true,\n  \"frames\": [\n    {\n      \"image\": \"<base64 JPEG, straight>\"\n    },\n    {\n      \"image\": \"<base64 JPEG, slightly turned>\"\n    },\n    {\n      \"image\": \"<base64 JPEG, slightly turned other way>\"\n    }\n  ]\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Face Enroll (parent for child)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const data = pm.response.json().data || {};",
+                  "  if (data.enrolment_id !== undefined) pm.collectionVariables.set('face_enrolment_id', data.enrolment_id);",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/face/enroll",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "face",
+                "enroll"
+              ]
+            },
+            "description": "As Face Enroll, for a linked child; consent: true records the parent's consent. 403 if not your child, 400 student_has_no_account.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"student_id\": \"{{student_id}}\",\n  \"consent\": true,\n  \"frames\": [\n    {\n      \"image\": \"<base64 JPEG>\"\n    },\n    {\n      \"image\": \"<base64 JPEG>\"\n    },\n    {\n      \"image\": \"<base64 JPEG>\"\n    }\n  ]\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Face Consent (parent)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/face/consent",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "face",
+                "consent"
+              ]
+            },
+            "description": "Requires auth (face sessions: step-up). Parent grants or withdraws (granted: false) face login for a child; withdrawing deletes the child's face data immediately.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"student_id\": \"{{student_id}}\",\n  \"granted\": true\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Face Disable",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/face/disable",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "face",
+                "disable"
+              ]
+            },
+            "description": "Requires auth (face sessions: step-up). Turns face login off and deletes the face data; add {\"student_id\": ...} to do it for a linked child.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Admin: List Enrolments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/face/enrolments?state=pending&role=student&limit=50&offset=0",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "face",
+                "enrolments"
+              ],
+              "query": [
+                {
+                  "key": "state",
+                  "value": "pending"
+                },
+                {
+                  "key": "role",
+                  "value": "student"
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
+            },
+            "description": "Face Login Manager / admin. Filters: state, role (student/teacher/parent), search, user_id. Pending oldest first. Items include duplicates (other enrolled accounts this face matched)."
+          },
+          "response": []
+        },
+        {
+          "name": "Admin: Get Enrolment",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/face/enrolments/:enrolment_id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "face",
+                "enrolments",
+                ":enrolment_id"
+              ],
+              "variable": [
+                {
+                  "key": "enrolment_id",
+                  "value": "{{face_enrolment_id}}"
+                }
+              ]
+            },
+            "description": "Face Login Manager / admin. Adds per-photo quality (yaw, detection_score, face_pixels, sharpness)."
+          },
+          "response": []
+        },
+        {
+          "name": "Admin: Enrolment Photos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/face/enrolments/:enrolment_id/photos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "face",
+                "enrolments",
+                ":enrolment_id",
+                "photos"
+              ],
+              "variable": [
+                {
+                  "key": "enrolment_id",
+                  "value": "{{face_enrolment_id}}"
+                }
+              ]
+            },
+            "description": "Face Login Manager / admin. photos[].image (base64 JPEG) and record_photo (photo on the school record)."
+          },
+          "response": []
+        },
+        {
+          "name": "Admin: Approve Enrolment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/face/enrolments/:enrolment_id/approve",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "face",
+                "enrolments",
+                ":enrolment_id",
+                "approve"
+              ],
+              "variable": [
+                {
+                  "key": "enrolment_id",
+                  "value": "{{face_enrolment_id}}"
+                }
+              ]
+            },
+            "description": "Face Login Manager / admin. 409 duplicate_review_required when the face matches other accounts: resend with \"same_person_user_ids\": [...] (same human, several logins) or \"ignore_duplicates\": true. 400 consent_required for a student without consent, invalid_state if not pending.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Admin: Reject Enrolment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/face/enrolments/:enrolment_id/reject",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "face",
+                "enrolments",
+                ":enrolment_id",
+                "reject"
+              ],
+              "variable": [
+                {
+                  "key": "enrolment_id",
+                  "value": "{{face_enrolment_id}}"
+                }
+              ]
+            },
+            "description": "Face Login Manager / admin. Photos deleted; the reason is shown to the user.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Too dark\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Admin: Revoke Enrolment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/face/enrolments/:enrolment_id/revoke",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "face",
+                "enrolments",
+                ":enrolment_id",
+                "revoke"
+              ],
+              "variable": [
+                {
+                  "key": "enrolment_id",
+                  "value": "{{face_enrolment_id}}"
+                }
+              ]
+            },
+            "description": "Face Login Manager / admin. Ends an active or pending enrolment; face data deleted.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Left the school\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Admin: Enrol In Person",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const data = pm.response.json().data || {};",
+                  "  if (data.id !== undefined) pm.collectionVariables.set('face_enrolment_id', data.id);",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/face/enrol",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "face",
+                "enrol"
+              ]
+            },
+            "description": "Face Login Manager / admin. One of user_id / student_id / faculty_id / parent_id, 1-5 photos. Active immediately unless the face matches another account (then pending with duplicates). Students without consent on record need consent_reference (signed form). 400 no_account.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"student_id\": \"{{student_id}}\",\n  \"consent_reference\": \"Form 2026/118\",\n  \"frames\": [\n    {\n      \"image\": \"<base64 JPEG>\"\n    }\n  ]\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Admin: Login Attempts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/face/attempts?result=face_not_recognised&limit=50",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "face",
+                "attempts"
+              ],
+              "query": [
+                {
+                  "key": "result",
+                  "value": "face_not_recognised"
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
+              ]
+            },
+            "description": "Face Login Manager / admin. Filters: user_id, result, mode (phone/auto/kiosk/identify), kiosk_id, date_from, date_to. Includes best/second scores for tuning thresholds."
+          },
+          "response": []
+        },
+        {
+          "name": "Admin: List Kiosks",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/face/kiosks",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "face",
+                "kiosks"
+              ]
+            },
+            "description": "Face Login Manager / admin."
+          },
+          "response": []
+        },
+        {
+          "name": "Admin: Create Kiosk",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const data = pm.response.json().data || {};",
+                  "  if (data.id !== undefined) pm.collectionVariables.set('kiosk_id', data.id);",
+                  "  if (data.key !== undefined) pm.collectionVariables.set('kiosk_key', data.key);",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/face/kiosks",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "face",
+                "kiosks"
+              ]
+            },
+            "description": "Face Login Manager / admin. The response contains the kiosk key once (send it as X-Kiosk-Key).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Library tablet\",\n  \"roles\": [\n    \"student\",\n    \"teacher\"\n  ],\n  \"session_minutes\": 15\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Admin: Revoke Kiosk",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/face/kiosks/:kiosk_id/revoke",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "face",
+                "kiosks",
+                ":kiosk_id",
+                "revoke"
+              ],
+              "variable": [
+                {
+                  "key": "kiosk_id",
+                  "value": "{{kiosk_id}}"
+                }
+              ]
+            },
+            "description": "Face Login Manager / admin. Disables the key and ends sessions opened on the kiosk.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Admin: Face Settings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/face/settings",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "face",
+                "settings"
+              ]
+            },
+            "description": "Face Login Manager / admin. All settings plus engine status, encryption_key_source and enrolment counts."
+          },
+          "response": []
+        },
+        {
+          "name": "Admin: Update Face Settings",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/face/settings",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "face",
+                "settings"
+              ]
+            },
+            "description": "Face Login Manager / admin. Any subset; see bxi_face_auth/README.md for every setting and its range.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"enabled\": true,\n  \"allow_student\": true,\n  \"allow_teacher\": true,\n  \"allow_parent\": true,\n  \"match_threshold\": 0.45,\n  \"kiosk_match_threshold\": 0.55,\n  \"kiosk_match_gap\": 0.1,\n  \"max_failures\": 5,\n  \"lockout_minutes\": 15,\n  \"auto_identify_enabled\": true\n}"
+            }
+          },
+          "response": []
+        }
+      ]
     }
   ],
   "auth": {
@@ -14130,6 +15141,30 @@
     {
       "key": "fee_category_id",
       "value": "1"
+    },
+    {
+      "key": "login_hint",
+      "value": ""
+    },
+    {
+      "key": "challenge_id",
+      "value": ""
+    },
+    {
+      "key": "selection_token",
+      "value": ""
+    },
+    {
+      "key": "face_enrolment_id",
+      "value": ""
+    },
+    {
+      "key": "kiosk_id",
+      "value": ""
+    },
+    {
+      "key": "kiosk_key",
+      "value": ""
     }
   ]
 }
