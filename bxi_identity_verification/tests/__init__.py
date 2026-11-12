@@ -3,3 +3,4 @@
 # License OPL-1 (Odoo Proprietary License v1.0, see LICENSE file for full text).
 from . import test_identity
 from . import test_identity_mixin_model
+from . import test_id_documents

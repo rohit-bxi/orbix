@@ -14,7 +14,7 @@ from odoo.addons.bxi_api.controllers.auth import (
 )
 
 from .assessment import _exam_dict, _is_coordinator_or_manager, _submission_dict
-from .common import get_own_faculty, safe_create
+from .common import get_own_faculty, safe_create, teacher_permission
 
 QUESTION_FIELDS = ('question_type', 'question_text', 'marks', 'sample_answer_keywords', 'sequence')
 QUESTION_TYPES = ('mcq', 'short_answer', 'long_answer')
@@ -183,6 +183,7 @@ class BxiApiSupportAssessmentAuthoringController(http.Controller):
 
     @http.route('/api/v1/assessments/submissions/<int:submission_id>/re-evaluate', type='http', auth='public', methods=['POST'], csrf=False)
     @require_auth
+    @teacher_permission('evaluate_assignments')
     def re_evaluate(self, submission_id, **kwargs):
         """{marks_adjustment, reason}: adjust a graded submission's score
         with an audit note, via the module's re-evaluation wizard."""

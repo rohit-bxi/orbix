@@ -120,7 +120,7 @@ class TestBxiApiSupportOperations(ApiSupportHttpCase):
         family = self.url_open('/api/v1/students', headers=self._parent())
         self.assertEqual(family.status_code, 403)
         created = self.url_open('/api/v1/students', headers=self._office(), json={
-            'first_name': 'New', 'last_name': 'Joiner', 'gender': 'm', 'gr_no': 'OPS-NEW',
+            'first_name': 'New', 'last_name': 'Joiner', 'gender': 'm', 'gr_no': 'OPS-NEW', 'email': 'new.joiner@ops.test',
             'enrollment': {'course_id': self.course.id, 'batch_id': self.batch.id, 'roll_number': '42'}})
         self.assertEqual(created.status_code, 201, created.text)
         self.assertEqual(created.json()['data']['roll_number'], '42')

@@ -16,7 +16,7 @@ from .common import (
     resolve_records,
 )
 from .dashboard import _allowed
-from .people import MANAGER_GROUPS
+from .people_account import MANAGER_GROUPS
 
 VIEW_GROUPS = COORDINATOR_GROUPS + ('openeducat_core.group_op_back_office_admin',)
 # Adding and editing classes is the office's job, same as people records.

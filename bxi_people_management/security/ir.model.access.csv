@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_bxi_staff_responsibility_user,bxi.staff.responsibility.user,model_bxi_staff_responsibility,base.group_user,1,0,0,0
+access_bxi_staff_responsibility_admin,bxi.staff.responsibility.admin,model_bxi_staff_responsibility,openeducat_core.group_op_back_office_admin,1,1,1,1
+access_bxi_faculty_document_admin,bxi.faculty.document.admin,model_bxi_faculty_document,openeducat_core.group_op_back_office_admin,1,1,1,1
+access_bxi_faculty_document_faculty,bxi.faculty.document.faculty,model_bxi_faculty_document,openeducat_core.group_op_faculty,1,0,0,0

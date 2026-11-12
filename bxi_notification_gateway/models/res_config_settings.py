@@ -17,6 +17,11 @@ class ResConfigSettings(models.TransientModel):
         help='Flow/template ID of the SMS template used to deliver the OTP code. '
              'Must contain a ##OTP## (or equivalent) placeholder.',
         config_parameter='bxi_notification_gateway.msg91_otp_template_id')
+    msg91_credentials_template_id = fields.Char(
+        string='MSG91 Login Credentials Template ID',
+        help='Flow/template ID of the SMS that carries a new login: it must contain the '
+             'USERNAME and PASSWORD variables (the password is a one-time password).',
+        config_parameter='bxi_notification_gateway.msg91_credentials_template_id')
     fcm_project_id = fields.Char(
         string='Firebase Project ID', config_parameter='bxi_notification_gateway.fcm_project_id')
     fcm_service_account_json = fields.Char(

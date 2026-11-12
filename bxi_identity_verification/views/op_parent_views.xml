@@ -23,7 +23,7 @@
                                     class="btn-secondary" invisible="aadhar_verification_status != 'pending'"/>
                         </div>
                     </group>
-                    <group string="Face Photo">
+                    <group string="Face Photo" name="face_photo">
                         <field name="face_verification_status" widget="badge"
                                decoration-success="face_verification_status == 'verified'"
                                decoration-warning="face_verification_status == 'pending'"

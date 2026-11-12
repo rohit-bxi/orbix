@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_op_faculty_form_people_management" model="ir.ui.view">
+        <field name="name">op.faculty.form.people.management</field>
+        <field name="model">op.faculty</field>
+        <field name="inherit_id" ref="openeducat_core.view_op_faculty_form"/>
+        <field name="arch" type="xml">
+            <field name="emergency_contact" position="after">
+                <field name="emergency_contact_relation" invisible="not emergency_contact"/>
+            </field>
+            <field name="joining_date" position="after">
+                <field name="designation_id" options="{'no_create': True}"/>
+                <field name="employment_status"/>
+            </field>
+            <field name="previous_school" position="after">
+                <field name="certifications"/>
+            </field>
+            <xpath expr="//page[@name='academic_details']" position="after">
+                <page name="assignments" string="Assignments">
+                    <group>
+                        <group string="Classes &amp; Sections">
+                            <field name="assigned_course_ids" widget="many2many_tags" options="{'no_create': True}"/>
+                            <field name="assigned_batch_ids" widget="many2many_tags" options="{'no_create': True}"/>
+                        </group>
+                        <group string="Duties">
+                            <field name="responsibility_ids" widget="many2many_tags"/>
+                            <field name="timetable_auto_assign" widget="boolean_toggle"/>
+                        </group>
+                    </group>
+                    <group string="Lesson &amp; Evaluation Permissions">
+                        <group>
+                            <field name="can_create_lesson_plans" widget="boolean_toggle"/>
+                            <field name="can_assign_homework" widget="boolean_toggle"/>
+                            <field name="can_evaluate_assignments" widget="boolean_toggle"/>
+                        </group>
+                        <group>
+                            <field name="can_enter_exam_marks" widget="boolean_toggle"/>
+                            <field name="can_access_reports" widget="boolean_toggle"/>
+                        </group>
+                    </group>
+                    <group string="Notes">
+                        <field name="staff_notes" nolabel="1" colspan="2"/>
+                    </group>
+                </page>
+                <page name="teacher_documents" string="Documents">
+                    <field name="document_ids">
+                        <list editable="bottom">
+                            <field name="doc_type"/>
+                            <field name="name"/>
+                            <field name="file" filename="filename" widget="binary"/>
+                            <field name="filename" column_invisible="1"/>
+                            <field name="create_date" string="Uploaded On" readonly="1"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_op_faculty_form_workload_remaining" model="ir.ui.view">
+        <field name="name">op.faculty.form.workload.remaining</field>
+        <field name="model">op.faculty</field>
+        <field name="inherit_id" ref="bxi_class_timetable_inhencement.view_op_faculty_form_workload_inherit"/>
+        <field name="arch" type="xml">
+            <field name="weekly_period_count" position="after">
+                <field name="remaining_weekly_periods"/>
+            </field>
+        </field>
+    </record>
+</odoo>

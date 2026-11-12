@@ -2,7 +2,7 @@
 
 {
     'name': 'Orbix Identity Verification',
-    'version': '19.0.1.1.0',
+    'version': '19.0.1.2.0',
     'category': 'Education',
     'summary': 'Aadhaar and face-photo identity verification for students and parents, via the Orbix API',
     'description': """
@@ -37,6 +37,7 @@
         'security/identity_groups.xml',
         'views/op_student_views.xml',
         'views/op_parent_views.xml',
+        'views/id_document_views.xml',
     ],
     'installable': True,
     'application': False,

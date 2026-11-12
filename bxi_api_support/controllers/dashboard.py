@@ -12,6 +12,7 @@ from odoo.http import request
 
 from odoo.addons.bxi_api.controllers.auth import api_error, api_response, require_auth
 
+from .common import teacher_permission
 from ..models.res_users import COORDINATOR_GROUPS, PERMISSION_GROUPS
 
 # name -> (dashboard model, groups allowed besides base.group_system)
@@ -40,6 +41,7 @@ class BxiApiSupportDashboardController(http.Controller):
 
     @http.route('/api/v1/dashboards', type='http', auth='public', methods=['GET'], csrf=False)
     @require_auth
+    @teacher_permission('reports')
     def list_dashboards(self, **kwargs):
         """The dashboards this login may open (installed modules only)."""
         user = request.env.user
@@ -51,6 +53,7 @@ class BxiApiSupportDashboardController(http.Controller):
 
     @http.route('/api/v1/dashboards/attendance', type='http', auth='public', methods=['GET'], csrf=False)
     @require_auth
+    @teacher_permission('reports')
     def attendance_dashboard(self, date=None, **kwargs):
         """Today's (or ?date=) periods, how many are fully marked, and the
         status split per class."""
@@ -83,6 +86,7 @@ class BxiApiSupportDashboardController(http.Controller):
 
     @http.route('/api/v1/dashboards/<string:name>', type='http', auth='public', methods=['GET'], csrf=False)
     @require_auth
+    @teacher_permission('reports')
     def dashboard(self, name, **kwargs):
         if name not in DASHBOARDS:
             return api_error(f"Unknown dashboard '{name}'.", status=404, code='not_found')

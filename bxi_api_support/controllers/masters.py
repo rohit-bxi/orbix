@@ -73,6 +73,10 @@ MASTERS = {
                          'staff': True},
     'payment-journals': {'model': 'account.journal', 'fields': ['name', 'code', 'type'],
                          'domain': [('type', 'in', ('bank', 'cash'))], 'order': 'name', 'staff': True},
+    # Teacher create/update dropdowns.
+    'designations': {'model': 'hr.job', 'fields': ['name', 'department_id'], 'order': 'name', 'staff': True},
+    'staff-responsibilities': {'model': 'bxi.staff.responsibility', 'fields': ['name'], 'order': 'name',
+                               'staff': True},
     'countries': {'model': 'res.country', 'fields': ['name', 'code'], 'order': 'name'},
     'country-states': {'model': 'res.country.state', 'fields': ['name', 'code', 'country_id'],
                        'filters': [('country_id', 'country_id')], 'order': 'name'},

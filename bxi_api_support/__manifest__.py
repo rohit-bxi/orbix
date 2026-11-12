@@ -2,7 +2,7 @@
 
 {
     'name': 'Orbix API Support',
-    'version': '19.0.5.1.0',
+    'version': '19.0.6.0.0',
     'category': 'Education',
     'summary': 'REST API for the Orbix mobile app across every Orbix school process',
     'description': """
@@ -34,6 +34,11 @@
         Admin dashboard: classes and sections, fees across students
         (collection by class, defaulters, fee categories) and events -
         lists with summaries, plus create/edit.
+        User management: teacher/student/parent create and update with
+        profile, assignments, workload, Account & Security (logins,
+        one-time passwords, sending credentials, face recognition, ID
+        verification), teacher documents and per-teacher lesson &
+        evaluation permissions.
     """,
     'author': 'BXI Technology Pvt. Ltd.',
     'maintainer': 'BXI Technology Pvt. Ltd.',
@@ -72,6 +77,9 @@
         'openeducat_assignment',
         'bxi_school_event_management',
         'visitor_management',
+        # Teacher/student/parent user management
+        'bxi_people_management',
+        'bxi_identity_verification',
     ],
     'data': [
         'data/ir_cron_data.xml',

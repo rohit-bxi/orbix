@@ -119,6 +119,12 @@ class BxiApiAuthController(http.Controller):
         new_password = payload.get('new_password') or ''
         if not old_password or not new_password:
             return api_error('old_password and new_password are required.', status=400, code='missing_fields')
+        problem = request.env['res.users']._bxi_password_problem(new_password)
+        if problem:
+            return api_error(problem, status=400, code='invalid_password')
+        if new_password.strip() == old_password.strip():
+            return api_error('Choose a password different from the current one.', status=400,
+                             code='same_password')
         try:
             request.env['res.users'].change_password(old_password, new_password)
         except AccessDenied:

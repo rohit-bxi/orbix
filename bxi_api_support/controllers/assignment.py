@@ -13,6 +13,7 @@ from odoo.addons.bxi_api.controllers.auth import (
 )
 
 from .common import (
+    teacher_permission,
     date_str, get_viewable_student, parse_ids, parse_pagination, ref, running_enrollment, safe_create,
     school_context,
 )
@@ -224,6 +225,7 @@ class BxiApiSupportAssignmentController(http.Controller):
 
     @http.route('/api/v1/assignments', type='http', auth='public', methods=['POST'], csrf=False)
     @require_auth
+    @teacher_permission('homework')
     def create_assignment(self, **kwargs):
         """Teacher creates homework for one of their sections. It's allocated
         to every student currently in that section unless `student_ids`
@@ -282,6 +284,7 @@ class BxiApiSupportAssignmentController(http.Controller):
     @http.route('/api/v1/assignments/<int:assignment_id>/<any("publish", "finish", "cancel", "reset-to-draft"):action>',
                 type='http', auth='public', methods=['POST'], csrf=False)
     @require_auth
+    @teacher_permission('homework')
     def transition(self, assignment_id, action, **kwargs):
         assignment = request.env['op.assignment'].sudo().browse(assignment_id)
         if not assignment.exists():
@@ -320,6 +323,7 @@ class BxiApiSupportAssignmentController(http.Controller):
     @http.route('/api/v1/assignments/submissions/<int:submission_id>/<any("accept", "reject", "request-changes"):action>',
                 type='http', auth='public', methods=['POST'], csrf=False)
     @require_auth
+    @teacher_permission('evaluate_assignments')
     def review_submission(self, submission_id, action, **kwargs):
         submission = request.env['op.assignment.sub.line'].sudo().browse(submission_id)
         if not submission.exists():

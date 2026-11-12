@@ -23,6 +23,8 @@ bxi_parent_data_api convention - only correct for that same class of
 low-sensitivity data, not for anything financial or private.
 """
 
+from functools import wraps
+
 import psycopg2
 
 from odoo import fields
@@ -361,3 +363,26 @@ def atomic(func):
         return None, api_error(
             'This conflicts with an existing record: %s' % (exc.diag.message_primary or exc),
             status=400, code='conflict')
+
+
+TEACHER_PERMISSION_MESSAGES = {
+    'lesson_plans': 'You are not allowed to create lesson plans.',
+    'homework': 'You are not allowed to assign homework.',
+    'evaluate_assignments': 'You are not allowed to evaluate assignments.',
+    'exam_marks': 'You are not allowed to enter exam marks.',
+    'reports': 'You are not allowed to access reports.',
+}
+
+
+def teacher_permission(key):
+    """Use below @require_auth: refuse (403 teacher_permission_denied) a
+    teacher whose record has the matching lesson & evaluation switch off.
+    Other logins pass through to the route's own checks."""
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            if not request.env.user._bxi_teacher_permissions()[key]:
+                return api_error(TEACHER_PERMISSION_MESSAGES[key], status=403, code='teacher_permission_denied')
+            return func(*args, **kwargs)
+        return wrapper
+    return decorator

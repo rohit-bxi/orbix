@@ -17,6 +17,10 @@
                         <setting id="msg91_otp_template_id" string="OTP Template ID">
                             <field name="msg91_otp_template_id"/>
                         </setting>
+                        <setting id="msg91_credentials_template_id" string="Login Credentials Template ID"
+                                 help="Flow/template used when the school office sends a new login: variables USERNAME and PASSWORD.">
+                            <field name="msg91_credentials_template_id"/>
+                        </setting>
                     </block>
                     <block title="Firebase Push (FCM)" help="Push notifications to the Orbix mobile app.">
                         <setting id="fcm_project_id" string="Project ID">

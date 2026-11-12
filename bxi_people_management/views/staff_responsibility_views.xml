@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_bxi_staff_responsibility_list" model="ir.ui.view">
+        <field name="name">bxi.staff.responsibility.list</field>
+        <field name="model">bxi.staff.responsibility</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="name"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_bxi_staff_responsibility" model="ir.actions.act_window">
+        <field name="name">Staff Responsibilities</field>
+        <field name="res_model">bxi.staff.responsibility</field>
+        <field name="view_mode">list</field>
+        <field name="context">{'active_test': False}</field>
+    </record>
+
+    <menuitem id="menu_bxi_staff_responsibility"
+              name="Staff Responsibilities"
+              parent="openeducat_core.menu_op_school_config_general"
+              sequence="50"
+              action="action_bxi_staff_responsibility"
+              groups="openeducat_core.group_op_back_office_admin"/>
+</odoo>

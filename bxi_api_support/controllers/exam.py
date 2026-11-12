@@ -11,7 +11,9 @@ from odoo.addons.bxi_api.controllers.auth import (
     api_error, api_file_response, api_response, call_action, parse_int, require_auth,
 )
 
-from .common import date_str, get_viewable_student, parse_pagination, ref, running_enrollment, school_context
+from .common import (
+    date_str, get_viewable_student, parse_pagination, ref, running_enrollment, school_context, teacher_permission,
+)
 
 EXAM_STAFF_GROUPS = (
     'openeducat_exam.group_op_exam_user',
@@ -225,6 +227,7 @@ class BxiApiSupportExamController(http.Controller):
 
     @http.route('/api/v1/exams/<int:exam_id>/marks', type='http', auth='public', methods=['POST'], csrf=False)
     @require_auth
+    @teacher_permission('exam_marks')
     def enter_marks(self, exam_id, **kwargs):
         """Bulk marks entry: {"marks": [{"student_id", "marks", "status"?,
         "note"?}]}. All rows are validated before anything is saved."""

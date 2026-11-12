@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_op_student_form_id_document" model="ir.ui.view">
+        <field name="name">op.student.form.identity.id.document</field>
+        <field name="model">op.student</field>
+        <field name="inherit_id" ref="bxi_identity_verification.view_op_student_form_identity"/>
+        <field name="arch" type="xml">
+            <xpath expr="//group[@name='face_photo']" position="after">
+                <group string="ID Document">
+                            <field name="id_document_type"/>
+                            <field name="id_document_ids" widget="many2many_binary"/>
+                            <field name="id_document_status" widget="badge"
+                                   decoration-success="id_document_status == 'verified'"
+                                   decoration-warning="id_document_status == 'pending'"
+                                   decoration-danger="id_document_status == 'rejected'"/>
+                            <field name="id_document_submitted_at" readonly="1"/>
+                            <field name="id_document_verified_at" readonly="1"/>
+                            <field name="id_document_notes"/>
+                            <div class="mt-2" groups="bxi_identity_verification.group_identity_reviewer">
+                                <button name="action_verify_id_document" type="object" string="Verify ID Document"
+                                        class="btn-primary" invisible="id_document_status != 'pending'"/>
+                                <button name="action_reject_id_document" type="object" string="Reject ID Document"
+                                        class="btn-secondary" invisible="id_document_status != 'pending'"/>
+                            </div>
+                        </group>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_op_parent_form_id_document" model="ir.ui.view">
+        <field name="name">op.parent.form.identity.id.document</field>
+        <field name="model">op.parent</field>
+        <field name="inherit_id" ref="bxi_identity_verification.view_op_parent_form_identity"/>
+        <field name="arch" type="xml">
+            <xpath expr="//group[@name='face_photo']" position="after">
+                <group string="ID Document">
+                            <field name="id_document_type"/>
+                            <field name="id_document_ids" widget="many2many_binary"/>
+                            <field name="id_document_status" widget="badge"
+                                   decoration-success="id_document_status == 'verified'"
+                                   decoration-warning="id_document_status == 'pending'"
+                                   decoration-danger="id_document_status == 'rejected'"/>
+                            <field name="id_document_submitted_at" readonly="1"/>
+                            <field name="id_document_verified_at" readonly="1"/>
+                            <field name="id_document_notes"/>
+                            <div class="mt-2" groups="bxi_identity_verification.group_identity_reviewer">
+                                <button name="action_verify_id_document" type="object" string="Verify ID Document"
+                                        class="btn-primary" invisible="id_document_status != 'pending'"/>
+                                <button name="action_reject_id_document" type="object" string="Reject ID Document"
+                                        class="btn-secondary" invisible="id_document_status != 'pending'"/>
+                            </div>
+                        </group>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_op_faculty_form_identity" model="ir.ui.view">
+        <field name="name">op.faculty.form.identity.verification</field>
+        <field name="model">op.faculty</field>
+        <field name="inherit_id" ref="openeducat_core.view_op_faculty_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='academic_details']" position="after">
+                <page string="Identity Verification" name="identity_verification">
+                    <group>
+                        <group string="Face Photo">
+                            <field name="face_verification_status" widget="badge"
+                                   decoration-success="face_verification_status == 'verified'"
+                                   decoration-warning="face_verification_status == 'pending'"
+                                   decoration-danger="face_verification_status == 'rejected'"/>
+                            <field name="face_submitted_at" readonly="1"/>
+                            <field name="face_verified_at" readonly="1"/>
+                            <div class="mt-2" groups="bxi_identity_verification.group_identity_reviewer">
+                                <button name="action_verify_face" type="object" string="Verify Face Photo"
+                                        class="btn-primary" invisible="face_verification_status != 'pending'"/>
+                                <button name="action_reject_face" type="object" string="Reject Face Photo"
+                                        class="btn-secondary" invisible="face_verification_status != 'pending'"/>
+                            </div>
+                        </group>
+                        <group string="ID Document">
+                            <field name="id_document_type"/>
+                            <field name="id_document_ids" widget="many2many_binary"/>
+                            <field name="id_document_status" widget="badge"
+                                   decoration-success="id_document_status == 'verified'"
+                                   decoration-warning="id_document_status == 'pending'"
+                                   decoration-danger="id_document_status == 'rejected'"/>
+                            <field name="id_document_submitted_at" readonly="1"/>
+                            <field name="id_document_verified_at" readonly="1"/>
+                            <field name="id_document_notes"/>
+                            <div class="mt-2" groups="bxi_identity_verification.group_identity_reviewer">
+                                <button name="action_verify_id_document" type="object" string="Verify ID Document"
+                                        class="btn-primary" invisible="id_document_status != 'pending'"/>
+                                <button name="action_reject_id_document" type="object" string="Reject ID Document"
+                                        class="btn-secondary" invisible="id_document_status != 'pending'"/>
+                            </div>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>
