@@ -6,7 +6,7 @@ from odoo.http import request
 
 from odoo.addons.bxi_api.controllers.auth import api_error, api_response, call_action, parse_int, require_auth
 
-from .common import get_own_faculty, get_own_student_ids, parse_pagination, safe_create
+from .common import get_own_faculty, get_own_student_ids, parse_pagination, safe_create, teacher_permission
 
 COORDINATOR_GROUP = 'bxi_academic_management.group_academic_coordinator'
 MANAGER_GROUP = 'bxi_academic_management.group_academic_manager'
@@ -213,6 +213,7 @@ class BxiApiSupportAssessmentController(http.Controller):
 
     @http.route('/api/v1/assessments/sessions/<int:session_id>/autograde-all', type='http', auth='public', methods=['POST'], csrf=False)
     @require_auth
+    @teacher_permission('evaluate_assignments')
     def autograde_session(self, session_id, **kwargs):
         session = request.env['bxi.assessment.session'].sudo().browse(session_id)
         if not session.exists():
@@ -310,6 +311,7 @@ class BxiApiSupportAssessmentController(http.Controller):
 
     @http.route('/api/v1/assessments/submissions/<int:submission_id>/auto-grade', type='http', auth='public', methods=['POST'], csrf=False)
     @require_auth
+    @teacher_permission('evaluate_assignments')
     def auto_grade(self, submission_id, **kwargs):
         submission = request.env['bxi.assessment.submission'].sudo().browse(submission_id)
         if not submission.exists():

@@ -186,7 +186,7 @@
                 "change"
               ]
             },
-            "description": "Revokes every other session of the account; the current token keeps working.",
+            "description": "Revokes every other session of the account; the current token keeps working. After signing in with a one-time password set by the school office (user.must_change_password true), only this route, /auth/me and /auth/logout work until the password is changed (403 password_change_required).",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"old_password\": \"current-password\",\n  \"new_password\": \"new-password\"\n}"
@@ -12460,10 +12460,10 @@
                 "students"
               ]
             },
-            "description": "",
+            "description": "Office creates and enrols a student. Required: first_name, last_name, gender, email, enrollment.course_id, enrollment.batch_id, enrollment.roll_number (the section must belong to the class). Account & Security blocks (all optional): \"account\" (create_login, username, password, active, send_credentials, channel email|sms), \"face\" (enabled, image|images, consent_reference for students), \"id_verification\" (document|documents image/PDF, doc_type). Any password the office sets is a one-time password the person must change at first sign-in. Everything is saved together or not at all; when the server generated the password and it was not delivered, the response carries it once in credentials.one_time_password.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"first_name\": \"Aarav\",\n  \"last_name\": \"Patel\",\n  \"gender\": \"m\",\n  \"birth_date\": \"2016-04-12\",\n  \"gr_no\": \"GR-1001\",\n  \"enrollment\": {\n    \"course_id\": 1,\n    \"batch_id\": 1,\n    \"roll_number\": \"12\"\n  }\n}"
+              "raw": "{\n  \"first_name\": \"Aarav\",\n  \"last_name\": \"Patel\",\n  \"gender\": \"m\",\n  \"birth_date\": \"2016-04-12\",\n  \"gr_no\": \"GR-1001\",\n  \"email\": \"aarav.patel@school.test\",\n  \"blood_group\": \"O+\",\n  \"image\": \"<base64 photo>\",\n  \"enrollment\": {\n    \"course_id\": 1,\n    \"batch_id\": 1,\n    \"roll_number\": \"12\",\n    \"academic_year_id\": 1\n  },\n  \"account\": {\n    \"create_login\": true,\n    \"username\": \"aarav.patel\",\n    \"password\": \"Welcome@2026\",\n    \"active\": true,\n    \"send_credentials\": true,\n    \"channel\": \"sms\"\n  },\n  \"face\": {\n    \"enabled\": true,\n    \"image\": \"<base64 photo>\",\n    \"consent_reference\": \"Form 2026/118 (students only)\"\n  },\n  \"id_verification\": {\n    \"document\": {\n      \"data\": \"<base64 image or PDF>\",\n      \"filename\": \"aadhaar.pdf\"\n    },\n    \"doc_type\": \"aadhaar\"\n  }\n}"
             }
           },
           "response": []
@@ -12497,10 +12497,10 @@
                 }
               ]
             },
-            "description": "",
+            "description": "Any create field, plus \"transfer\" {batch_id, course_id?, roll_number} to move to another section (the old enrolment is finished, history kept) and \"status\" running|finished for the current enrolment. Account & Security blocks (all optional): \"account\" (create_login, username, password, active, send_credentials, channel email|sms), \"face\" (enabled, image|images, consent_reference for students), \"id_verification\" (document|documents image/PDF, doc_type). Any password the office sets is a one-time password the person must change at first sign-in. Everything is saved together or not at all; when the server generated the password and it was not delivered, the response carries it once in credentials.one_time_password.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"blood_group\": \"O+\"\n}"
+              "raw": "{\n  \"blood_group\": \"B+\",\n  \"email\": \"aarav.p@school.test\",\n  \"transfer\": {\n    \"batch_id\": 2,\n    \"roll_number\": \"7\"\n  },\n  \"status\": \"running\",\n  \"account\": {\n    \"active\": true\n  }\n}"
             }
           },
           "response": []
@@ -12511,7 +12511,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/api/v1/teachers?q=",
+              "raw": "{{base_url}}/api/v1/teachers?q=&status=",
               "host": [
                 "{{base_url}}"
               ],
@@ -12523,6 +12523,10 @@
               "query": [
                 {
                   "key": "q",
+                  "value": ""
+                },
+                {
+                  "key": "status",
                   "value": ""
                 }
               ]
@@ -12579,10 +12583,10 @@
                 "teachers"
               ]
             },
-            "description": "",
+            "description": "Required: first_name, last_name, gender, birth_date. status: active|on_leave|resigned (employment). permissions: lesson_plans, homework, evaluate_assignments, exam_marks, reports (default all on). documents: teacher files (aadhaar|cv|certificate|other). Account & Security blocks (all optional): \"account\" (create_login, username, password, active, send_credentials, channel email|sms), \"face\" (enabled, image|images, consent_reference for students), \"id_verification\" (document|documents image/PDF, doc_type). Any password the office sets is a one-time password the person must change at first sign-in. Everything is saved together or not at all; when the server generated the password and it was not delivered, the response carries it once in credentials.one_time_password.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"first_name\": \"Meera\",\n  \"last_name\": \"Iyer\",\n  \"gender\": \"female\",\n  \"birth_date\": \"1990-01-01\",\n  \"subject_ids\": [\n    1\n  ]\n}"
+              "raw": "{\n  \"first_name\": \"Rahul\",\n  \"last_name\": \"Tiwari\",\n  \"gender\": \"male\",\n  \"birth_date\": \"1990-04-12\",\n  \"email\": \"rahul.tiwari@school.test\",\n  \"phone\": \"9876543210\",\n  \"image\": \"<base64 photo>\",\n  \"address\": {\n    \"street\": \"12 MG Road\",\n    \"city\": \"Pune\",\n    \"zip\": \"411001\",\n    \"state_id\": 1,\n    \"country_id\": 104\n  },\n  \"emergency_contact\": {\n    \"name\": \"Priya Tiwari\",\n    \"phone\": \"9876500000\",\n    \"relation\": \"Spouse\"\n  },\n  \"joining_date\": \"2026-06-01\",\n  \"highest_qualification\": \"M.Sc Physics\",\n  \"specialization_subject_id\": 1,\n  \"subject_ids\": [\n    1,\n    2\n  ],\n  \"years_of_experience\": \"8\",\n  \"previous_school\": \"Green Valley School\",\n  \"certifications\": \"B.Ed, CTET\",\n  \"assignments\": {\n    \"course_ids\": [\n      1\n    ],\n    \"batch_ids\": [\n      1,\n      2\n    ]\n  },\n  \"workload\": {\n    \"max_weekly_periods\": 28,\n    \"timetable_auto_assign\": false\n  },\n  \"designation_id\": 1,\n  \"responsibility_ids\": [\n    1\n  ],\n  \"status\": \"active\",\n  \"notes\": \"Prefers morning periods\",\n  \"permissions\": {\n    \"lesson_plans\": true,\n    \"homework\": true,\n    \"evaluate_assignments\": true,\n    \"exam_marks\": true,\n    \"reports\": false\n  },\n  \"account\": {\n    \"create_login\": true,\n    \"username\": \"rahul.tiwari\",\n    \"password\": \"Welcome@2026\",\n    \"active\": true,\n    \"send_credentials\": true,\n    \"channel\": \"email\"\n  },\n  \"face\": {\n    \"enabled\": true,\n    \"image\": \"<base64 photo>\"\n  },\n  \"id_verification\": {\n    \"document\": {\n      \"data\": \"<base64 image or PDF>\",\n      \"filename\": \"aadhaar.pdf\"\n    },\n    \"doc_type\": \"aadhaar\"\n  },\n  \"documents\": [\n    {\n      \"doc_type\": \"aadhaar\",\n      \"file\": \"<base64>\",\n      \"filename\": \"aadhaar.jpg\"\n    },\n    {\n      \"doc_type\": \"cv\",\n      \"file\": \"<base64>\",\n      \"filename\": \"cv.pdf\"\n    },\n    {\n      \"doc_type\": \"certificate\",\n      \"name\": \"B.Ed\",\n      \"file\": \"<base64>\",\n      \"filename\": \"bed.pdf\"\n    }\n  ]\n}"
             }
           },
           "response": []
@@ -12616,10 +12620,10 @@
                 }
               ]
             },
-            "description": "",
+            "description": "Any create field; only the keys sent change. Account & Security blocks (all optional): \"account\" (create_login, username, password, active, send_credentials, channel email|sms), \"face\" (enabled, image|images, consent_reference for students), \"id_verification\" (document|documents image/PDF, doc_type). Any password the office sets is a one-time password the person must change at first sign-in. Everything is saved together or not at all; when the server generated the password and it was not delivered, the response carries it once in credentials.one_time_password.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"phone\": \"9876500000\"\n}"
+              "raw": "{\n  \"designation_id\": 2,\n  \"responsibility_ids\": [\n    1,\n    2\n  ],\n  \"status\": \"on_leave\",\n  \"assignments\": {\n    \"batch_ids\": [\n      3\n    ]\n  },\n  \"workload\": {\n    \"max_weekly_periods\": 24\n  },\n  \"permissions\": {\n    \"exam_marks\": false\n  },\n  \"account\": {\n    \"active\": true\n  }\n}"
             }
           },
           "response": []
@@ -12671,10 +12675,10 @@
                 "parents"
               ]
             },
-            "description": "",
+            "description": "Required: name, mobile, relationship_id, student_ids. status: active|inactive. Department and classes in the response come from the children. Account & Security blocks (all optional): \"account\" (create_login, username, password, active, send_credentials, channel email|sms), \"face\" (enabled, image|images, consent_reference for students), \"id_verification\" (document|documents image/PDF, doc_type). Any password the office sets is a one-time password the person must change at first sign-in. Everything is saved together or not at all; when the server generated the password and it was not delivered, the response carries it once in credentials.one_time_password.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Rohan Patel\",\n  \"mobile\": \"9876543210\",\n  \"email\": \"rohan@example.com\",\n  \"relationship_id\": 1,\n  \"student_ids\": [\n    1\n  ],\n  \"create_login\": true\n}"
+              "raw": "{\n  \"name\": \"Neha Patel\",\n  \"mobile\": \"9800011122\",\n  \"email\": \"neha.patel@school.test\",\n  \"relationship_id\": 1,\n  \"student_ids\": [\n    1\n  ],\n  \"image\": \"<base64 photo>\",\n  \"status\": \"active\",\n  \"account\": {\n    \"create_login\": true,\n    \"username\": \"neha.patel\",\n    \"password\": \"Welcome@2026\",\n    \"active\": true,\n    \"send_credentials\": true,\n    \"channel\": \"email\"\n  },\n  \"face\": {\n    \"enabled\": false\n  },\n  \"id_verification\": {\n    \"document\": {\n      \"data\": \"<base64 image or PDF>\",\n      \"filename\": \"aadhaar.pdf\"\n    },\n    \"doc_type\": \"aadhaar\"\n  }\n}"
             }
           },
           "response": []
@@ -12708,11 +12712,647 @@
                 }
               ]
             },
-            "description": "",
+            "description": "Any create field. Account & Security blocks (all optional): \"account\" (create_login, username, password, active, send_credentials, channel email|sms), \"face\" (enabled, image|images, consent_reference for students), \"id_verification\" (document|documents image/PDF, doc_type). Any password the office sets is a one-time password the person must change at first sign-in. Everything is saved together or not at all; when the server generated the password and it was not delivered, the response carries it once in credentials.one_time_password.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"mobile\": \"9876500001\"\n}"
+              "raw": "{\n  \"mobile\": \"9800011199\",\n  \"status\": \"active\",\n  \"image\": \"<base64 photo>\",\n  \"account\": {\n    \"active\": false\n  }\n}"
             }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Parent",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/parents/:parent_id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "parents",
+                ":parent_id"
+              ],
+              "variable": [
+                {
+                  "key": "parent_id",
+                  "value": "{{parent_id}}"
+                }
+              ]
+            },
+            "description": "Parent with children, classes, account, face and ID verification."
+          },
+          "response": []
+        },
+        {
+          "name": "Teacher Photo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/teachers/:teacher_id/photo",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "teachers",
+                ":teacher_id",
+                "photo"
+              ],
+              "variable": [
+                {
+                  "key": "teacher_id",
+                  "value": "{{teacher_id}}"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Parent Photo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/parents/:parent_id/photo",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "parents",
+                ":parent_id",
+                "photo"
+              ],
+              "variable": [
+                {
+                  "key": "parent_id",
+                  "value": "{{parent_id}}"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "User Management - Account & Security (bxi_api_support)",
+      "description": ":kind is teachers, students or parents; :person_id the teacher/student/parent record id. Office (back-office admin / academic manager) only, except ID review (identity reviewers too) and a teacher reading their own documents.",
+      "item": [
+        {
+          "name": "Get Account",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/:kind/:person_id/account",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                ":kind",
+                ":person_id",
+                "account"
+              ],
+              "variable": [
+                {
+                  "key": "kind",
+                  "value": "{{kind}}"
+                },
+                {
+                  "key": "person_id",
+                  "value": "{{person_id}}"
+                }
+              ]
+            },
+            "description": "Login, face-recognition and ID-verification state."
+          },
+          "response": []
+        },
+        {
+          "name": "Create / Update Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/:kind/:person_id/account",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                ":kind",
+                ":person_id",
+                "account"
+              ],
+              "variable": [
+                {
+                  "key": "kind",
+                  "value": "{{kind}}"
+                },
+                {
+                  "key": "person_id",
+                  "value": "{{person_id}}"
+                }
+              ]
+            },
+            "description": "The \"account\" block on its own: create the login, rename it, set a one-time password, enable/disable sign-in, send credentials.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"create_login\": true,\n  \"username\": \"rahul.tiwari\",\n  \"password\": \"Welcome@2026\",\n  \"active\": true,\n  \"send_credentials\": true,\n  \"channel\": \"email\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Account Status (Enable / Disable Sign-in)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/:kind/:person_id/account/status",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                ":kind",
+                ":person_id",
+                "account",
+                "status"
+              ],
+              "variable": [
+                {
+                  "key": "kind",
+                  "value": "{{kind}}"
+                },
+                {
+                  "key": "person_id",
+                  "value": "{{person_id}}"
+                }
+              ]
+            },
+            "description": "Turning sign-in off also ends every app session.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"active\": false\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/:kind/:person_id/account/reset-password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                ":kind",
+                ":person_id",
+                "account",
+                "reset-password"
+              ],
+              "variable": [
+                {
+                  "key": "kind",
+                  "value": "{{kind}}"
+                },
+                {
+                  "key": "person_id",
+                  "value": "{{person_id}}"
+                }
+              ]
+            },
+            "description": "A new one-time password: typed (\"password\") or generated. Signs the person out everywhere.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"password\": null,\n  \"send_credentials\": true,\n  \"channel\": \"sms\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Send Login Credentials",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/:kind/:person_id/account/send-credentials",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                ":kind",
+                ":person_id",
+                "account",
+                "send-credentials"
+              ],
+              "variable": [
+                {
+                  "key": "kind",
+                  "value": "{{kind}}"
+                },
+                {
+                  "key": "person_id",
+                  "value": "{{person_id}}"
+                }
+              ]
+            },
+            "description": "Issues a fresh one-time password and sends it with the username (email or sms).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"channel\": \"email\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Face Recognition",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/:kind/:person_id/face",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                ":kind",
+                ":person_id",
+                "face"
+              ],
+              "variable": [
+                {
+                  "key": "kind",
+                  "value": "{{kind}}"
+                },
+                {
+                  "key": "person_id",
+                  "value": "{{person_id}}"
+                }
+              ]
+            },
+            "description": "Enable (with the latest photo) or disable face sign-in/attendance. Needs a login; students need parent consent.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"enabled\": true,\n  \"image\": \"<base64 photo>\",\n  \"consent_reference\": \"Form 2026/118 (students only)\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Upload ID Document",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/:kind/:person_id/id-verification",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                ":kind",
+                ":person_id",
+                "id-verification"
+              ],
+              "variable": [
+                {
+                  "key": "kind",
+                  "value": "{{kind}}"
+                },
+                {
+                  "key": "person_id",
+                  "value": "{{person_id}}"
+                }
+              ]
+            },
+            "description": "JSON as shown, or multipart: file part(s) + doc_type. Replaces earlier ID documents; status becomes pending.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"document\": {\n    \"data\": \"<base64 image or PDF>\",\n    \"filename\": \"aadhaar.pdf\"\n  },\n  \"doc_type\": \"aadhaar\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Review ID Document",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/:kind/:person_id/id-verification/review",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                ":kind",
+                ":person_id",
+                "id-verification",
+                "review"
+              ],
+              "variable": [
+                {
+                  "key": "kind",
+                  "value": "{{kind}}"
+                },
+                {
+                  "key": "person_id",
+                  "value": "{{person_id}}"
+                }
+              ]
+            },
+            "description": "decision: verify | reject.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"decision\": \"verify\",\n  \"notes\": \"Matches the original\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Download ID Document",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/:kind/:person_id/id-verification/documents/:attachment_id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                ":kind",
+                ":person_id",
+                "id-verification",
+                "documents",
+                ":attachment_id"
+              ],
+              "variable": [
+                {
+                  "key": "kind",
+                  "value": "{{kind}}"
+                },
+                {
+                  "key": "person_id",
+                  "value": "{{person_id}}"
+                },
+                {
+                  "key": "attachment_id",
+                  "value": "{{attachment_id}}"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "List Teacher Documents",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/teachers/:teacher_id/documents?doc_type=",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "teachers",
+                ":teacher_id",
+                "documents"
+              ],
+              "variable": [
+                {
+                  "key": "teacher_id",
+                  "value": "{{teacher_id}}"
+                }
+              ],
+              "query": [
+                {
+                  "key": "doc_type",
+                  "value": ""
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Upload Teacher Documents",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/teachers/:teacher_id/documents",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "teachers",
+                ":teacher_id",
+                "documents"
+              ],
+              "variable": [
+                {
+                  "key": "teacher_id",
+                  "value": "{{teacher_id}}"
+                }
+              ]
+            },
+            "description": "JSON as shown, or multipart: file part(s) + doc_type + name. doc_type: aadhaar | cv | certificate | other.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"documents\": [\n    {\n      \"doc_type\": \"certificate\",\n      \"name\": \"B.Ed\",\n      \"file\": \"<base64>\",\n      \"filename\": \"bed.pdf\"\n    }\n  ]\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Upload Teacher Document (multipart)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/teachers/:teacher_id/documents",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "teachers",
+                ":teacher_id",
+                "documents"
+              ],
+              "variable": [
+                {
+                  "key": "teacher_id",
+                  "value": "{{teacher_id}}"
+                }
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "doc_type",
+                  "value": "cv",
+                  "type": "text"
+                },
+                {
+                  "key": "name",
+                  "value": "CV",
+                  "type": "text"
+                },
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Download Teacher Document",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/teachers/:teacher_id/documents/:document_id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "teachers",
+                ":teacher_id",
+                "documents",
+                ":document_id"
+              ],
+              "variable": [
+                {
+                  "key": "teacher_id",
+                  "value": "{{teacher_id}}"
+                },
+                {
+                  "key": "document_id",
+                  "value": "{{document_id}}"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Teacher Document",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/teachers/:teacher_id/documents/:document_id/delete",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "teachers",
+                ":teacher_id",
+                "documents",
+                ":document_id",
+                "delete"
+              ],
+              "variable": [
+                {
+                  "key": "teacher_id",
+                  "value": "{{teacher_id}}"
+                },
+                {
+                  "key": "document_id",
+                  "value": "{{document_id}}"
+                }
+              ]
+            },
+            "description": ""
           },
           "response": []
         }
@@ -15165,6 +15805,18 @@
     {
       "key": "kiosk_key",
       "value": ""
+    },
+    {
+      "key": "kind",
+      "value": "teachers"
+    },
+    {
+      "key": "person_id",
+      "value": "1"
+    },
+    {
+      "key": "document_id",
+      "value": "1"
     }
   ]
 }

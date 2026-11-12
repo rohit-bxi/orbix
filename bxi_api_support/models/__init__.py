@@ -4,3 +4,4 @@
 from . import res_users
 from . import payment_order
 from . import push_triggers
+from . import people_service

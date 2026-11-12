@@ -33,6 +33,35 @@ class Msg91Client(models.AbstractModel):
             'template_id': ICP.get_param('bxi_notification_gateway.msg91_otp_template_id'),
         }
 
+    def send_credentials_sms(self, phone, username, password):
+        """Send a new login (username + one-time password) to `phone` via
+        the MSG91 credentials template. Returns True on success, False when
+        MSG91 or the template isn't configured or the send failed."""
+        config = self._get_config()
+        template_id = self.env['ir.config_parameter'].sudo().get_param(
+            'bxi_notification_gateway.msg91_credentials_template_id')
+        if not config['auth_key'] or not template_id:
+            _logger.warning('MSG91 credentials template is not configured - login SMS to %s not sent.', phone)
+            return False
+        return self._send_flow(config, template_id, {'mobiles': phone, 'USERNAME': username, 'PASSWORD': password})
+
+    def _send_flow(self, config, template_id, recipient):
+        payload = {'template_id': template_id, 'short_url': '0', 'recipients': [recipient]}
+        if config['sender_id']:
+            payload['sender'] = config['sender_id']
+        try:
+            response = requests.post(
+                MSG91_FLOW_URL, json=payload,
+                headers={'authkey': config['auth_key'], 'Content-Type': 'application/json'}, timeout=10)
+        except requests.RequestException:
+            _logger.exception('MSG91 SMS request failed for %s.', recipient.get('mobiles'))
+            return False
+        if response.status_code >= 400:
+            _logger.warning('MSG91 SMS to %s failed: %s %s', recipient.get('mobiles'), response.status_code,
+                            response.text)
+            return False
+        return True
+
     def send_otp_sms(self, phone, otp_code):
         """Send `otp_code` to `phone` via the configured MSG91 OTP template.
         Returns True on a 2xx response from MSG91, False otherwise (never

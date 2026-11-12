@@ -6,3 +6,4 @@ from . import test_face_login
 from . import test_face_enrolment
 from . import test_face_admin
 from . import test_face_identity
+from . import test_face_people

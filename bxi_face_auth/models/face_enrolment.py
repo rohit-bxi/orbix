@@ -132,7 +132,7 @@ class BxiFaceEnrolment(models.Model):
             })
             # The identity photo check (bxi_identity_verification) asks
             # staff the same question; don't make them answer it twice.
-            for record in (enrolment.student_id, enrolment.parent_id):
+            for record in (enrolment.student_id, enrolment.parent_id, enrolment.faculty_id):
                 if record and 'face_verification_status' in record._fields \
                         and record.face_verification_status != 'verified':
                     record.write({'face_verification_status': 'verified', 'face_verified_at': now})

@@ -161,6 +161,13 @@ def call_action(record, method_name, **kwargs):
         return None, api_error(str(exc), status=400, code='invalid_transition')
 
 
+# What an account signed in with a one-time password (set by the school
+# office) may call before choosing its own password.
+PASSWORD_CHANGE_PENDING_PATHS = frozenset({
+    '/api/v1/auth/password/change', '/api/v1/auth/me', '/api/v1/auth/logout',
+})
+
+
 def require_auth(func):
     """Validates the `Authorization: Bearer <token>` header against
     bxi.api.token and, on success, runs the wrapped route with
@@ -175,6 +182,10 @@ def require_auth(func):
         token = request.env['bxi.api.token'].sudo()._verify_token_record(raw_token)
         if not token:
             return api_error('Invalid or expired token.', status=401, code='unauthorized')
+        if token.user_id.bxi_must_change_password \
+                and request.httprequest.path.rstrip('/') not in PASSWORD_CHANGE_PENDING_PATHS:
+            return api_error('Change your one-time password to continue.', status=403,
+                             code='password_change_required')
         request.update_env(user=token.user_id.id)
         return func(*args, **kwargs)
     return wrapper

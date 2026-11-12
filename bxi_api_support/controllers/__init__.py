@@ -40,3 +40,4 @@ from . import subject_registration
 from . import admin_classes
 from . import admin_fees
 from . import admin_events
+from . import people_account

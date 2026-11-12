@@ -6,7 +6,7 @@ from odoo.http import request
 
 from odoo.addons.bxi_api.controllers.auth import api_error, api_response, call_action, require_auth
 
-from .common import get_own_faculty, parse_pagination, safe_create
+from .common import get_own_faculty, parse_pagination, safe_create, teacher_permission
 
 COORDINATOR_GROUP = 'bxi_academic_management.group_academic_coordinator'
 MANAGER_GROUP = 'bxi_academic_management.group_academic_manager'
@@ -70,6 +70,7 @@ class BxiApiSupportLessonPlanController(http.Controller):
 
     @http.route('/api/v1/lesson-plans', type='http', auth='public', methods=['POST'], csrf=False)
     @require_auth
+    @teacher_permission('lesson_plans')
     def create_plan(self, **kwargs):
         payload = request.get_json_data() or {}
         missing = [f for f in CREATE_FIELDS if not payload.get(f)]
@@ -87,6 +88,7 @@ class BxiApiSupportLessonPlanController(http.Controller):
 
     @http.route('/api/v1/lesson-plans/<int:plan_id>/resubmit', type='http', auth='public', methods=['POST'], csrf=False)
     @require_auth
+    @teacher_permission('lesson_plans')
     def resubmit_plan(self, plan_id, **kwargs):
         plan, error = self._authorized_plan(plan_id)
         if error:

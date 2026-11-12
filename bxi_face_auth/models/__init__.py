@@ -10,3 +10,4 @@ from . import face_template
 from . import face_challenge
 from . import face_kiosk
 from . import face_login_attempt
+from . import people_service

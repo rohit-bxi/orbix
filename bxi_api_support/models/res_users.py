@@ -9,6 +9,20 @@ COORDINATOR_GROUPS = (
 )
 FACULTY_GROUP = 'openeducat_core.group_op_faculty'
 
+# Per-teacher lesson & evaluation switches (bxi_people_management) by the
+# key the API and /auth/me use. Office staff, coordinators and admins are
+# never limited by them.
+TEACHER_PERMISSION_FIELDS = {
+    'lesson_plans': 'can_create_lesson_plans',
+    'homework': 'can_assign_homework',
+    'evaluate_assignments': 'can_evaluate_assignments',
+    'exam_marks': 'can_enter_exam_marks',
+    'reports': 'can_access_reports',
+}
+TEACHER_PERMISSION_EXEMPT_GROUPS = (
+    'base.group_system', 'openeducat_core.group_op_back_office_admin',
+) + COORDINATOR_GROUPS
+
 # permission flag -> groups that grant it. Returned on /auth/me so the app
 # can show or hide staff screens without guessing from group names; every
 # route still does its own check server-side.
@@ -71,6 +85,9 @@ class ResUsers(models.Model):
         class_teacher_batches = env['op.batch'].sudo().search([('class_teacher_id', '=', faculty.id)]) if faculty else env['op.batch']
         teaching_batches = (teaching_lines and teaching_lines.timetable_id.batch_id or env['op.batch']) | class_teacher_batches
         teaching_courses = (teaching_lines and teaching_lines.timetable_id.course_id or env['op.course']) | class_teacher_batches.course_id
+        # Sections/classes the office assigned on the teacher's record.
+        teaching_batches |= faculty.assigned_batch_ids
+        teaching_courses |= faculty.assigned_course_ids | faculty.assigned_batch_ids.course_id
         return {
             'student': student,
             'parent': parent,
@@ -101,6 +118,16 @@ class ResUsers(models.Model):
             return True
         return not (context['student'] or context['parent'])
 
+    def _bxi_teacher_permissions(self, context=None):
+        """{key: allowed} for TEACHER_PERMISSION_FIELDS. Everything is
+        allowed unless this login is a teacher without an exempt group; the
+        routes still run their own checks on top."""
+        self.ensure_one()
+        context = context or self._bxi_school_context()
+        faculty = context['faculty']
+        exempt = not faculty or self._bxi_has_any_group(TEACHER_PERMISSION_EXEMPT_GROUPS)
+        return {key: exempt or bool(faculty[field]) for key, field in TEACHER_PERMISSION_FIELDS.items()}
+
     def _bxi_roles(self, context=None):
         context = context or self._bxi_school_context()
         roles = []
@@ -130,6 +157,7 @@ class ResUsers(models.Model):
             'permissions': {
                 flag: self._bxi_has_any_group(groups) for flag, groups in PERMISSION_GROUPS.items()
             },
+            'teacher_permissions': self._bxi_teacher_permissions(context),
         })
         return profile
 

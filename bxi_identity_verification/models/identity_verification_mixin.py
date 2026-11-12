@@ -40,6 +40,57 @@ class BxiIdentityVerificationMixin(models.AbstractModel):
     face_submitted_at = fields.Datetime(readonly=True, copy=False)
     face_verified_at = fields.Datetime(readonly=True, copy=False)
 
+    # Scanned ID proof (image or PDF) uploaded by the school office. The
+    # attachments themselves live in an `id_document_ids` many2many each
+    # concrete model declares with its own relation table.
+    id_document_status = fields.Selection(
+        VERIFICATION_STATUSES, string='ID Document Status', default='unverified', tracking=True)
+    id_document_type = fields.Selection([
+        ('aadhaar', 'Aadhaar Card'),
+        ('pan', 'PAN Card'),
+        ('passport', 'Passport'),
+        ('driving_licence', 'Driving Licence'),
+        ('voter_id', 'Voter ID'),
+        ('birth_certificate', 'Birth Certificate'),
+        ('other', 'Other'),
+    ], string='ID Document Type')
+    id_document_submitted_at = fields.Datetime(readonly=True, copy=False)
+    id_document_verified_at = fields.Datetime(readonly=True, copy=False)
+    id_document_notes = fields.Text(string='ID Document Review Notes')
+
+    def _submit_id_documents(self, files, doc_type=False):
+        """Attach uploaded ID proof - [{name, content (bytes), mimetype}] -
+        and send it for review. Earlier ID documents are replaced."""
+        self.ensure_one()
+        if not files:
+            raise UserError(_('An ID document is required.'))
+        Attachment = self.env['ir.attachment'].sudo()
+        attachments = Attachment
+        for file in files:
+            attachments |= Attachment.create({
+                'name': file.get('name') or 'id-document',
+                'raw': file['content'],
+                'mimetype': file.get('mimetype') or False,
+                'res_model': self._name,
+                'res_id': self.id,
+            })
+        old = self.id_document_ids
+        self.write({
+            'id_document_ids': [(6, 0, attachments.ids)],
+            'id_document_type': doc_type or self.id_document_type or False,
+            'id_document_status': 'pending',
+            'id_document_submitted_at': fields.Datetime.now(),
+            'id_document_verified_at': False,
+        })
+        (old - attachments).sudo().unlink()
+        return attachments
+
+    def action_verify_id_document(self):
+        self.write({'id_document_status': 'verified', 'id_document_verified_at': fields.Datetime.now()})
+
+    def action_reject_id_document(self):
+        self.write({'id_document_status': 'rejected'})
+
     def _submit_aadhar(self, aadhar_number):
         self.ensure_one()
         if not aadhar_number:
