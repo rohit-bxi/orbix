@@ -9580,7 +9580,7 @@
                 }
               ]
             },
-            "description": "e.g. classes, sections (?course_id=), subjects (?course_id=), timings, academic-years, payment-journals (staff), certificate-types, canteen-menu, transport-stops (?route_id=), visit-hosts (staff)."
+            "description": "e.g. classes, sections (?course_id=), subjects (?course_id=), timings, academic-years, payment-journals (staff), certificate-types, canteen-menu, transport-stops (?route_id=), visit-hosts (staff), designations (staff), staff-responsibilities (staff)."
           },
           "response": []
         }
