@@ -10,6 +10,7 @@
                     <group>
                         <group string="Aadhaar">
                             <field name="aadhar_card"/>
+                            <field name="bxi_aadhaar_masked" groups="!bxi_identity_verification.group_identity_reviewer"/>
                             <field name="aadhar_verification_status" widget="badge"
                                    decoration-success="aadhar_verification_status == 'verified'"
                                    decoration-warning="aadhar_verification_status == 'pending'"

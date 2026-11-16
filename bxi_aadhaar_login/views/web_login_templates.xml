@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- /web/login: the login box also takes an Aadhaar number, plus a link
+         to the emailed-code login. bxi_aadhaar_login / bxi_aadhaar_otp are
+         set by the web_login override (controllers/web.py). -->
+    <template id="web_login_aadhaar" inherit_id="web.login" name="Login: Aadhaar number">
+        <xpath expr="//label[@for='login']" position="replace">
+            <label for="login" class="form-label d-flex justify-content-between">
+                <t t-if="bxi_aadhaar_login">Email, Username or Aadhaar</t>
+                <t t-else="">Email</t>
+            </label>
+        </xpath>
+        <xpath expr="//input[@name='login']" position="attributes">
+            <attribute name="placeholder"/>
+            <attribute name="t-att-placeholder">'Email, username or Aadhaar number' if bxi_aadhaar_login else 'Enter your email'</attribute>
+        </xpath>
+        <xpath expr="//div[hasclass('oe_login_buttons')]" position="after">
+            <div class="text-center small mb-2" t-if="bxi_aadhaar_otp">
+                <a href="/web/login/aadhaar-code">Log in with Aadhaar and an email code</a>
+            </div>
+        </xpath>
+    </template>
+
+    <template id="aadhaar_code_login" name="Login with Aadhaar and an Email Code">
+        <t t-call="web.login_layout">
+            <form class="oe_login_form" role="form" action="/web/login/aadhaar-code" method="post">
+                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                <input type="hidden" name="redirect" t-att-value="redirect"/>
+                <h5 class="mb-3">Log in with Aadhaar</h5>
+
+                <t t-if="stage == 'code'">
+                    <input type="hidden" name="step" value="verify"/>
+                    <p class="small text-muted">
+                        If this Aadhaar number is registered, a 6-digit code was emailed to
+                        <strong t-out="email_hint"/>. It expires in 10 minutes.
+                    </p>
+                    <div class="mb-3">
+                        <label for="otp" class="form-label">Login code</label>
+                        <input type="text" name="otp" id="otp" class="form-control" required="required"
+                               inputmode="numeric" autocomplete="one-time-code" maxlength="6" autofocus="autofocus"/>
+                    </div>
+                </t>
+                <t t-else="">
+                    <input type="hidden" name="step" value="request"/>
+                    <div class="mb-3">
+                        <label for="aadhaar" class="form-label">Aadhaar number</label>
+                        <input type="text" name="aadhaar" id="aadhaar" class="form-control" required="required"
+                               inputmode="numeric" autocomplete="off" maxlength="14" placeholder="1234 5678 9012"
+                               t-att-value="aadhaar" autofocus="autofocus"/>
+                    </div>
+                </t>
+
+                <p class="alert alert-danger" t-if="error" role="alert"><t t-esc="error"/></p>
+
+                <div class="oe_login_buttons text-center d-grid mb-1 pt-3">
+                    <button type="submit" class="btn btn-primary">
+                        <t t-if="stage == 'code'">Log in</t>
+                        <t t-else="">Email me a code</t>
+                    </button>
+                </div>
+                <div class="text-center small mt-2">
+                    <a t-if="stage == 'code'" class="d-block" href="/web/login/aadhaar-code">Use a different Aadhaar number</a>
+                    <a class="d-block" href="/web/login">Log in with a password</a>
+                </div>
+            </form>
+        </t>
+    </template>
+</odoo>

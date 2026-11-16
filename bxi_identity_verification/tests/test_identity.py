@@ -55,15 +55,15 @@ class TestBxiIdentityVerification(HttpCase):
 
     def test_submit_aadhar_by_linked_parent_succeeds(self):
         resp = self.url_open('/api/v1/identity/aadhar/submit', headers=self._headers('id_parent', 'ParentPass1!'), json={
-            'subject_type': 'student', 'subject_id': self.student.id, 'aadhar_number': '123456789012',
+            'subject_type': 'student', 'subject_id': self.student.id, 'aadhar_number': '234567890124',
         })
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.json()['data']['aadhar_verification_status'], 'pending')
-        self.assertEqual(self.student.aadhar_card, '123456789012')
+        self.assertEqual(self.student.aadhar_card, '234567890124')
 
     def test_submit_aadhar_by_unrelated_user_forbidden(self):
         resp = self.url_open('/api/v1/identity/aadhar/submit', headers=self._headers('id_other', 'OtherPass1!'), json={
-            'subject_type': 'student', 'subject_id': self.student.id, 'aadhar_number': '123456789012',
+            'subject_type': 'student', 'subject_id': self.student.id, 'aadhar_number': '234567890124',
         })
         self.assertEqual(resp.status_code, 403)
 
@@ -75,27 +75,27 @@ class TestBxiIdentityVerification(HttpCase):
 
     def test_submit_aadhar_invalid_subject_type_rejected(self):
         resp = self.url_open('/api/v1/identity/aadhar/submit', headers=self._headers('id_parent', 'ParentPass1!'), json={
-            'subject_type': 'teacher', 'subject_id': self.student.id, 'aadhar_number': '123456789012',
+            'subject_type': 'staff', 'subject_id': self.student.id, 'aadhar_number': '234567890124',
         })
         self.assertEqual(resp.status_code, 400)
         self.assertEqual(resp.json()['error']['code'], 'invalid_subject_type')
 
     def test_submit_aadhar_not_found(self):
         resp = self.url_open('/api/v1/identity/aadhar/submit', headers=self._headers('id_parent', 'ParentPass1!'), json={
-            'subject_type': 'student', 'subject_id': 999999, 'aadhar_number': '123456789012',
+            'subject_type': 'student', 'subject_id': 999999, 'aadhar_number': '234567890124',
         })
         self.assertEqual(resp.status_code, 404)
 
     def test_submit_aadhar_for_own_parent_record(self):
         resp = self.url_open('/api/v1/identity/aadhar/submit', headers=self._headers('id_parent', 'ParentPass1!'), json={
-            'subject_type': 'parent', 'subject_id': self.parent.id, 'aadhar_number': '999988887777',
+            'subject_type': 'parent', 'subject_id': self.parent.id, 'aadhar_number': '987654321096',
         })
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(self.parent.aadhar_card, '999988887777')
+        self.assertEqual(self.parent.aadhar_card, '987654321096')
 
     def test_staff_can_submit_for_any_student(self):
         resp = self.url_open('/api/v1/identity/aadhar/submit', headers=self._headers('id_staff', 'StaffPass1!'), json={
-            'subject_type': 'student', 'subject_id': self.student.id, 'aadhar_number': '111122223333',
+            'subject_type': 'student', 'subject_id': self.student.id, 'aadhar_number': '345678901238',
         })
         self.assertEqual(resp.status_code, 200)
 
@@ -150,7 +150,7 @@ class TestBxiIdentityVerification(HttpCase):
 
     def test_status_invalid_subject_type_rejected(self):
         resp = self.url_open(
-            f'/api/v1/identity/status?subject_type=teacher&subject_id={self.student.id}',
+            f'/api/v1/identity/status?subject_type=staff&subject_id={self.student.id}',
             headers=self._headers('id_parent', 'ParentPass1!'))
         self.assertEqual(resp.status_code, 400)
         self.assertEqual(resp.json()['error']['code'], 'invalid_subject_type')
@@ -175,13 +175,13 @@ class TestBxiIdentityVerification(HttpCase):
     # -- staff review actions (backend, called directly) -----------------------------
 
     def test_action_verify_aadhar_sets_verified_and_timestamp(self):
-        self.student.sudo()._submit_aadhar('123456789012')
+        self.student.sudo()._submit_aadhar('234567890124')
         self.student.action_verify_aadhar()
         self.assertEqual(self.student.aadhar_verification_status, 'verified')
         self.assertTrue(self.student.aadhar_verified_at)
 
     def test_action_reject_aadhar_sets_rejected(self):
-        self.student.sudo()._submit_aadhar('123456789012')
+        self.student.sudo()._submit_aadhar('234567890124')
         self.student.action_reject_aadhar()
         self.assertEqual(self.student.aadhar_verification_status, 'rejected')
 

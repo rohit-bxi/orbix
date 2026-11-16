@@ -32,3 +32,4 @@ from . import test_route_smoke
 from . import test_admin_dashboard_api
 from . import test_people_management_api
 from . import test_people_account_api
+from . import test_people_aadhaar_api

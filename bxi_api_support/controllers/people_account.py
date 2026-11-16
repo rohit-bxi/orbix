@@ -22,6 +22,11 @@ per-person routes below:
       Image or PDF, sent for review (status "pending").
   "documents" (teachers): [{"doc_type": "aadhaar" | "cv" | "certificate" |
                             "other", "name"?, "file": "<base64>", "filename"?}]
+  "aadhaar_number": "1234 5678 9012" | null
+      The person's Aadhaar number (spaces/dashes allowed; null clears it).
+      Set by the office it counts as verified, so it can be used for
+      Aadhaar login (bxi_aadhaar_login). Responses only show it masked.
+      A number already registered to another person -> 409 aadhaar_in_use.
 """
 import base64
 import binascii
@@ -33,6 +38,8 @@ from odoo.tools.mimetypes import guess_mimetype
 from odoo.addons.bxi_api.controllers.auth import (
     MAX_UPLOAD_BYTES, api_error, api_file_response, api_response, parse_request, require_auth,
 )
+
+from odoo.addons.bxi_identity_verification.models.aadhaar import mask_aadhaar, normalize_aadhaar
 
 from ..models.people_service import CREDENTIAL_CHANNELS, PeopleError
 from .common import atomic, check_selection, ref
@@ -189,6 +196,21 @@ def parse_id_verification(payload, files=()):
     return {'files': checked, 'doc_type': doc_type}, None
 
 
+def parse_aadhaar(payload):
+    """(aadhaar or None, error) from payload["aadhaar_number"]: None when
+    the key is absent, {"digits": False} to clear it."""
+    if 'aadhaar_number' not in payload:
+        return None, None
+    raw = payload['aadhaar_number']
+    if raw in (None, ''):
+        return {'digits': False}, None
+    digits = normalize_aadhaar(raw) if isinstance(raw, str) else None
+    if not digits:
+        return None, api_error(
+            'aadhaar_number must be a valid 12-digit Aadhaar number.', status=400, code='invalid_aadhaar')
+    return {'digits': digits}, None
+
+
 def parse_documents(entries):
     """(documents, error) for teacher documents."""
     if entries is None:
@@ -280,6 +302,18 @@ def apply_id_verification(record, id_verification):
         record.sudo()._submit_id_documents(id_verification['files'], id_verification['doc_type'])
 
 
+def apply_aadhaar(record, aadhaar):
+    if aadhaar is None:
+        return
+    record = record.sudo()
+    digits = aadhaar['digits']
+    if digits and record._bxi_aadhaar_conflict(digits):
+        raise PeopleError('This Aadhaar number is already registered to another person.',
+                          'aadhaar_in_use', status=409)
+    if digits != (record.aadhar_card or False):
+        record.write({'aadhar_card': digits})
+
+
 def apply_documents(faculty, documents):
     Document = request.env['bxi.faculty.document'].sudo()
     created = Document
@@ -341,6 +375,16 @@ def id_verification_dict(record):
     }
 
 
+def aadhaar_dict(record):
+    record = record.sudo()
+    return {
+        'number_masked': mask_aadhaar(record.bxi_aadhaar_last4),
+        'last4': record.bxi_aadhaar_last4 or None,
+        'status': record.aadhar_verification_status,
+        'verified_at': _dt(record.aadhar_verified_at),
+    }
+
+
 def document_dict(document):
     return {
         'id': document.id,
@@ -360,6 +404,7 @@ def security_dict(record):
         'account': account_dict(record),
         'face': request.env['bxi.people.service']._face_status(user) if user else None,
         'id_verification': id_verification_dict(record),
+        'aadhaar': aadhaar_dict(record),
     }
 
 

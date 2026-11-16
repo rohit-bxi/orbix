@@ -8,11 +8,14 @@ from odoo.http import request
 
 from odoo.addons.bxi_api.controllers.auth import api_error, api_response, rate_limit, require_auth, require_step_up
 
+from ..models.aadhaar import AadhaarInUseError
+
 REVIEWER_GROUPS = ('bxi_identity_verification.group_identity_reviewer', 'base.group_system')
 
 SUBJECT_MODELS = {
     'student': 'op.student',
     'parent': 'op.parent',
+    'teacher': 'op.faculty',
 }
 
 
@@ -22,8 +25,8 @@ def _own_parent_record(env):
 
 def _resolve_subject(env, subject_type, subject_id):
     """Returns (subject_record, error_response). Enforces that the caller
-    is either an identity reviewer, the parent record itself, or a parent
-    linked to the student in question.
+    is either an identity reviewer, the parent record itself, a parent
+    linked to the student in question, or the teacher's own login.
 
     "Staff" here means the Identity Reviewer group, not base.group_user:
     family accounts are often internal users in this deployment, and a
@@ -32,7 +35,8 @@ def _resolve_subject(env, subject_type, subject_id):
     """
     model_name = SUBJECT_MODELS.get(subject_type)
     if not model_name:
-        return None, api_error("subject_type must be 'student' or 'parent'.", status=400, code='invalid_subject_type')
+        return None, api_error("subject_type must be 'student', 'parent' or 'teacher'.", status=400,
+                               code='invalid_subject_type')
 
     subject = env[model_name].sudo().browse(int(subject_id))
     if not subject.exists():
@@ -45,6 +49,8 @@ def _resolve_subject(env, subject_type, subject_id):
     if subject_type == 'parent' and own_parent and own_parent.id == subject.id:
         return subject, None
     if subject_type == 'student' and own_parent and subject.id in own_parent.student_ids.ids:
+        return subject, None
+    if subject_type == 'teacher' and subject.user_id == env.user:
         return subject, None
 
     return None, api_error('Not authorized for this record.', status=403, code='forbidden')
@@ -81,8 +87,10 @@ class BxiIdentityVerificationController(http.Controller):
             return error
         try:
             subject.sudo()._submit_aadhar(aadhar_number)
+        except AadhaarInUseError as exc:
+            return api_error(exc.args[0], status=409, code='aadhaar_in_use')
         except UserError as exc:
-            return api_error(str(exc), status=400, code='invalid_aadhar')
+            return api_error(exc.args[0], status=400, code='invalid_aadhar')
         return api_response({'aadhar_verification_status': subject.aadhar_verification_status})
 
     @http.route('/api/v1/identity/face/submit', type='http', auth='public', methods=['POST'], csrf=False)

@@ -42,14 +42,14 @@ class TestBxiIdentityVerificationMixinModel(TransactionCase):
     # -- _submit_aadhar --------------------------------------------------------
 
     def test_submit_aadhar_success_on_student(self):
-        self.student._submit_aadhar('123456789012')
-        self.assertEqual(self.student.aadhar_card, '123456789012')
+        self.student._submit_aadhar('234567890124')
+        self.assertEqual(self.student.aadhar_card, '234567890124')
         self.assertEqual(self.student.aadhar_verification_status, 'pending')
         self.assertTrue(self.student.aadhar_submitted_at)
 
     def test_submit_aadhar_success_on_parent(self):
-        self.parent._submit_aadhar('999988887777')
-        self.assertEqual(self.parent.aadhar_card, '999988887777')
+        self.parent._submit_aadhar('987654321096')
+        self.assertEqual(self.parent.aadhar_card, '987654321096')
         self.assertEqual(self.parent.aadhar_verification_status, 'pending')
         self.assertTrue(self.parent.aadhar_submitted_at)
 
@@ -78,7 +78,7 @@ class TestBxiIdentityVerificationMixinModel(TransactionCase):
     # -- action_verify_aadhar -------------------------------------------------
 
     def test_action_verify_aadhar_sets_verified_and_timestamp(self):
-        self.student._submit_aadhar('123456789012')
+        self.student._submit_aadhar('234567890124')
         self.student.action_verify_aadhar()
         self.assertEqual(self.student.aadhar_verification_status, 'verified')
         self.assertTrue(self.student.aadhar_verified_at)
@@ -86,7 +86,7 @@ class TestBxiIdentityVerificationMixinModel(TransactionCase):
     # -- action_reject_aadhar --------------------------------------------------
 
     def test_action_reject_aadhar_sets_rejected(self):
-        self.student._submit_aadhar('123456789012')
+        self.student._submit_aadhar('234567890124')
         self.student.action_reject_aadhar()
         self.assertEqual(self.student.aadhar_verification_status, 'rejected')
 

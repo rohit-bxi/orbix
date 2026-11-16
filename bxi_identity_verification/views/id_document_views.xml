@@ -62,6 +62,23 @@
             <xpath expr="//page[@name='academic_details']" position="after">
                 <page string="Identity Verification" name="identity_verification">
                     <group>
+                        <group string="Aadhaar">
+                            <field name="aadhar_card"/>
+                            <field name="bxi_aadhaar_masked" groups="!bxi_identity_verification.group_identity_reviewer"/>
+                            <field name="aadhar_verification_status" widget="badge"
+                                   decoration-success="aadhar_verification_status == 'verified'"
+                                   decoration-warning="aadhar_verification_status == 'pending'"
+                                   decoration-danger="aadhar_verification_status == 'rejected'"/>
+                            <field name="aadhar_submitted_at" readonly="1"/>
+                            <field name="aadhar_verified_at" readonly="1"/>
+                            <field name="aadhar_verification_notes"/>
+                            <div class="mt-2" groups="bxi_identity_verification.group_identity_reviewer">
+                                <button name="action_verify_aadhar" type="object" string="Verify Aadhaar"
+                                        class="btn-primary" invisible="aadhar_verification_status != 'pending'"/>
+                                <button name="action_reject_aadhar" type="object" string="Reject Aadhaar"
+                                        class="btn-secondary" invisible="aadhar_verification_status != 'pending'"/>
+                            </div>
+                        </group>
                         <group string="Face Photo">
                             <field name="face_verification_status" widget="badge"
                                    decoration-success="face_verification_status == 'verified'"
