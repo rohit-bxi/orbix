@@ -72,6 +72,15 @@ All bodies are JSON. Responses use the usual `{"data": ...}` / `{"error": {"mess
 - **Same reply for unknown numbers:** a number no account may use gets a made-up (but stable) hint and no email is sent, so the route can't be used to find registered numbers.
 - **Resend limit:** at most one email a minute and five an hour per account. A repeat inside that window sends nothing; the previous code stays valid.
 
+**Testing switch: code in the response.** The system parameter `bxi_aadhaar_login.otp_in_response` controls this. You can set it under Settings › Aadhaar Login › "Show Code in API Response (Testing)", or with `"otp_in_response": true` on the admin settings API. It is **off by default**. When it is on:
+
+- The reply also carries `"otp": "123456"`.
+- It is `null` for an unknown number, and `null` within a minute of the previous code (that code is still the one to use).
+- A code is created even for a record without an email address.
+- Each code returned this way is logged as a warning.
+
+Anyone who knows an Aadhaar number can then log in as that person. Use it only for testing without a mail server, and switch it off before real students, teachers and parents use the app.
+
 **2. Log in:** `POST /api/v1/auth/aadhaar/otp-login` with `{"aadhaar": "…", "otp": "123456", "device_name": "…"}`
 
 - **Response:** same as a normal login, with `auth_method: "otp"` and `login_identifier: "aadhaar"`.
@@ -92,8 +101,11 @@ All bodies are JSON. Responses use the usual `{"data": ...}` / `{"error": {"mess
 - `POST /api/v1/admin/aadhaar-login/settings` with any of:
 
 ```json
-{"enabled": true, "otp_enabled": true, "requires_verified": true, "roles": ["student", "teacher", "parent"]}
+{"enabled": true, "otp_enabled": true, "requires_verified": true, "roles": ["student", "teacher", "parent"],
+ "otp_in_response": false}
 ```
+
+`otp_in_response` is the testing switch above. It applies to every school on the server.
 
 ### People APIs (bxi_api_support)
 

@@ -324,6 +324,58 @@ class TestAadhaarEmailCodeLogin(AadhaarLoginCase):
 
 
 @tagged('post_install', '-at_install')
+class TestAadhaarOtpInResponse(AadhaarLoginCase):
+    """The testing switch that returns the login code in the API reply."""
+
+    def _switch(self, on):
+        self.env['ir.config_parameter'].sudo().set_param('bxi_aadhaar_login.otp_in_response', 'True' if on else 'False')
+
+    def test_off_by_default(self):
+        self.assertFalse(self.env['ir.config_parameter'].sudo().get_param('bxi_aadhaar_login.otp_in_response'))
+        data = self._post('/api/v1/auth/aadhaar/otp-request', {'aadhaar': STUDENT_NO}).json()['data']
+        self.assertNotIn('otp', data)
+
+    def test_code_returned_and_logs_in(self):
+        self._switch(True)
+        with self.assertLogs('odoo.addons.bxi_aadhaar_login.controllers.api', level='WARNING'):
+            data = self._post('/api/v1/auth/aadhaar/otp-request', {'aadhaar': STUDENT_NO}).json()['data']
+        self.assertRegex(data['otp'], r'^\d{6}$')
+        self.assertEqual(data['otp'], self._last_code(), 'The same code as the email')
+        resp = self._post('/api/v1/auth/aadhaar/otp-login', {'aadhaar': STUDENT_NO, 'otp': data['otp']})
+        self.assertEqual(resp.status_code, 200, resp.text)
+        self.assertEqual(resp.json()['data']['user']['id'], self.student_user.id)
+
+    def test_works_without_an_email_address(self):
+        self._switch(True)
+        user = mail_new_test_user(self.env, login='aad_nomail', password='NoMailPass1!', groups='base.group_portal')
+        user.partner_id.email = False
+        self.env['op.student'].create({
+            'first_name': 'No', 'last_name': 'Mail', 'gr_no': 'AADL-020', 'gender': 'm',
+            'user_id': user.id, 'aadhar_card': SPARE_NO,
+        })
+        data = self._post('/api/v1/auth/aadhaar/otp-request', {'aadhaar': SPARE_NO}).json()['data']
+        self.assertTrue(data['otp'])
+        self.assertFalse(self.sent, 'Nothing to email')
+        resp = self._post('/api/v1/auth/aadhaar/otp-login', {'aadhaar': SPARE_NO, 'otp': data['otp']})
+        self.assertEqual(resp.status_code, 200, resp.text)
+
+    def test_unknown_number_and_throttled_resend_give_null(self):
+        self._switch(True)
+        data = self._post('/api/v1/auth/aadhaar/otp-request', {'aadhaar': UNKNOWN_NO}).json()['data']
+        self.assertIn('otp', data)
+        self.assertIsNone(data['otp'])
+        self._post('/api/v1/auth/aadhaar/otp-request', {'aadhaar': STUDENT_NO})
+        again = self._post('/api/v1/auth/aadhaar/otp-request', {'aadhaar': STUDENT_NO}).json()['data']
+        self.assertIsNone(again['otp'], 'Within a minute the previous code is still the one to use')
+
+    def test_switch_off_again_hides_the_code(self):
+        self._switch(True)
+        self._switch(False)
+        data = self._post('/api/v1/auth/aadhaar/otp-request', {'aadhaar': STUDENT_NO}).json()['data']
+        self.assertNotIn('otp', data)
+
+
+@tagged('post_install', '-at_install')
 class TestAadhaarLoginSettingsApi(AadhaarLoginCase):
 
     def _token(self, login, password):
@@ -343,6 +395,12 @@ class TestAadhaarLoginSettingsApi(AadhaarLoginCase):
         data = resp.json()['data']
         self.assertEqual((data['otp_enabled'], data['roles']), (False, ['student', 'parent']))
         self.assertFalse(admin.company_id.bxi_aadhaar_login_allow_teacher)
+        self.assertFalse(data['otp_in_response'])
+        resp = self._post('/api/v1/admin/aadhaar-login/settings', {'otp_in_response': True}, headers=headers)
+        self.assertTrue(resp.json()['data']['otp_in_response'])
+        self.assertEqual(self.env['ir.config_parameter'].sudo().get_param('bxi_aadhaar_login.otp_in_response'), 'True')
+        resp = self._post('/api/v1/admin/aadhaar-login/settings', {'otp_in_response': 'yes'}, headers=headers)
+        self.assertEqual(self._error(resp), 'invalid_otp_in_response')
         resp = self._post('/api/v1/admin/aadhaar-login/settings', {'roles': ['staff']}, headers=headers)
         self.assertEqual(self._error(resp), 'invalid_roles')
         resp = self._post('/api/v1/admin/aadhaar-login/settings', {'enabled': 'yes'}, headers=headers)

@@ -109,3 +109,11 @@ class TestBxiOtpEmail(TransactionCase):
             self.Otp._generate_and_email(self.user, 'otp.user@example.com')
             email_code = self._code()
         self.assertEqual(self.Otp._verify('9000000000', email_code), (False, 'not_found'))
+
+    def test_return_code_and_no_email(self):
+        status, code = self.Otp._generate_and_email(self.user, False, return_code=True)
+        self.assertEqual(status, 'no_email')
+        self.assertFalse(self.sent)
+        self.assertEqual(self.Otp._verify_for_user(self.user, code), (True, None))
+        self.assertEqual(self.Otp._generate_and_email(self.user, 'otp.user@example.com', return_code=True),
+                         ('throttled', None))

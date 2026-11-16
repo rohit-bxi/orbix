@@ -105,22 +105,30 @@ class BxiOtpRequest(models.Model):
         return bool(recent) and recent[0].create_date > now - timedelta(seconds=EMAIL_RESEND_SECONDS)
 
     @api.model
-    def _generate_and_email(self, user, email, purpose='login'):
+    def _generate_and_email(self, user, email, purpose='login', return_code=False):
         """Email a fresh code for `user` to `email`. Returns 'sent',
-        'throttled' (nothing sent, the last code is still the one to use)
-        or 'failed' (the mail server refused it; the code still works)."""
+        'throttled' (nothing sent, the last code is still the one to use),
+        'failed' (the mail server refused it; the code still works) or
+        'no_email' (`email` is empty: the code is created, not sent).
+        With `return_code`, returns (status, code) - code None when
+        throttled. Only for the Aadhaar login testing switch: the plain
+        code must never reach anyone but the account's owner."""
         if self._email_throttled(user):
-            return 'throttled'
+            return ('throttled', None) if return_code else 'throttled'
         code = f'{secrets.randbelow(1000000):06d}'
         self.sudo().create({
             'channel': 'email',
             'user_id': user.id,
-            'email': email,
+            'email': email or False,
             'purpose': purpose,
             'code_hash': self._hash(code),
             'expires_at': fields.Datetime.now() + timedelta(minutes=OTP_TTL_MINUTES),
         })
-        return 'sent' if self._send_otp_email(user, email, code) else 'failed'
+        if not email:
+            status = 'no_email'
+        else:
+            status = 'sent' if self._send_otp_email(user, email, code) else 'failed'
+        return (status, code) if return_code else status
 
     @api.model
     def _send_otp_email(self, user, email, code):
