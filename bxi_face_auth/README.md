@@ -30,6 +30,16 @@ app) is built separately; this module is API only.
 - **Matching runs on the server.** It uses OpenCV Zoo's YuNet detector (MIT) and SFace recogniser
   (Apache-2.0), CPU only, at about 0.1 s per photo. Nothing biometric is sent back to the app.
   Match scores are never returned.
+- **Record photo is the face (default).** The photo on the student, teacher or parent record
+  (`image_1920` of their contact: the form's CLICK IMAGE button, an upload, the people API's
+  `image`, or the person's own profile-photo upload) is used as their face. Whenever it changes,
+  the face is rebuilt from it and stored as an active enrolment with source `record`; a photo with
+  no usable face removes it (the reason is kept on the user as `bxi_face_photo_error`). The face
+  is also built when a login is linked to a record that already has a photo. A face that looks
+  like another account's waits for review, like any enrolment. Setting `use_record_photo`
+  (default on) switches this off; switching it off removes the faces built this way. Students
+  still need consent to sign in. Trade-off: anyone who can change a record's photo decides whose
+  face opens that account, so keep photo editing to the office and the person themselves.
 - **Enrolment.**
   - **From the app:** a person (or a parent for their child) sends 3–5 photos. The enrolment
     stays *pending* until a Face Login Manager approves it.
@@ -250,6 +260,7 @@ A student can enrol themselves only after a parent has consented.
 | `GET /api/v1/admin/face/kiosks` | Kiosk list. |
 | `POST /api/v1/admin/face/kiosks` | `{"name": "Library tablet", "roles": ["student", "teacher"], "session_minutes": 15}`. The response contains `key` **once**. |
 | `POST /api/v1/admin/face/kiosks/<id>/revoke` | Disables the key and ends sessions opened on that kiosk. |
+| `POST /api/v1/admin/face/sync-record-photos` | `{"force": false}`. Rebuild faces from the record photos now (the daily job does it too). Answers `{"sync": {"active": 12, "no_face": 2, "unchanged": 30, …}}`. |
 | `GET/POST /api/v1/admin/face/settings` | See below. GET also returns `engine` (model status), `encryption_key_source` (`config` or `database`) and enrolment counts. |
 
 **Settings** (POST any subset):
@@ -273,6 +284,7 @@ A student can enrol themselves only after a parent has consented.
 | `token_days` | `30` | Length of a face session on a phone |
 | `attempt_retention_days` | `180` | |
 | `consent_version` | `"1"` | Bump when the consent wording shown in the app changes |
+| `use_record_photo` | `true` | Use the record photo as the face (see How it works). Turning it on, or turning on `enabled`, builds faces from the existing photos and adds `record_photo_sync` (`{outcome: count}`) to the answer; turning it off removes them (`record_photo_faces_removed`) |
 
 ## Other API changes that came with this module
 

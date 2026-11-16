@@ -2,7 +2,7 @@
 
 {
     'name': 'Orbix Face Login',
-    'version': '19.0.1.1.0',
+    'version': '19.0.1.2.0',
     'category': 'Education',
     'summary': 'Face-recognition login API for students, teachers and parents',
     'description': """
@@ -21,6 +21,9 @@
           optional passive anti-spoof model.
         - Enrolment from the app is reviewed by staff before use; staff
           can also enrol in person. Students need a parent's consent.
+        - Record photo: by default the photo on the student, teacher or
+          parent record (CLICK IMAGE / upload) is their face - rebuilt
+          whenever that photo changes (setting use_record_photo).
         - Face embeddings and photos are stored encrypted (bxi_face_key in
           the Odoo config file), separately from the profile picture.
         - Face sessions must confirm the password/OTP (step-up) before
