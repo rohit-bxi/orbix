@@ -8,6 +8,8 @@ username before Odoo's authenticate() runs, so Odoo's own failed-login
 cooldown applies and its log lines never contain the number. Unknown
 numbers and wrong passwords get the same answer.
 """
+import logging
+
 from odoo import http
 from odoo.exceptions import AccessDenied
 from odoo.http import request
@@ -19,12 +21,25 @@ from odoo.addons.bxi_notification_gateway.models.otp_request import OTP_TTL_MINU
 
 from ..models.res_users import EMAIL_OTP_CREDENTIAL, EmailOtpDenied, mask_email
 
+_logger = logging.getLogger(__name__)
+
+# Testing switch (system parameter, off by default): /aadhaar/otp-request
+# also returns the code. Anyone who knows an Aadhaar number can then log in
+# as that person - only for testing without a mail server, never with real
+# families.
+OTP_IN_RESPONSE_PARAM = 'bxi_aadhaar_login.otp_in_response'
+
 SETTING_FIELDS = {
     'enabled': 'bxi_aadhaar_login_enabled',
     'otp_enabled': 'bxi_aadhaar_login_otp_enabled',
     'requires_verified': 'bxi_aadhaar_login_requires_verified',
 }
 ROLES = ('student', 'teacher', 'parent')
+
+
+def otp_in_response():
+    value = request.env['ir.config_parameter'].sudo().get_param(OTP_IN_RESPONSE_PARAM) or ''
+    return value.strip().lower() in ('1', 'true', 'yes', 'on')
 
 
 def _invalid_credentials():
@@ -122,13 +137,28 @@ class BxiAadhaarAuthController(BxiApiAuthController):
         if reason == 'ambiguous':
             return _ambiguous()
         hint = Users._bxi_fake_email_hint(number)
+        testing = otp_in_response()
+        code = None
         if user and user.company_id.bxi_aadhaar_login_otp_enabled:
             email = user._bxi_aadhaar_otp_email(records)
+            Otp = request.env['bxi.otp.request'].sudo()
+            if testing:
+                # Testing switch: a code even without an email address, and
+                # the code itself in the reply.
+                _status, code = Otp._generate_and_email(user, email, purpose='login', return_code=True)
+                if code:
+                    _logger.warning('Aadhaar login testing switch is ON: the login code for user %s was returned '
+                                    'in the API response. Switch it off before real use.', user.id)
+            elif email:
+                Otp._generate_and_email(user, email, purpose='login')
             if email:
-                request.env['bxi.otp.request'].sudo()._generate_and_email(user, email, purpose='login')
                 hint = mask_email(email)
-        return api_response({'sent': True, 'channel': 'email', 'email_hint': hint,
-                             'expires_in': OTP_TTL_MINUTES * 60})
+        data = {'sent': True, 'channel': 'email', 'email_hint': hint, 'expires_in': OTP_TTL_MINUTES * 60}
+        if testing:
+            # null for an unknown number, or when the previous code (sent
+            # less than a minute ago) is still the one to use.
+            data['otp'] = code
+        return api_response(data)
 
     @http.route('/api/v1/auth/aadhaar/otp-login', type='http', auth='public', methods=['POST'], csrf=False)
     @rate_limit('aadhaar_otp_login', limit=10)
@@ -164,7 +194,8 @@ class BxiAadhaarAuthController(BxiApiAuthController):
 
     @staticmethod
     def _settings_response(company):
-        return api_response(dict(company._bxi_aadhaar_settings(), company={'id': company.id, 'name': company.name}))
+        return api_response(dict(company._bxi_aadhaar_settings(), otp_in_response=otp_in_response(),
+                                 company={'id': company.id, 'name': company.name}))
 
     @http.route('/api/v1/admin/aadhaar-login/settings', type='http', auth='public', methods=['GET'], csrf=False)
     @require_auth
@@ -177,7 +208,8 @@ class BxiAadhaarAuthController(BxiApiAuthController):
     @require_auth
     def update_aadhaar_settings(self, **kwargs):
         """Any of {"enabled", "otp_enabled", "requires_verified": bool,
-        "roles": ["student", "teacher", "parent"]}."""
+        "roles": ["student", "teacher", "parent"], "otp_in_response": bool}.
+        otp_in_response is the testing switch (all schools on this server)."""
         if not request.env.user.has_group('base.group_system'):
             return api_error('Not authorized.', status=403, code='forbidden')
         payload = request.get_json_data() or {}
@@ -193,7 +225,12 @@ class BxiAadhaarAuthController(BxiApiAuthController):
                 return api_error('roles must be a list of student, teacher, parent.', status=400,
                                  code='invalid_roles')
             vals.update({f'bxi_aadhaar_login_allow_{role}': role in roles for role in ROLES})
+        if 'otp_in_response' in payload and not isinstance(payload['otp_in_response'], bool):
+            return api_error('otp_in_response must be true or false.', status=400, code='invalid_otp_in_response')
         company = request.env.user.company_id.sudo()
         if vals:
             company.write(vals)
+        if 'otp_in_response' in payload:
+            request.env['ir.config_parameter'].sudo().set_param(
+                OTP_IN_RESPONSE_PARAM, 'True' if payload['otp_in_response'] else 'False')
         return self._settings_response(company)

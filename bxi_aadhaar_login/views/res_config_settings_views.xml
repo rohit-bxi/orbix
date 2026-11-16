@@ -17,6 +17,11 @@
                              invisible="not bxi_aadhaar_login_enabled">
                         <field name="bxi_aadhaar_login_otp_enabled"/>
                     </setting>
+                    <setting id="bxi_aadhaar_login_otp_in_response" string="Show Code in API Response (Testing)"
+                             help="Testing only, while no mail server is set up: the code request also returns the code. Anyone who knows an Aadhaar number can then log in as that person - keep it off with real families. Applies to every school on this server."
+                             invisible="not bxi_aadhaar_login_enabled or not bxi_aadhaar_login_otp_enabled">
+                        <field name="bxi_aadhaar_login_otp_in_response"/>
+                    </setting>
                     <setting id="bxi_aadhaar_login_requires_verified" string="Verified Numbers Only"
                              help="Numbers the family submitted from the app can be used only after an Identity Reviewer verifies them. Numbers typed by the office count as verified."
                              invisible="not bxi_aadhaar_login_enabled">

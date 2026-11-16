@@ -15580,7 +15580,7 @@
                 "otp-request"
               ]
             },
-            "description": "Public. Emails a 6-digit code (valid 10 minutes, one use) to the address on the student/teacher/parent record (a student without one: a linked parent's email). Always {sent: true, channel: \"email\", email_hint, expires_in} - a made-up hint for an unknown number. One email a minute, five an hour per account. 400 invalid_aadhaar, 409 ambiguous_aadhaar.",
+            "description": "Public. Emails a 6-digit code (valid 10 minutes, one use) to the address on the student/teacher/parent record (a student without one: a linked parent's email). Always {sent: true, channel: \"email\", email_hint, expires_in} - a made-up hint for an unknown number. One email a minute, five an hour per account. 400 invalid_aadhaar, 409 ambiguous_aadhaar. Testing switch (system parameter bxi_aadhaar_login.otp_in_response, off by default): the reply also carries \"otp\" (null for an unknown number or within a minute of the previous code). Anyone who knows an Aadhaar number can then log in as that person - testing only.",
             "auth": {
               "type": "noauth"
             },
@@ -15684,10 +15684,10 @@
                 "settings"
               ]
             },
-            "description": "System administrators. Any of enabled / otp_enabled / requires_verified (bool) and roles (list of student, teacher, parent).",
+            "description": "System administrators. Any of enabled / otp_enabled / requires_verified (bool) and roles (list of student, teacher, parent). otp_in_response (bool) is the testing switch that returns the code in the otp-request reply.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"enabled\": true,\n  \"otp_enabled\": true,\n  \"requires_verified\": true,\n  \"roles\": [\n    \"student\",\n    \"teacher\",\n    \"parent\"\n  ]\n}"
+              "raw": "{\n  \"enabled\": true,\n  \"otp_enabled\": true,\n  \"requires_verified\": true,\n  \"roles\": [\n    \"student\",\n    \"teacher\",\n    \"parent\"\n  ],\n  \"otp_in_response\": false\n}"
             }
           },
           "response": []
