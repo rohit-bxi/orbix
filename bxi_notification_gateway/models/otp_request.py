@@ -7,7 +7,7 @@ import logging
 import secrets
 from datetime import timedelta
 
-from odoo import api, fields, models
+from odoo import Command, api, fields, models
 from odoo.tools import formataddr
 
 _logger = logging.getLogger(__name__)
@@ -164,7 +164,11 @@ class BxiOtpRequest(models.Model):
         mail_id = template.sudo().with_context(
             otp_code=code, otp_minutes=OTP_TTL_MINUTES, lang=user.lang,
         ).send_mail(user.id, email_values={
-            'email_to': email, 'email_from': email_from, 'auto_delete': True,
+            # Exactly one recipient: `email`. Clearing recipient_ids keeps a
+            # template edited back to "default recipients" from also mailing
+            # the account's contact (a second copy of the code).
+            'email_to': email, 'recipient_ids': [Command.clear()], 'email_cc': False,
+            'email_from': email_from, 'auto_delete': True,
         })
         mail = self.env['mail.mail'].sudo().browse(mail_id)
         try:
