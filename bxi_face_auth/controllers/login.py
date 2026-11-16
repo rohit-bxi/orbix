@@ -107,6 +107,7 @@ class _Recognition:
             except FaceError as exc:
                 return self.fail(exc.code, exc.message, 400, action=action)
 
+        self.attempt.yaws = ', '.join('%s %+.2f' % (action, analyses[action].yaw) for action in analyses)
         ok, reason, live_score = Service._check_liveness(analyses, self.company)
         if live_score is not None:
             self.attempt.live_score = live_score

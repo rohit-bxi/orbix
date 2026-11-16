@@ -34,6 +34,11 @@ class TestFaceDecisions(BaseCase):
         self.assertEqual(check_liveness({'center': 0.0, 'left': 0.3, 'right': -0.3}, same)[:2], (True, None))
         self.assertEqual(check_liveness({'center': 0.0, 'left': -0.3, 'right': 0.3}, same)[:2], (True, None))
         self.assertEqual(check_liveness({'center': 0.0, 'left': 0.05, 'right': -0.3}, same)[1], 'head_not_turned')
+        # A natural 12-15 degree turn (yaw about 0.10-0.13) is enough by default...
+        self.assertEqual(check_liveness({'center': 0.01, 'left': 0.13, 'right': -0.11}, same)[:2], (True, None))
+        # ...unless the school asks for a bigger turn.
+        self.assertEqual(check_liveness({'center': 0.01, 'left': 0.13, 'right': -0.11}, same, turn_min=0.18)[1],
+                         'head_not_turned')
         self.assertEqual(check_liveness({'center': 0.0, 'left': 0.3, 'right': 0.4}, same)[1], 'head_not_turned')
         self.assertEqual(check_liveness({'center': 0.35, 'left': 0.6, 'right': 0.0}, same)[1], 'not_facing_camera')
         self.assertEqual(check_liveness({'center': 0.0, 'left': 0.3, 'right': -0.3},

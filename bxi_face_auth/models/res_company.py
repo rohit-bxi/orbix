@@ -41,6 +41,9 @@ class ResCompany(models.Model):
         help='How far the best match must be ahead of the next person, else the face is '
              'treated as ambiguous and the user is sent to password/OTP login.')
     bxi_face_liveness_required = fields.Boolean(string='Liveness Check', default=True)
+    bxi_face_turn_min = fields.Float(
+        string='Minimum Head Turn', digits=(4, 3), default=0.10,
+        help='How far the head must turn for the liveness check (yaw change; 0.10 is about 12 degrees).')
     bxi_face_antispoof_threshold = fields.Float(
         string='Anti-spoof Threshold', default=0.80, digits=(3, 2),
         help='Only used when a passive anti-spoof model is installed.')

@@ -47,3 +47,4 @@ class BxiFaceLoginAttempt(models.Model):
     best_score = fields.Float(digits=(4, 3))
     second_score = fields.Float(digits=(4, 3))
     live_score = fields.Float(digits=(4, 3))
+    yaws = fields.Char(string='Head Angles', help='Measured yaw per photo, e.g. "center +0.02, right -0.13, left +0.11".')

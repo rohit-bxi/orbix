@@ -24,7 +24,7 @@ app) is built separately; this module is API only.
   role?" with no session, for a gate, front desk or kiosk screen. Only kiosks and Face Login
   Managers may call it.
 - **Liveness.** Every login starts with a challenge: photograph the face straight, then turned
-  left and right, in a random order, within 60 seconds. A flat photo or screen can't produce the
+  left and right, in a random order, within 60 seconds (a turn of about 12° is enough by default). A flat photo or screen can't produce the
   head turn. The turned photos must also show the same person as the straight one. An optional
   passive anti-spoof model can be added (see Deployment).
 - **Matching runs on the server.** It uses OpenCV Zoo's YuNet detector (MIT) and SFace recogniser
@@ -278,6 +278,7 @@ A student can enrol themselves only after a parent has consented.
 | `kiosk_match_threshold` | `0.55` | Kiosk, 0.2–0.95 |
 | `kiosk_match_gap` | `0.10` | 0–0.5 |
 | `liveness_required` | `true` | Head-turn check. When off, the turned photos must still be the same person |
+| `liveness_turn_min` | `0.10` | How far the head must turn (yaw change, about 0.45 × tan(angle): 0.10 ≈ 12°, 0.18 ≈ 22°), 0.05–0.4. Each attempt logs the measured angles (`yaws` in the attempts list) to tune it |
 | `antispoof_threshold` | `0.80` | Only with an anti-spoof model |
 | `max_failures`, `lockout_minutes` | `5`, `15` | |
 | `student_validity_days` | `365` | 0 = never expires |

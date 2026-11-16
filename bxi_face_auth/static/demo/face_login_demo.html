@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Orbix Face Login Demo</title>
+<style>
+  :root { --bg:#f6f7f9; --card:#fff; --ink:#1d2330; --quiet:#5b6475; --line:#d9dde5; --accent:#2f6fde;
+          --good:#1f8a4c; --bad:#c23b32; --warn:#b26b00; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background:var(--bg); color:var(--ink); }
+  main { max-width: 980px; margin: 0 auto; padding: 20px 16px 40px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  p.sub { margin: 0 0 18px; color: var(--quiet); }
+  .grid { display:grid; grid-template-columns: 1fr 1fr; gap:16px; }
+  @media (max-width: 760px) { .grid { grid-template-columns: 1fr; } }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; }
+  label { display:block; font-size:13px; color:var(--quiet); margin:8px 0 4px; }
+  input { width:100%; padding:9px 10px; border:1px solid var(--line); border-radius:8px; font:inherit; }
+  button { padding:10px 16px; border:0; border-radius:8px; background:var(--accent); color:#fff; font:inherit; font-weight:600; cursor:pointer; }
+  button.secondary { background:#e9edf5; color:var(--ink); }
+  button:disabled { opacity:.5; cursor:not-allowed; }
+  .row { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+  .stage { position:relative; background:#111; border-radius:10px; overflow:hidden; aspect-ratio: 4/3; }
+  video { width:100%; height:100%; object-fit:cover; transform: scaleX(-1); }
+  .prompt { position:absolute; inset:auto 0 0 0; padding:14px; text-align:center; color:#fff; font-size:22px; font-weight:700;
+            background:linear-gradient(transparent, rgba(0,0,0,.75)); min-height:70px; }
+  .prompt small { display:block; font-size:14px; font-weight:500; opacity:.85; }
+  .oval { position:absolute; left:50%; top:46%; width:46%; height:68%; transform:translate(-50%,-50%);
+          border:3px dashed rgba(255,255,255,.55); border-radius:50%; pointer-events:none; }
+  .thumbs { display:flex; gap:8px; margin-top:10px; }
+  .thumbs figure { margin:0; flex:1; text-align:center; font-size:12px; color:var(--quiet); }
+  .thumbs img { width:100%; border-radius:6px; border:1px solid var(--line); background:#eee; aspect-ratio:4/3; object-fit:cover; transform: scaleX(-1); }
+  .result { margin-top:12px; padding:12px; border-radius:8px; display:none; }
+  .result.ok { display:block; background:#e8f5ee; border:1px solid #b6e0c6; }
+  .result.err { display:block; background:#fbecea; border:1px solid #f0c3be; }
+  .result.info { display:block; background:#eef3fd; border:1px solid #c9d8f6; }
+  .result h3 { margin:0 0 6px; font-size:16px; }
+  pre { background:#0f1420; color:#d6dbe6; padding:12px; border-radius:8px; font-size:12px; overflow:auto; max-height:340px; white-space:pre-wrap; word-break:break-word; }
+  .steps { margin:8px 0 0; padding-left:18px; color:var(--quiet); font-size:14px; }
+  .accounts button { margin:4px 6px 0 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Orbix Face Login Demo</h1>
+  <p class="sub">Signs in with your face against the real Orbix API: challenge → three photos (look straight, turn, turn) → result.</p>
+
+  <div class="grid">
+    <section class="card">
+      <div class="stage">
+        <video id="video" autoplay playsinline muted></video>
+        <div class="oval"></div>
+        <div class="prompt" id="prompt">Start the camera<small>Front camera, good light, one face in view</small></div>
+      </div>
+      <div class="row">
+        <button id="btnCamera">1. Start camera</button>
+        <button id="btnLogin" disabled>2. Sign in with face</button>
+      </div>
+      <div class="thumbs" id="thumbs"></div>
+      <div class="result" id="result"></div>
+    </section>
+
+    <section class="card">
+      <label for="server">Server</label>
+      <input id="server" value="https://app.orbixschools.com">
+      <label for="hint">Login hint (the account this phone remembers; leave empty for face-only search)</label>
+      <input id="hint" value="vijay.dubey@bxitech.com">
+      <label for="device">Device name</label>
+      <input id="device" value="Face login demo (browser)">
+      <ol class="steps">
+        <li>Sit facing the camera, face inside the oval, good light from the front.</li>
+        <li>When asked to turn, turn your head (not just your eyes) about 15° and hold it until the photo is taken.</li>
+        <li>All three photos must be taken within 60 seconds of starting.</li>
+      </ol>
+      <label>Request log</label>
+      <pre id="log">(nothing yet)</pre>
+    </section>
+  </div>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const video = $('video');
+const PROMPTS = {
+  center: ['Look straight at the camera', 'Keep still'],
+  right: ['Turn your head to the RIGHT', 'Turn clearly and hold'],
+  left: ['Turn your head to the LEFT', 'Turn clearly and hold'],
+};
+const HINTS = {
+  liveness_failed: 'The head turn was not clear enough. Turn your head (not just your eyes) about 15° and hold until the photo is taken.',
+  head_not_turned: 'Turn your head (not just your eyes) about 15° and hold it until the photo is taken.',
+  face_not_recognised: 'The face did not match the registered face for this account (or face login is off for it). Try better light, or update the record photo.',
+  no_face: 'No face found. Face the camera in good light.',
+  multiple_faces: 'Only one person may be in view.',
+  poor_quality: 'Photo too small or blurred. Move closer and hold still.',
+  challenge_expired: 'Took longer than 60 seconds. Start again.',
+  locked: 'Too many failed attempts on this account. Wait 15 minutes or use the password.',
+  ambiguous: 'The face is too close to another person. Use the password.',
+  missing_login_hint: 'Face-only login is off at this school: enter the login hint.',
+  face_engine_unavailable: 'Server problem: face engine unavailable.',
+  rate_limited: 'Too many requests. Wait a minute.',
+};
+let busy = false;
+
+function log(title, data) {
+  const el = $('log');
+  if (el.textContent === '(nothing yet)') el.textContent = '';
+  const text = typeof data === 'string' ? data : JSON.stringify(data, (k, v) =>
+    (typeof v === 'string' && v.length > 120) ? v.slice(0, 60) + `… (${v.length} chars)` : v, 2);
+  el.textContent = `[${new Date().toLocaleTimeString()}] ${title}\n${text}\n\n` + el.textContent;
+}
+function setPrompt(main, small = '') { $('prompt').innerHTML = `${main}<small>${small}</small>`; }
+function showResult(kind, html) { const r = $('result'); r.className = 'result ' + kind; r.innerHTML = html; }
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const api = (path) => $('server').value.replace(/\/+$/, '') + path;
+
+async function post(path, body) {
+  log('POST ' + path, body);
+  const resp = await fetch(api(path), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) });
+  let data;
+  try { data = await resp.json(); } catch (e) { data = { success: false, error: { code: 'http_' + resp.status, message: await resp.text() } }; }
+  log(`→ HTTP ${resp.status}`, data);
+  return data;
+}
+
+$('btnCamera').onclick = async () => {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 960 } }, audio: false });
+    video.srcObject = stream;
+    await video.play();
+    $('btnLogin').disabled = false;
+    setPrompt('Camera ready', 'Press “Sign in with face”');
+  } catch (e) {
+    showResult('err', `<h3>Camera not available</h3>${esc(e.message)}<br>Open this page over https:// or http://localhost and allow the camera.`);
+  }
+};
+
+function capture() {
+  const canvas = document.createElement('canvas');
+  const w = video.videoWidth, h = video.videoHeight;
+  const scale = Math.min(1, 1280 / Math.max(w, h));
+  canvas.width = Math.round(w * scale); canvas.height = Math.round(h * scale);
+  canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+  return canvas.toDataURL('image/jpeg', 0.9);
+}
+
+async function countdown(action) {
+  const [main, small] = PROMPTS[action] || [action, ''];
+  for (let n = 3; n >= 1; n--) { setPrompt(`${main} · ${n}`, small); await sleep(800); }
+  setPrompt(`${main} · 📸`, 'Hold…');
+  await sleep(250);
+}
+
+$('btnLogin').onclick = async () => {
+  if (busy) return;
+  busy = true; $('btnLogin').disabled = true; $('thumbs').innerHTML = ''; showResult('info', 'Getting a challenge…');
+  try {
+    const ch = await post('/api/v1/auth/face-login/challenge', {});
+    if (!ch.success) throw ch.error;
+    const { challenge_id, actions } = ch.data;
+    const frames = [];
+    for (const action of actions) {
+      await countdown(action);
+      const image = capture();
+      frames.push({ action, image });
+      $('thumbs').insertAdjacentHTML('beforeend', `<figure><img src="${image}"><figcaption>${action}</figcaption></figure>`);
+      setPrompt('Got it', '');
+      await sleep(400);
+    }
+    setPrompt('Checking…', 'Matching on the server');
+    const body = { challenge_id, device_name: $('device').value, frames };
+    if ($('hint').value.trim()) body.login_hint = $('hint').value.trim();
+    const res = await post('/api/v1/auth/face-login', body);
+    handle(res);
+  } catch (err) {
+    showError(err);
+  } finally {
+    busy = false; $('btnLogin').disabled = false;
+  }
+};
+
+function showError(error) {
+  const code = (error && (error.code || error.reason)) || 'error';
+  setPrompt('Not signed in', 'See the result below');
+  showResult('err', `<h3>✗ ${esc(code)}</h3>${esc(error && error.message)}<br><b>What to do:</b> ${esc(HINTS[code] || 'Try again.')}`);
+}
+
+function handle(res) {
+  if (!res.success) return showError(res.error);
+  const d = res.data;
+  if (d.selection_required) {
+    setPrompt('Choose an account', '');
+    const buttons = d.accounts.map((a) => `<button data-id="${a.user_id}">${esc(a.name)} — ${esc(a.role)}</button>`).join('');
+    showResult('info', `<h3>One face, several accounts</h3><div class="accounts">${buttons}</div>`);
+    $('result').querySelectorAll('button').forEach((b) => b.onclick = async () => {
+      handle(await post('/api/v1/auth/face-login/select', { selection_token: d.selection_token, user_id: Number(b.dataset.id) }));
+    });
+    return;
+  }
+  const id = d.identity || {};
+  const record = id.student ? `Student: ${esc(id.student.name)}${id.student.class ? ' · ' + esc(id.student.class.name) : ''}${id.student.section ? ' / ' + esc(id.student.section.name) : ''}`
+    : id.teacher ? `Teacher: ${esc(id.teacher.name)}` : id.parent ? `Parent: ${esc(id.parent.name)}` : '';
+  setPrompt('Signed in ✓', esc(id.name));
+  showResult('ok', `<h3>✓ Signed in as ${esc(id.name || (d.user && d.user.name))}</h3>
+    Role: <b>${esc(id.role)}</b>${id.roles && id.roles.length > 1 ? ' (also ' + esc(id.roles.slice(1).join(', ')) + ')' : ''}<br>
+    ${record}<br>
+    Login: ${esc(d.user && d.user.login)} · method: ${esc(d.auth_method)} · token …${esc(String(d.token).slice(-6))}`);
+}
+</script>
+</body>
+</html>

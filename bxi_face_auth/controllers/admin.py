@@ -37,6 +37,7 @@ SETTINGS = {
     'kiosk_match_threshold': ('bxi_face_kiosk_match_threshold', 'float', 0.2, 0.95),
     'kiosk_match_gap': ('bxi_face_kiosk_match_gap', 'float', 0.0, 0.5),
     'liveness_required': ('bxi_face_liveness_required', 'bool', None, None),
+    'liveness_turn_min': ('bxi_face_turn_min', 'float', 0.05, 0.4),
     'antispoof_threshold': ('bxi_face_antispoof_threshold', 'float', 0.0, 1.0),
     'max_failures': ('bxi_face_max_failures', 'int', 1, 20),
     'lockout_minutes': ('bxi_face_lockout_minutes', 'int', 1, 1440),
@@ -427,6 +428,7 @@ class BxiFaceAdminController(http.Controller):
             'best_score': round(attempt.best_score, 3),
             'second_score': round(attempt.second_score, 3),
             'live_score': round(attempt.live_score, 3) if attempt.live_score else None,
+            'yaws': attempt.yaws or None,
         } for attempt in attempts], meta={'total': Attempt.search_count(domain), 'limit': limit, 'offset': offset})
 
     # -- kiosks ----------------------------------------------------------------------------
