@@ -66,4 +66,8 @@ class BxiPeopleService(models.AbstractModel):
     @api.model
     def _face_status(self, user):
         from ..controllers.common import face_status
-        return face_status(user)
+        status = face_status(user)
+        # Why the photo on the record could not be used as the face, if so
+        # (e.g. poor_quality: face too small or blurred - retake it closer).
+        status['record_photo_problem'] = user.sudo().bxi_face_photo_error or None
+        return status

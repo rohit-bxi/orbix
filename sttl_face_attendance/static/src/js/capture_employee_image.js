@@ -36,7 +36,9 @@ class CaptureEmployeeImage extends Component {
     _start_video_stream() {
         const self = this;
         setTimeout(() => {
-            navigator.mediaDevices.getUserMedia({ video: true })
+            // Ask for HD: this photo is also the person's face for face login,
+            // which needs the face at least 80 px wide.
+            navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1280 }, height: { ideal: 720 } } })
                 .then(function (stream) {
                     var video = document.getElementById('video');
                     video.srcObject = stream;
@@ -63,15 +65,21 @@ class CaptureEmployeeImage extends Component {
             var canvas = document.getElementById('canvas');
             var context = canvas.getContext('2d');
 
-            const targetWidth = 320;
-            const targetHeight = 240;
+            // Keep the camera's own size and aspect ratio (at most 1280 px):
+            // a fixed 320x240 made faces too small (and stretched on
+            // widescreen cameras) for face login.
+            const sourceWidth = video.videoWidth || 640;
+            const sourceHeight = video.videoHeight || 480;
+            const scale = Math.min(1, 1280 / Math.max(sourceWidth, sourceHeight));
+            const targetWidth = Math.round(sourceWidth * scale);
+            const targetHeight = Math.round(sourceHeight * scale);
 
             canvas.width = targetWidth;
             canvas.height = targetHeight;
 
             context.drawImage(video, 0, 0, targetWidth, targetHeight);
 
-            var imageData = canvas.toDataURL('image/png');
+            var imageData = canvas.toDataURL('image/jpeg', 0.92);
 
             this.orm.call(this.resModel, 'register_face', [this.resId, imageData])
             .then(function (result) {

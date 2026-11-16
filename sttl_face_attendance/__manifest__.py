@@ -2,7 +2,7 @@
 
 {
     'name': 'Face Recognition for HR Attendance',
-    'version': '19.0.1.4',
+    'version': '19.0.1.5',
     'summary': 'Face Recognition for HR Attendance',
     'category': 'Human Resources',
     'depends': ['hr_attendance', 'hr', 'openeducat_core', 'openeducat_parent'],

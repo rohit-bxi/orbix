@@ -80,6 +80,9 @@ class TestRecordPhotoFaceLogin(FaceHttpCase):
         self.faculty.image_1920 = record_photo(None)
         self.assertFalse(self._record_faces(self.teacher_user), 'An unusable photo removes the old face.')
         self.assertEqual(self.teacher_user.sudo().bxi_face_photo_error, 'no_face')
+        office = self.headers('rp_office', 'OfficePass1!')
+        face = self.url_open('/api/v1/teachers/%s/account' % self.faculty.id, headers=office).json()['data']['face']
+        self.assertEqual(face['record_photo_problem'], 'no_face', 'The office sees why the photo was not used.')
         self.faculty.image_1920 = False
         self.assertFalse(self.teacher_user.sudo().bxi_face_photo_error)
 
