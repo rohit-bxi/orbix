@@ -2,8 +2,15 @@
 # Copyright (c) 2026 BXI Technology Pvt. Ltd. All Rights Reserved.
 # License OPL-1 (Odoo Proprietary License v1.0, see LICENSE file for full text).
 
-from odoo import _, fields, models
-from odoo.exceptions import UserError
+from odoo import _, api, fields, models
+from odoo.exceptions import UserError, ValidationError
+
+from .aadhaar import AadhaarInUseError, aadhaar_hash, clean_aadhaar, mask_aadhaar, normalize_aadhaar
+
+# The people records an Aadhaar number can sit on. One number belongs to
+# one person: it may appear on several of these records only when they are
+# the same person (same login or same contact).
+AADHAAR_MODELS = ('op.student', 'op.faculty', 'op.parent')
 
 VERIFICATION_STATUSES = [
     ('unverified', 'Unverified'),
@@ -25,10 +32,19 @@ class BxiIdentityVerificationMixin(models.AbstractModel):
     _description = 'Identity Verification Fields'
 
     aadhar_card = fields.Char(
-        string='Aadhaar Number',
+        string='Aadhaar Number', copy=False,
         groups='bxi_identity_verification.group_identity_reviewer',
         help='Restricted to Identity Reviewers - other users with read '
-             'access to this record do not see this field.')
+             'access to this record do not see this field. Saved as 12 '
+             'digits; a number typed by the school office counts as verified.')
+    bxi_aadhaar_hash = fields.Char(
+        compute='_compute_bxi_aadhaar', store=True, index=True, copy=False,
+        groups='base.group_system',
+        help='Keyed hash of the Aadhaar number, used to look the number up (e.g. Aadhaar login) '
+             'without a searchable plain copy.')
+    bxi_aadhaar_last4 = fields.Char(
+        string='Aadhaar Last 4 Digits', compute='_compute_bxi_aadhaar', store=True, copy=False)
+    bxi_aadhaar_masked = fields.Char(string='Aadhaar', compute='_compute_bxi_aadhaar_masked')
     aadhar_verification_status = fields.Selection(
         VERIFICATION_STATUSES, string='Aadhaar Status', default='unverified', tracking=True)
     aadhar_submitted_at = fields.Datetime(readonly=True, copy=False)
@@ -57,6 +73,100 @@ class BxiIdentityVerificationMixin(models.AbstractModel):
     id_document_submitted_at = fields.Datetime(readonly=True, copy=False)
     id_document_verified_at = fields.Datetime(readonly=True, copy=False)
     id_document_notes = fields.Text(string='ID Document Review Notes')
+
+    # -- Aadhaar number ------------------------------------------------------------
+
+    @api.depends('aadhar_card')
+    def _compute_bxi_aadhaar(self):
+        for record in self:
+            digits = normalize_aadhaar(record.sudo().aadhar_card)
+            record.bxi_aadhaar_hash = aadhaar_hash(self.env, digits) if digits else False
+            record.bxi_aadhaar_last4 = digits[-4:] if digits else False
+
+    @api.depends('bxi_aadhaar_last4')
+    def _compute_bxi_aadhaar_masked(self):
+        for record in self:
+            record.bxi_aadhaar_masked = mask_aadhaar(record.bxi_aadhaar_last4) or False
+
+    def _bxi_aadhaar_partner(self):
+        """The contact of this person (op.parent overrides: its `name`)."""
+        self.ensure_one()
+        return self.partner_id if 'partner_id' in self._fields else self.env['res.partner']
+
+    def _bxi_same_person(self, other):
+        """True when `other` (a record of an AADHAAR_MODELS model) is the
+        same person as this record: same login, or same contact."""
+        self.ensure_one()
+        if self._name == other._name and self.id == other.id:
+            return True
+        user, other_user = self.sudo().user_id, other.sudo().user_id
+        if user and other_user:
+            return user == other_user
+        partner, other_partner = self._bxi_aadhaar_partner(), other._bxi_aadhaar_partner()
+        return bool(partner) and partner == other_partner
+
+    @api.model
+    def _bxi_aadhaar_holders(self, digits):
+        """Every student/teacher/parent record (archived ones included)
+        holding the normalized Aadhaar number `digits`."""
+        hashed = aadhaar_hash(self.env, digits)
+        holders = []
+        for model in AADHAAR_MODELS:
+            if model in self.env:
+                holders.extend(self.env[model].sudo().with_context(active_test=False).search(
+                    [('bxi_aadhaar_hash', '=', hashed)]))
+        return holders
+
+    def _bxi_aadhaar_conflict(self, digits):
+        """A record of another person already holding `digits`, or None."""
+        self.ensure_one()
+        for holder in self._bxi_aadhaar_holders(digits):
+            if not self._bxi_same_person(holder):
+                return holder
+        return None
+
+    @api.constrains('aadhar_card', 'user_id')
+    def _check_bxi_aadhaar(self):
+        for record in self:
+            value = record.sudo().aadhar_card
+            if not value:
+                continue
+            digits = normalize_aadhaar(value)
+            if not digits:
+                raise ValidationError(_(
+                    'Enter a valid 12-digit Aadhaar number (it cannot start with 0 or 1, '
+                    'and the last digit is a check digit).'))
+            if record._bxi_aadhaar_conflict(digits):
+                raise AadhaarInUseError(_('This Aadhaar number is already registered to another person.'))
+
+    @api.model
+    def _bxi_prepare_aadhaar_vals(self, vals):
+        """Clean an `aadhar_card` value in create/write vals. A number set
+        by the school office (anything but the family's own submission,
+        see _submit_aadhar) counts as verified; clearing it resets the
+        status."""
+        if 'aadhar_card' not in vals:
+            return vals
+        vals = dict(vals)
+        cleaned = clean_aadhaar(vals['aadhar_card'])
+        vals['aadhar_card'] = cleaned or False
+        if self.env.context.get('bxi_aadhaar_self_submitted') or 'aadhar_verification_status' in vals:
+            return vals
+        now = fields.Datetime.now()
+        if cleaned:
+            vals.update(aadhar_verification_status='verified', aadhar_verified_at=now)
+            vals.setdefault('aadhar_submitted_at', now)
+        else:
+            vals.update(aadhar_verification_status='unverified', aadhar_verified_at=False,
+                        aadhar_submitted_at=False)
+        return vals
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        return super().create([self._bxi_prepare_aadhaar_vals(vals) for vals in vals_list])
+
+    def write(self, vals):
+        return super().write(self._bxi_prepare_aadhaar_vals(vals))
 
     def _submit_id_documents(self, files, doc_type=False):
         """Attach uploaded ID proof - [{name, content (bytes), mimetype}] -
@@ -92,13 +202,17 @@ class BxiIdentityVerificationMixin(models.AbstractModel):
         self.write({'id_document_status': 'rejected'})
 
     def _submit_aadhar(self, aadhar_number):
+        """The family's own submission from the app: waits for a reviewer
+        (status 'pending'). Raises ValidationError for an invalid number
+        and AadhaarInUseError for someone else's."""
         self.ensure_one()
         if not aadhar_number:
             raise UserError(_('An Aadhaar number is required.'))
-        self.write({
+        self.with_context(bxi_aadhaar_self_submitted=True).write({
             'aadhar_card': aadhar_number,
             'aadhar_verification_status': 'pending',
             'aadhar_submitted_at': fields.Datetime.now(),
+            'aadhar_verified_at': False,
         })
 
     def _submit_face(self, image_data):

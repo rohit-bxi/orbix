@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Login code emailed by bxi.otp.request._generate_and_email (Aadhaar
+         login). The school may edit the wording; keep the code placeholder. -->
+    <record id="mail_template_otp_email" model="mail.template">
+        <field name="name">Orbix: Login Code</field>
+        <field name="model_id" ref="base.model_res_users"/>
+        <field name="subject">Your {{ object.company_id.name }} login code</field>
+        <field name="auto_delete" eval="True"/>
+        <field name="body_html" type="html">
+<div style="font-family: Arial, sans-serif; font-size: 14px;">
+    <p>Hello <t t-out="object.name or ''"/>,</p>
+    <p>Your login code for <t t-out="object.company_id.name or ''"/> is:</p>
+    <p style="font-size: 24px; font-weight: bold; letter-spacing: 4px;"><t t-out="ctx.get('otp_code') or ''"/></p>
+    <p>It expires in <t t-out="ctx.get('otp_minutes') or 10"/> minutes and can be used once.</p>
+    <p>If you did not try to log in, you can ignore this email. Never share this code with anyone.</p>
+</div>
+        </field>
+    </record>
+</odoo>

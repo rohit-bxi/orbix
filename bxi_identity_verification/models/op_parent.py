@@ -12,3 +12,7 @@ class OpParent(models.Model):
     id_document_ids = fields.Many2many(
         'ir.attachment', 'op_parent_id_document_rel', 'parent_id', 'attachment_id', string='ID Documents',
         help='Scanned ID proof (image or PDF) sent for verification.')
+
+    def _bxi_aadhaar_partner(self):
+        self.ensure_one()
+        return self.name

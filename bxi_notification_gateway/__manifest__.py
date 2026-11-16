@@ -2,7 +2,7 @@
 
 {
     'name': 'Orbix Notification Gateway',
-    'version': '19.0.1.3.0',
+    'version': '19.0.1.4.0',
     'category': 'Education',
     'summary': 'SMS/OTP (MSG91) and push (FCM) notifications for the Orbix mobile app',
     'description': """
@@ -23,6 +23,9 @@
           (`/api/v1/auth/password/forgot` + `/reset`), and OTP as the
           step-up confirmation for phone-only accounts
           (`/api/v1/auth/step-up/otp-request`).
+        - Emailed login codes for an account (bxi.otp.request with channel
+          'email', `_generate_and_email` / `_verify_for_user`), used by
+          Aadhaar login (bxi_aadhaar_login).
         - Push notifications: app device registry (bxi.api.device), the
           per-user in-app inbox (bxi.notification, created via
           `_notify(...)`) and the FCM HTTP v1 sender a cron uses to
@@ -33,11 +36,13 @@
     'website': 'https://bxitech.com/',
     'depends': [
         'base',
+        'mail',
         'bxi_api',
     ],
     'data': [
         'security/ir.model.access.csv',
         'data/ir_cron_data.xml',
+        'data/mail_template_otp.xml',
         'views/res_config_settings_views.xml',
         'views/push_views.xml',
     ],

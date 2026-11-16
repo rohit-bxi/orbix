@@ -11,8 +11,9 @@ Create/update bodies are JSON. Common blocks:
   "status": teacher employment status / student enrolment state /
             parent "active" | "inactive". Whether someone can sign in
             (Account Status) is a separate login setting.
-  "account", "face", "id_verification" (and "documents" for teachers):
-            Account & Security - see people_account.py.
+  "account", "face", "id_verification", "aadhaar_number" (and
+            "documents" for teachers): Account & Security - see
+            people_account.py.
 Everything a request asks for is saved together or not at all; login
 credentials are sent only once it is saved.
 """
@@ -31,8 +32,9 @@ from .common import (
     resolve_records, running_enrollment, school_context,
 )
 from .people_account import (
-    account_dict, apply_account, apply_documents, apply_face, apply_id_verification, deliver, document_dict,
-    is_manager, parse_account, parse_documents, parse_face, parse_id_verification, security_dict, transaction,
+    account_dict, apply_aadhaar, apply_account, apply_documents, apply_face, apply_id_verification, deliver,
+    document_dict, is_manager, parse_aadhaar, parse_account, parse_documents, parse_face, parse_id_verification,
+    security_dict, transaction,
 )
 from .profile import _image_response, _student_detail, student_summary
 STUDENT_FIELDS = (
@@ -73,7 +75,7 @@ def _security_blocks(payload, teacher=False):
     """(blocks, error): the parsed Account & Security blocks of a body."""
     blocks = {}
     for key, parser in (('account', parse_account), ('face', parse_face),
-                        ('id_verification', parse_id_verification)):
+                        ('id_verification', parse_id_verification), ('aadhaar', parse_aadhaar)):
         blocks[key], error = parser(payload)
         if error:
             return None, error
@@ -88,6 +90,7 @@ def _security_blocks(payload, teacher=False):
 def _apply_security(record, blocks):
     """Apply parsed blocks inside the transaction; returns the credentials
     still to deliver."""
+    apply_aadhaar(record, blocks['aadhaar'])
     delivery = apply_account(record, blocks['account'])
     apply_face(record, blocks['face'])
     apply_id_verification(record, blocks['id_verification'])

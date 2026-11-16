@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.bxi.aadhaar.login</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="bxi_notification_gateway.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//app[@name='bxi_notification_gateway']" position="inside">
+                <block title="Aadhaar Login" name="bxi_aadhaar_login"
+                       help="Students, teachers and parents may type their Aadhaar number instead of their username, then use their password or a code emailed to the address on their school record.">
+                    <setting id="bxi_aadhaar_login_enabled" string="Aadhaar Login"
+                             help="Offer Aadhaar login in the app and on the website login page.">
+                        <field name="bxi_aadhaar_login_enabled"/>
+                    </setting>
+                    <setting id="bxi_aadhaar_login_otp_enabled" string="Email Code"
+                             help="Allow a one-time code emailed to the address on the record instead of the password. Needs an outgoing mail server."
+                             invisible="not bxi_aadhaar_login_enabled">
+                        <field name="bxi_aadhaar_login_otp_enabled"/>
+                    </setting>
+                    <setting id="bxi_aadhaar_login_requires_verified" string="Verified Numbers Only"
+                             help="Numbers the family submitted from the app can be used only after an Identity Reviewer verifies them. Numbers typed by the office count as verified."
+                             invisible="not bxi_aadhaar_login_enabled">
+                        <field name="bxi_aadhaar_login_requires_verified"/>
+                    </setting>
+                    <setting id="bxi_aadhaar_login_roles" string="Who Can Use It"
+                             invisible="not bxi_aadhaar_login_enabled">
+                        <div class="d-flex flex-column">
+                            <div><field name="bxi_aadhaar_login_allow_student" class="oe_inline"/> <label for="bxi_aadhaar_login_allow_student" string="Students"/></div>
+                            <div><field name="bxi_aadhaar_login_allow_teacher" class="oe_inline"/> <label for="bxi_aadhaar_login_allow_teacher" string="Teachers"/></div>
+                            <div><field name="bxi_aadhaar_login_allow_parent" class="oe_inline"/> <label for="bxi_aadhaar_login_allow_parent" string="Parents"/></div>
+                        </div>
+                    </setting>
+                </block>
+            </xpath>
+        </field>
+    </record>
+</odoo>

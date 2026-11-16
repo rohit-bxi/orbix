@@ -2,9 +2,9 @@
 
 {
     'name': 'Orbix Identity Verification',
-    'version': '19.0.1.2.0',
+    'version': '19.0.1.3.0',
     'category': 'Education',
-    'summary': 'Aadhaar and face-photo identity verification for students and parents, via the Orbix API',
+    'summary': 'Aadhaar and face-photo identity verification for students, teachers and parents, via the Orbix API',
     'description': """
         Orbix Identity Verification
         ==============================
