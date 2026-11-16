@@ -16,7 +16,7 @@ from odoo import api, fields, models, tools
 from odoo.tools import config
 
 from ..lib import engine as engine_lib
-from ..lib.matching import SAME_PERSON_MIN, check_liveness, decide
+from ..lib.matching import SAME_PERSON_MIN, TURN_MIN_DELTA, check_liveness, decide
 
 _logger = logging.getLogger(__name__)
 
@@ -280,6 +280,7 @@ class BxiFaceService(models.AbstractModel):
             consistency,
             [analysis.live_score for analysis in analyses.values()],
             company.bxi_face_antispoof_threshold,
+            turn_min=company.bxi_face_turn_min or TURN_MIN_DELTA,
         )
 
     # -- lockout -------------------------------------------------------------------

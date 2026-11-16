@@ -149,6 +149,16 @@ class TestFaceLogin(FaceHttpCase):
         self.assertEqual(resp.json()['error']['code'], 'liveness_failed')
         attempt = self.env['bxi.face.login.attempt'].sudo().search([], limit=1)
         self.assertEqual(attempt.reason, 'head_not_turned')
+        self.assertIn('center +0.00', attempt.yaws, 'The measured head angles are kept for tuning.')
+
+    def test_natural_head_turn_passes(self):
+        # About 12-15 degrees each way: what people do without being coached.
+        self.enrol(self.teacher_user, 'tara')
+        resp = self.face_login('tara', login_hint='face_teacher', yaws={'left': 0.12, 'right': -0.12})
+        self.assertEqual(resp.status_code, 200, resp.text)
+        self.company.bxi_face_turn_min = 0.2
+        resp = self.face_login('tara', login_hint='face_teacher', yaws={'left': 0.12, 'right': -0.12})
+        self.assertEqual(resp.json()['error']['code'], 'liveness_failed', 'A stricter school setting applies.')
 
     def test_turns_in_same_direction_fail(self):
         self.enrol(self.teacher_user, 'tara')

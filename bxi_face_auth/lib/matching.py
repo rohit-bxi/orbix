@@ -13,7 +13,11 @@ SAME_PERSON_MIN = 0.30
 # |yaw| allowed on the "center" frame, and the minimum change from it on
 # each turned frame (see engine.yaw_from_landmarks: ~0.2 is ~20 degrees).
 CENTER_MAX_YAW = 0.20
-TURN_MIN_DELTA = 0.18
+# Minimum change in yaw between the straight and a turned photo. Yaw is
+# about 0.45 x tan(angle), so 0.10 is a turn of roughly 12 degrees; a flat
+# photo turned in front of the camera stays near 0. Default for the
+# company setting bxi_face_turn_min.
+TURN_MIN_DELTA = 0.10
 
 TURN_ACTIONS = ('left', 'right')
 
@@ -45,7 +49,7 @@ def decide(user_scores, threshold, gap, same_person=None):
     return ('match' if len(matches) == 1 else 'select'), matches
 
 
-def check_liveness(yaws, consistency, live_scores=None, antispoof_threshold=None):
+def check_liveness(yaws, consistency, live_scores=None, antispoof_threshold=None, turn_min=TURN_MIN_DELTA):
     """Check a head-turn challenge.
 
     `yaws` maps action -> yaw of that frame (must contain 'center').
@@ -73,7 +77,7 @@ def check_liveness(yaws, consistency, live_scores=None, antispoof_threshold=None
     for action in TURN_ACTIONS:
         if action in yaws:
             delta = yaws[action] - center
-            if abs(delta) < TURN_MIN_DELTA:
+            if abs(delta) < turn_min:
                 return False, 'head_not_turned', min_live
             deltas[action] = delta
     if len(deltas) == 2 and (deltas['left'] > 0) == (deltas['right'] > 0):
