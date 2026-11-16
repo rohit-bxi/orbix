@@ -8,6 +8,7 @@ import secrets
 from datetime import timedelta
 
 from odoo import api, fields, models
+from odoo.tools import formataddr
 
 _logger = logging.getLogger(__name__)
 
@@ -131,6 +132,25 @@ class BxiOtpRequest(models.Model):
         return (status, code) if return_code else status
 
     @api.model
+    def _bxi_email_sender(self, company):
+        """From address for school emails: the company email, else Odoo's
+        default sender (mail.default.from), else the address of the
+        outgoing mail server itself (its from-filter or login), so a school
+        that only set up a mail server still sends."""
+        if company.email:
+            return company.email_formatted
+        MailServer = self.env['ir.mail_server'].sudo()
+        default = MailServer._get_default_from_address()
+        if default:
+            return default
+        for server in MailServer.search([], order='sequence, id'):
+            for candidate in (server.from_filter, server.smtp_user):
+                candidate = (candidate or '').strip()
+                if '@' in candidate and ',' not in candidate and ' ' not in candidate:
+                    return formataddr((company.name or '', candidate))
+        return False
+
+    @api.model
     def _send_otp_email(self, user, email, code):
         """Send `code` now with the 'Orbix: Login Code' email template.
         The mail record is deleted afterwards, sent or not, so the code is
@@ -140,8 +160,7 @@ class BxiOtpRequest(models.Model):
             _logger.warning('Login code email template is missing; code not sent.')
             return False
         company = user.company_id or self.env.company
-        email_from = (company.email_formatted or self.env['ir.mail_server'].sudo()._get_default_from_address()
-                      or False)
+        email_from = self._bxi_email_sender(company)
         mail_id = template.sudo().with_context(
             otp_code=code, otp_minutes=OTP_TTL_MINUTES, lang=user.lang,
         ).send_mail(user.id, email_values={

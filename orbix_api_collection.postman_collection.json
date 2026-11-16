@@ -257,7 +257,7 @@
                 }
               ]
             },
-            "description": "Requires auth. Caller must be staff, the parent record itself, or a parent linked to the student. Staff here means Identity Reviewers and system admins only; anyone else may act only on their own parent record or their linked children (403 forbidden)."
+            "description": "aadhar_verification_status, face_verification_status and an \"aadhaar\" block: status, has_number, number_valid (false = an old number that fails the Aadhaar format: correct it), number_masked, last4, submitted_at, verified_at, notes; aadhar_number (full) only for reviewers/office."
           },
           "response": []
         },
@@ -273,7 +273,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"subject_type\": \"student\",\n  \"subject_id\": {{student_id}},\n  \"aadhar_number\": \"123456789012\"\n}"
+              "raw": "{\n  \"subject_type\": \"student\",\n  \"subject_id\": {{student_id}},\n  \"aadhar_number\": \"2345 6789 0124\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/v1/identity/aadhar/submit",
@@ -288,7 +288,74 @@
                 "submit"
               ]
             },
-            "description": "Requires auth. Staff here means Identity Reviewers and system admins only; anyone else may act only on their own parent record or their linked children (403 forbidden). Face-login sessions must confirm first via Auth > Step-up (403 step_up_required)."
+            "description": "Submit an Aadhaar number for review (status \"pending\"). subject_type student | parent | teacher. Allowed for the person themselves (own login), a parent for a linked student, and reviewers/office. The number must be a real Aadhaar format: 12 digits, not starting with 0/1, valid Verhoeff check digit (e.g. 2345 6789 0124; 123456789012 is NOT valid). Spaces/dashes allowed; \"aadhaar_number\" also accepted. Re-sending the same already verified number keeps it verified. Errors: 400 invalid_aadhar, 409 aadhaar_in_use. Reply: aadhar_verification_status + \"aadhaar\" block (masked number; full number only for reviewers)."
+          },
+          "response": []
+        },
+        {
+          "name": "Pending Aadhaar Reviews",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/identity/aadhar/pending?subject_type=student&limit=50&offset=0",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "identity",
+                "aadhar",
+                "pending"
+              ],
+              "query": [
+                {
+                  "key": "subject_type",
+                  "value": "student"
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
+            },
+            "description": "Identity Reviewers / office / admins. Aadhaar numbers waiting for review (oldest first) with the full number, subject_type, subject_id, name. subject_type optional. meta: total, limit, offset."
+          },
+          "response": []
+        },
+        {
+          "name": "Review Aadhaar (verify / reject)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/identity/aadhar/review",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "identity",
+                "aadhar",
+                "review"
+              ]
+            },
+            "description": "Identity Reviewers / office / admins. For a number with status \"pending\". decision verify | reject, notes optional. A verified number can be used for Aadhaar login. Errors: 400 invalid_decision, invalid_transition (not pending), invalid_aadhar (stored number not valid), 403 forbidden.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subject_type\": \"student\",\n  \"subject_id\": {{student_id}},\n  \"decision\": \"verify\",\n  \"notes\": \"Matches the Aadhaar card\"\n}"
+            }
           },
           "response": []
         },
