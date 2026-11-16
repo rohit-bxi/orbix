@@ -5,3 +5,4 @@ from . import test_identity
 from . import test_identity_mixin_model
 from . import test_id_documents
 from . import test_aadhaar
+from . import test_aadhaar_review

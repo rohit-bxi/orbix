@@ -143,7 +143,7 @@ class BxiPeopleService(models.AbstractModel):
         mail = self.env['mail.mail'].sudo().create({
             'subject': _('Your %s login', company.name),
             'email_to': email,
-            'email_from': company.email_formatted or self.env['ir.mail_server']._get_default_from_address()
+            'email_from': self.env['bxi.otp.request']._bxi_email_sender(company)
             or self.env.user.email_formatted or False,
             'body_html': body,
             'auto_delete': True,

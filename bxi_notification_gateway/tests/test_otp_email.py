@@ -117,3 +117,19 @@ class TestBxiOtpEmail(TransactionCase):
         self.assertEqual(self.Otp._verify_for_user(self.user, code), (True, None))
         self.assertEqual(self.Otp._generate_and_email(self.user, 'otp.user@example.com', return_code=True),
                          ('throttled', None))
+
+    def test_sender_falls_back_to_the_mail_server(self):
+        """A school with a mail server but no company email still sends."""
+        Otp = self.Otp
+        self.env.company.email = False
+        self.env['ir.config_parameter'].sudo().set_param('mail.default.from', False)
+        self.env['ir.config_parameter'].sudo().set_param('mail.catchall.domain', False)
+        self.env['ir.mail_server'].sudo().search([]).active = False
+        self.assertFalse(Otp._bxi_email_sender(self.env.company))
+        self.env['ir.mail_server'].sudo().create({
+            'name': 'School SMTP', 'smtp_host': 'smtp.example.com', 'smtp_user': 'noreply@school.example',
+            'smtp_pass': 'x', 'smtp_encryption': 'starttls', 'smtp_port': 587,
+        })
+        self.assertIn('noreply@school.example', Otp._bxi_email_sender(self.env.company))
+        self.env.company.email = 'office@otp-school.test'
+        self.assertIn('office@otp-school.test', Otp._bxi_email_sender(self.env.company))

@@ -125,7 +125,7 @@ class BxiIdentityVerificationMixin(models.AbstractModel):
                 return holder
         return None
 
-    @api.constrains('aadhar_card', 'user_id')
+    @api.constrains('aadhar_card')
     def _check_bxi_aadhaar(self):
         for record in self:
             value = record.sudo().aadhar_card
@@ -137,6 +137,16 @@ class BxiIdentityVerificationMixin(models.AbstractModel):
                     'Enter a valid 12-digit Aadhaar number (it cannot start with 0 or 1, '
                     'and the last digit is a check digit).'))
             if record._bxi_aadhaar_conflict(digits):
+                raise AadhaarInUseError(_('This Aadhaar number is already registered to another person.'))
+
+    @api.constrains('user_id')
+    def _check_bxi_aadhaar_login_link(self):
+        """Linking a login can make two records holding one number different
+        people. Only that is checked here: an old number in another format
+        must not block creating a login (it simply can't be used to sign in)."""
+        for record in self:
+            digits = normalize_aadhaar(record.sudo().aadhar_card)
+            if digits and record._bxi_aadhaar_conflict(digits):
                 raise AadhaarInUseError(_('This Aadhaar number is already registered to another person.'))
 
     @api.model
@@ -208,6 +218,10 @@ class BxiIdentityVerificationMixin(models.AbstractModel):
         self.ensure_one()
         if not aadhar_number:
             raise UserError(_('An Aadhaar number is required.'))
+        digits = normalize_aadhaar(aadhar_number)
+        if digits and digits == normalize_aadhaar(self.sudo().aadhar_card) \
+                and self.aadhar_verification_status == 'verified':
+            return  # the same, already verified number: nothing to review again
         self.with_context(bxi_aadhaar_self_submitted=True).write({
             'aadhar_card': aadhar_number,
             'aadhar_verification_status': 'pending',
@@ -227,10 +241,14 @@ class BxiIdentityVerificationMixin(models.AbstractModel):
         })
 
     def action_verify_aadhar(self):
+        for record in self:
+            if not normalize_aadhaar(record.sudo().aadhar_card):
+                raise UserError(_('%s has no valid Aadhaar number to verify. Correct the number first.',
+                                  record.display_name))
         self.write({'aadhar_verification_status': 'verified', 'aadhar_verified_at': fields.Datetime.now()})
 
     def action_reject_aadhar(self):
-        self.write({'aadhar_verification_status': 'rejected'})
+        self.write({'aadhar_verification_status': 'rejected', 'aadhar_verified_at': False})
 
     def action_verify_face(self):
         self.write({'face_verification_status': 'verified', 'face_verified_at': fields.Datetime.now()})
