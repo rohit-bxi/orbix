@@ -10,7 +10,7 @@ from .aadhaar import AadhaarInUseError, aadhaar_hash, clean_aadhaar, mask_aadhaa
 # The people records an Aadhaar number can sit on. One number belongs to
 # one person: it may appear on several of these records only when they are
 # the same person (same login or same contact).
-AADHAAR_MODELS = ('op.student', 'op.faculty', 'op.parent')
+AADHAAR_MODELS = ('op.student', 'op.faculty', 'op.parent', 'hr.employee')
 
 VERIFICATION_STATUSES = [
     ('unverified', 'Unverified'),

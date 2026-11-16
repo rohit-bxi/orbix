@@ -7,6 +7,9 @@
         <field name="model_id" ref="base.model_res_users"/>
         <field name="subject">Your {{ object.company_id.name }} login code</field>
         <field name="auto_delete" eval="True"/>
+        <!-- Only the address chosen by the code (email_to): no default
+             recipients, or Odoo also sends a copy to the user's contact. -->
+        <field name="use_default_to" eval="False"/>
         <field name="body_html" type="html">
 <div style="font-family: Arial, sans-serif; font-size: 14px;">
     <p>Hello <t t-out="object.name or ''"/>,</p>

@@ -19,6 +19,7 @@ from odoo.addons.bxi_api.controllers.main import BxiApiAuthController
 from odoo.addons.bxi_identity_verification.models.aadhaar import clean_aadhaar, looks_like_aadhaar, normalize_aadhaar
 from odoo.addons.bxi_notification_gateway.models.otp_request import OTP_TTL_MINUTES
 
+from ..models.res_company import ROLES
 from ..models.res_users import EMAIL_OTP_CREDENTIAL, EmailOtpDenied, mask_email
 
 _logger = logging.getLogger(__name__)
@@ -34,7 +35,6 @@ SETTING_FIELDS = {
     'otp_enabled': 'bxi_aadhaar_login_otp_enabled',
     'requires_verified': 'bxi_aadhaar_login_requires_verified',
 }
-ROLES = ('student', 'teacher', 'parent')
 
 
 def otp_in_response():
@@ -208,7 +208,7 @@ class BxiAadhaarAuthController(BxiApiAuthController):
     @require_auth
     def update_aadhaar_settings(self, **kwargs):
         """Any of {"enabled", "otp_enabled", "requires_verified": bool,
-        "roles": ["student", "teacher", "parent"], "otp_in_response": bool}.
+        "roles": ["student", "teacher", "parent", "staff"], "otp_in_response": bool}.
         otp_in_response is the testing switch (all schools on this server)."""
         if not request.env.user.has_group('base.group_system'):
             return api_error('Not authorized.', status=403, code='forbidden')
@@ -222,7 +222,7 @@ class BxiAadhaarAuthController(BxiApiAuthController):
         if 'roles' in payload:
             roles = payload['roles']
             if not isinstance(roles, list) or any(role not in ROLES for role in roles):
-                return api_error('roles must be a list of student, teacher, parent.', status=400,
+                return api_error('roles must be a list of student, teacher, parent, staff.', status=400,
                                  code='invalid_roles')
             vals.update({f'bxi_aadhaar_login_allow_{role}': role in roles for role in ROLES})
         if 'otp_in_response' in payload and not isinstance(payload['otp_in_response'], bool):

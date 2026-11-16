@@ -22,6 +22,12 @@ Rules:
 - **One number, one person.** A number already held by a different person is refused (`409 aadhaar_in_use`, or a validation error in the backend). The same number may sit on two records only if they are the same person, i.e. the same login or the same contact (for example, a parent who is also a teacher).
 - **Lookup and display:** numbers are looked up through a keyed hash (`bxi_aadhaar_hash`, an HMAC with the database secret). API responses only show `XXXX XXXX 1234`. The number never appears in server logs.
 
+## Staff and administrators
+
+Administrators and office staff have no student, teacher or parent record. Their number goes on their **employee record** instead: Employees › the person › Identity Verification. In the API this is `subject_type: "staff"` on `/api/v1/identity/aadhar/submit` and `/review`.
+
+Their login role is `staff`. It is **off by default**. Switch it on with Settings › "Staff & administrators", or with `"roles": [..., "staff"]` on the admin settings API. The emailed code goes to the employee's work email, then their private email, then the login's email.
+
 ## Settings (per school)
 
 Settings › Orbix Notifications › Aadhaar Login, or the admin API below:
@@ -32,6 +38,7 @@ Settings › Orbix Notifications › Aadhaar Login, or the admin API below:
 | Email Code | on | Allow the emailed code (needs an outgoing mail server) |
 | Verified Numbers Only | on | `pending` numbers can't log in until reviewed. A `rejected` number never logs in, even with this off |
 | Students / Teachers / Parents | on | Which roles may use it |
+| Staff & administrators | **off** | Number on the employee record |
 
 To be used, a number must also be on an active record linked to an active login.
 
@@ -101,7 +108,7 @@ Anyone who knows an Aadhaar number can then log in as that person. Use it only f
 - `POST /api/v1/admin/aadhaar-login/settings` with any of:
 
 ```json
-{"enabled": true, "otp_enabled": true, "requires_verified": true, "roles": ["student", "teacher", "parent"],
+{"enabled": true, "otp_enabled": true, "requires_verified": true, "roles": ["student", "teacher", "parent", "staff"],
  "otp_in_response": false}
 ```
 

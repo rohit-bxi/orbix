@@ -19,6 +19,7 @@ SUBJECT_MODELS = {
     'student': 'op.student',
     'parent': 'op.parent',
     'teacher': 'op.faculty',
+    'staff': 'hr.employee',
 }
 
 
@@ -73,7 +74,7 @@ def _resolve_subject(env, subject_type, subject_id):
     """
     model_name = SUBJECT_MODELS.get(subject_type)
     if not model_name:
-        return None, api_error("subject_type must be 'student', 'parent' or 'teacher'.", status=400,
+        return None, api_error("subject_type must be 'student', 'parent', 'teacher' or 'staff'.", status=400,
                                code='invalid_subject_type')
     try:
         subject_id = int(subject_id)
@@ -148,7 +149,7 @@ class BxiIdentityVerificationController(http.Controller):
         if not _is_reviewer(request.env.user):
             return api_error('Not authorized to review Aadhaar numbers.', status=403, code='forbidden')
         if subject_type and subject_type not in SUBJECT_MODELS:
-            return api_error("subject_type must be 'student', 'parent' or 'teacher'.", status=400,
+            return api_error("subject_type must be 'student', 'parent', 'teacher' or 'staff'.", status=400,
                              code='invalid_subject_type')
         try:
             limit = min(max(int(limit or 50), 1), 200)

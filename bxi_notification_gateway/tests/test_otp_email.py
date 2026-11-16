@@ -32,7 +32,8 @@ class TestBxiOtpEmail(TransactionCase):
 
         def fake_send(mails, *args, **kwargs):
             for mail in mails:
-                sent.append({'to': mail.email_to, 'subject': mail.subject, 'body': str(mail.body_html)})
+                sent.append({'to': mail.email_to, 'subject': mail.subject, 'body': str(mail.body_html),
+                             'recipients': mail.recipient_ids, 'cc': mail.email_cc})
             mails.write({'state': 'sent'})
             return True
 
@@ -133,3 +134,18 @@ class TestBxiOtpEmail(TransactionCase):
         self.assertIn('noreply@school.example', Otp._bxi_email_sender(self.env.company))
         self.env.company.email = 'office@otp-school.test'
         self.assertIn('office@otp-school.test', Otp._bxi_email_sender(self.env.company))
+
+    def test_code_goes_to_one_address_only(self):
+        """No second copy to the account's own contact (template default
+        recipients), even when the code goes to another address."""
+        self.Otp._generate_and_email(self.user, 'parent.inbox@example.com')
+        self.assertEqual(len(self.sent), 1)
+        self.assertEqual(self.sent[0]['to'], 'parent.inbox@example.com')
+        self.assertFalse(self.sent[0]['recipients'], 'Only email_to - not also %s' % self.user.email)
+        self.assertFalse(self.sent[0]['cc'])
+
+    def test_template_edited_back_to_default_recipients_still_sends_once(self):
+        self.env.ref('bxi_notification_gateway.mail_template_otp_email').use_default_to = True
+        self.Otp._generate_and_email(self.user, 'otp.user@example.com')
+        self.assertEqual(len(self.sent), 1)
+        self.assertFalse(self.sent[0]['recipients'])

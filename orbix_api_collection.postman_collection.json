@@ -288,7 +288,7 @@
                 "submit"
               ]
             },
-            "description": "Submit an Aadhaar number for review (status \"pending\"). subject_type student | parent | teacher. Allowed for the person themselves (own login), a parent for a linked student, and reviewers/office. The number must be a real Aadhaar format: 12 digits, not starting with 0/1, valid Verhoeff check digit (e.g. 2345 6789 0124; 123456789012 is NOT valid). Spaces/dashes allowed; \"aadhaar_number\" also accepted. Re-sending the same already verified number keeps it verified. Errors: 400 invalid_aadhar, 409 aadhaar_in_use. Reply: aadhar_verification_status + \"aadhaar\" block (masked number; full number only for reviewers)."
+            "description": "Submit an Aadhaar number for review (status \"pending\"). subject_type student | parent | teacher | staff (employee record: administrators, office). Allowed for the person themselves (own login), a parent for a linked student, and reviewers/office. The number must be a real Aadhaar format: 12 digits, not starting with 0/1, valid Verhoeff check digit (e.g. 2345 6789 0124; 123456789012 is NOT valid). Spaces/dashes allowed; \"aadhaar_number\" also accepted. Re-sending the same already verified number keeps it verified. Errors: 400 invalid_aadhar, 409 aadhaar_in_use. Reply: aadhar_verification_status + \"aadhaar\" block (masked number; full number only for reviewers)."
           },
           "response": []
         },
@@ -15751,10 +15751,10 @@
                 "settings"
               ]
             },
-            "description": "System administrators. Any of enabled / otp_enabled / requires_verified (bool) and roles (list of student, teacher, parent). otp_in_response (bool) is the testing switch that returns the code in the otp-request reply.",
+            "description": "System administrators. Any of enabled / otp_enabled / requires_verified (bool) and roles (list of student, teacher, parent, staff - staff = administrators/office, off by default). otp_in_response (bool) is the testing switch that returns the code in the otp-request reply.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"enabled\": true,\n  \"otp_enabled\": true,\n  \"requires_verified\": true,\n  \"roles\": [\n    \"student\",\n    \"teacher\",\n    \"parent\"\n  ],\n  \"otp_in_response\": false\n}"
+              "raw": "{\n  \"enabled\": true,\n  \"otp_enabled\": true,\n  \"requires_verified\": true,\n  \"roles\": [\n    \"student\",\n    \"teacher\",\n    \"parent\",\n    \"staff\"\n  ],\n  \"otp_in_response\": false\n}"
             }
           },
           "response": []

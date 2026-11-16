@@ -33,6 +33,7 @@
                             <div><field name="bxi_aadhaar_login_allow_student" class="oe_inline"/> <label for="bxi_aadhaar_login_allow_student" string="Students"/></div>
                             <div><field name="bxi_aadhaar_login_allow_teacher" class="oe_inline"/> <label for="bxi_aadhaar_login_allow_teacher" string="Teachers"/></div>
                             <div><field name="bxi_aadhaar_login_allow_parent" class="oe_inline"/> <label for="bxi_aadhaar_login_allow_parent" string="Parents"/></div>
+                            <div><field name="bxi_aadhaar_login_allow_staff" class="oe_inline"/> <label for="bxi_aadhaar_login_allow_staff" string="Staff &amp; administrators (number on the employee record)"/></div>
                         </div>
                     </setting>
                 </block>
