@@ -105,7 +105,8 @@ class _Recognition:
             try:
                 analyses[action] = engine.analyze(content)
             except FaceError as exc:
-                return self.fail(exc.code, exc.message, 400, action=action)
+                reason = '%s: %s' % (action, exc.detail) if exc.detail else action
+                return self.fail(exc.code, exc.message, 400, reason=reason, action=action)
 
         self.attempt.yaws = ', '.join('%s %+.2f' % (action, analyses[action].yaw) for action in analyses)
         ok, reason, live_score = Service._check_liveness(analyses, self.company)

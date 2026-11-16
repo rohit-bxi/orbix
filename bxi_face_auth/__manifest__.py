@@ -2,7 +2,7 @@
 
 {
     'name': 'Orbix Face Login',
-    'version': '19.0.1.3.0',
+    'version': '19.0.1.3.1',
     'category': 'Education',
     'summary': 'Face-recognition login API for students, teachers and parents',
     'description': """

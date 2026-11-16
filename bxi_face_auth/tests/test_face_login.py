@@ -205,6 +205,9 @@ class TestFaceLogin(FaceHttpCase):
         error = resp.json()['error']
         self.assertEqual(error['code'], 'no_face')
         self.assertEqual(error['action'], frames[1]['action'])
+        attempt = self.env['bxi.face.login.attempt'].sudo().search([], limit=1)
+        self.assertEqual(attempt.result, 'no_face')
+        self.assertTrue(attempt.reason.startswith(frames[1]['action']), 'The log says which photo failed.')
 
     def test_invalid_base64_rejected(self):
         challenge = self.challenge()
