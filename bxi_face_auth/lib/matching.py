@@ -9,7 +9,10 @@ matches, and whether a challenge sequence looks like a live person."""
 # (the same person turned ~30 degrees scores well above this; different
 # people average ~0.1 with SFace). Stops "hold up the victim's photo for
 # the straight frame, then turn your own head".
-SAME_PERSON_MIN = 0.30
+# Least similarity between the straight photo and a turned one of the same
+# person. Turning the head 20-35 degrees lowers it (live webcam attempts
+# measured below 0.30); photos of different people stay well under 0.25.
+SAME_PERSON_MIN = 0.25
 # |yaw| allowed on the "center" frame, and the minimum change from it on
 # each turned frame (see engine.yaw_from_landmarks: ~0.2 is ~20 degrees).
 CENTER_MAX_YAW = 0.20

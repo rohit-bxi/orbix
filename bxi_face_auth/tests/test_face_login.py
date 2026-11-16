@@ -344,7 +344,7 @@ class TestFaceLoginBursts(FaceHttpCase):
         resp = self._burst_login({'center': [0.02, 0.0], 'left': [0.01, 0.05, 0.16], 'right': [0.0, -0.04, -0.15]})
         self.assertEqual(resp.status_code, 200, resp.text)
         attempt = self.env['bxi.face.login.attempt'].sudo().search([], limit=1)
-        self.assertIn('left +0.16 of [+0.01 +0.05 +0.16]', attempt.yaws)
+        self.assertRegex(attempt.yaws, r'left \+0\.16 sim \d\.\d\d of \[\+0\.01 \+0\.05 \+0\.16\]')
 
     def test_side_on_photos_without_a_face_are_skipped(self):
         self.enrol(self.teacher_user, 'tara')
@@ -371,3 +371,20 @@ class TestFaceLoginBursts(FaceHttpCase):
     def test_at_most_five_photos_per_action(self):
         resp = self._burst_login({'center': [0.0] * 6, 'left': [0.2], 'right': [-0.2]})
         self.assertEqual(resp.json()['error']['code'], 'invalid_frames')
+
+
+@tagged('post_install', '-at_install')
+class TestFaceLoginHintByEmail(FaceHttpCase):
+    """People type their email, which need not be their login."""
+
+    def test_email_on_the_school_record(self):
+        self.enrol(self.teacher_user, 'tara')
+        self.faculty.email = 'Tara.Teacher@school.test'
+        resp = self.face_login('tara', login_hint='tara.teacher@school.test')
+        self.assertEqual(resp.status_code, 200, resp.text)
+        self.assertEqual(resp.json()['data']['user']['login'], 'face_teacher')
+
+    def test_unknown_email_still_matches_nobody(self):
+        self.enrol(self.teacher_user, 'tara')
+        resp = self.face_login('tara', login_hint='nobody@school.test')
+        self.assertEqual(resp.json()['error']['code'], 'face_not_recognised')
