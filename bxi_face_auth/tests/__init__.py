@@ -7,3 +7,4 @@ from . import test_face_enrolment
 from . import test_face_admin
 from . import test_face_identity
 from . import test_face_people
+from . import test_record_photo

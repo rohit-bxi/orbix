@@ -11,3 +11,4 @@ from . import face_challenge
 from . import face_kiosk
 from . import face_login_attempt
 from . import people_service
+from . import record_photo

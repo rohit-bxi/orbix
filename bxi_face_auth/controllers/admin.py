@@ -44,6 +44,7 @@ SETTINGS = {
     'token_days': ('bxi_face_token_days', 'int', 1, 365),
     'attempt_retention_days': ('bxi_face_attempt_retention_days', 'int', 1, 3650),
     'consent_version': ('bxi_face_consent_version', 'char', None, None),
+    'use_record_photo': ('bxi_face_use_record_photo', 'bool', None, None),
 }
 
 
@@ -525,4 +526,30 @@ class BxiFaceAdminController(http.Controller):
             vals[field] = value
         company = request.env.user.company_id.sudo()
         company.write(vals)
-        return api_response(_settings_dict(company))
+        Service = request.env['bxi.face.service']
+        data = _settings_dict(company)
+        if 'enabled' in payload or 'use_record_photo' in payload:
+            if Service._record_photo_enabled(company):
+                # Build faces from the photos already on the records.
+                data['record_photo_sync'] = Service._sync_all_record_photos(company)
+            elif 'use_record_photo' in payload and not payload['use_record_photo']:
+                data['record_photo_faces_removed'] = Service._drop_record_photo_faces(company)
+        return api_response(data)
+
+    @http.route('/api/v1/admin/face/sync-record-photos', type='http', auth='public', methods=['POST'],
+                csrf=False)
+    @require_auth
+    @manager_only
+    def sync_record_photos(self, **kwargs):
+        """Rebuild faces from the photos on the student, teacher and parent
+        records now ({"force": true} redoes unchanged photos too). Answers
+        {outcome: count}, e.g. {"active": 12, "no_face": 2, "unchanged": 30}."""
+        payload, _files, error = read_payload()
+        if error:
+            return error
+        company = request.env.user.company_id.sudo()
+        Service = request.env['bxi.face.service']
+        if not Service._record_photo_enabled(company):
+            return api_error('Turn on face login and use_record_photo first.', status=400,
+                             code='record_photo_disabled')
+        return api_response({'sync': Service._sync_all_record_photos(company, force=bool(payload.get('force')))})
