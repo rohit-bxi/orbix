@@ -2,9 +2,9 @@
 
 {
     'name': 'Orbix Identity Verification',
-    'version': '19.0.1.4.0',
+    'version': '19.0.1.5.0',
     'category': 'Education',
-    'summary': 'Aadhaar and face-photo identity verification for students, teachers and parents, via the Orbix API',
+    'summary': 'Aadhaar and face-photo identity verification for students, teachers, parents and staff, via the Orbix API',
     'description': """
         Orbix Identity Verification
         ==============================
@@ -28,6 +28,7 @@
     'depends': [
         'base',
         'mail',
+        'hr',
         'bxi_api',
         'openeducat_core',
         'openeducat_parent',
@@ -38,6 +39,7 @@
         'views/op_student_views.xml',
         'views/op_parent_views.xml',
         'views/id_document_views.xml',
+        'views/hr_employee_views.xml',
     ],
     'installable': True,
     'application': False,

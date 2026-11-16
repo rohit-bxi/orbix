@@ -20,6 +20,8 @@ class ResConfigSettings(models.TransientModel):
         related='company_id.bxi_aadhaar_login_allow_teacher', readonly=False)
     bxi_aadhaar_login_allow_parent = fields.Boolean(
         related='company_id.bxi_aadhaar_login_allow_parent', readonly=False)
+    bxi_aadhaar_login_allow_staff = fields.Boolean(
+        related='company_id.bxi_aadhaar_login_allow_staff', readonly=False)
     bxi_aadhaar_login_otp_in_response = fields.Boolean(
         string='Show Login Code in API Response (Testing)', config_parameter='bxi_aadhaar_login.otp_in_response',
         help='Testing only: /api/v1/auth/aadhaar/otp-request also returns the code. Anyone who knows an Aadhaar '

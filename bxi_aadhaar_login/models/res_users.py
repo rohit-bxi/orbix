@@ -108,6 +108,8 @@ class ResUsers(models.Model):
         record = record.sudo()
         if record._name == 'op.parent':
             return record.email or record.name.email or False
+        if record._name == 'hr.employee':
+            return record.work_email or record.private_email or False
         return record.email or False
 
     def _bxi_aadhaar_otp_email(self, records):

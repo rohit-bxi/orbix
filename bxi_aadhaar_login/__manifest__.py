@@ -2,7 +2,7 @@
 
 {
     'name': 'Orbix Aadhaar Login',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.1.0',
     'category': 'Education',
     'summary': 'Students, teachers and parents log in with their Aadhaar number - password or emailed code',
     'description': """

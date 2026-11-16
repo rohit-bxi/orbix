@@ -5,7 +5,8 @@
 from odoo import fields, models
 
 # Record model -> role name used by the settings and the API.
-ROLE_BY_MODEL = {'op.student': 'student', 'op.faculty': 'teacher', 'op.parent': 'parent'}
+ROLE_BY_MODEL = {'op.student': 'student', 'op.faculty': 'teacher', 'op.parent': 'parent', 'hr.employee': 'staff'}
+ROLES = ('student', 'teacher', 'parent', 'staff')
 
 
 class ResCompany(models.Model):
@@ -26,6 +27,10 @@ class ResCompany(models.Model):
     bxi_aadhaar_login_allow_student = fields.Boolean(string='Aadhaar Login for Students', default=True)
     bxi_aadhaar_login_allow_teacher = fields.Boolean(string='Aadhaar Login for Teachers', default=True)
     bxi_aadhaar_login_allow_parent = fields.Boolean(string='Aadhaar Login for Parents', default=True)
+    bxi_aadhaar_login_allow_staff = fields.Boolean(
+        string='Aadhaar Login for Staff & Administrators', default=False,
+        help='Administrators and office staff, with the Aadhaar number on their employee record '
+             '(Employees > Identity Verification). Off by default.')
 
     def _bxi_aadhaar_role_allowed(self, role):
         self.ensure_one()
@@ -37,5 +42,5 @@ class ResCompany(models.Model):
             'enabled': self.bxi_aadhaar_login_enabled,
             'otp_enabled': self.bxi_aadhaar_login_otp_enabled,
             'requires_verified': self.bxi_aadhaar_login_requires_verified,
-            'roles': [role for role in ('student', 'teacher', 'parent') if self._bxi_aadhaar_role_allowed(role)],
+            'roles': [role for role in ROLES if self._bxi_aadhaar_role_allowed(role)],
         }

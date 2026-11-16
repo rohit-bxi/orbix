@@ -376,6 +376,58 @@ class TestAadhaarOtpInResponse(AadhaarLoginCase):
 
 
 @tagged('post_install', '-at_install')
+class TestAadhaarStaffLogin(AadhaarLoginCase):
+    """Administrators / office staff: the number sits on their employee record."""
+
+    ADMIN_NO = '765432109878'
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.admin_user = mail_new_test_user(
+            cls.env, login='aad_admin_staff', password='AdminPass1!', groups='base.group_user,base.group_system',
+            email='admin.login@example.com')
+        cls.employee = cls.env['hr.employee'].create({
+            'name': 'Asha Admin', 'user_id': cls.admin_user.id, 'work_email': 'asha.work@example.com',
+            'aadhar_card': '7654 3210 9878',
+        })
+
+    def test_staff_off_by_default(self):
+        self.assertFalse(self.company.bxi_aadhaar_login_allow_staff)
+        self.assertEqual(self.employee.aadhar_verification_status, 'verified')
+        self.assertEqual(self._login(self.ADMIN_NO, 'AdminPass1!').status_code, 401)
+
+    def test_admin_logs_in_with_aadhaar_password_and_email_code(self):
+        self.company.bxi_aadhaar_login_allow_staff = True
+        resp = self._login('7654 3210 9878', 'AdminPass1!')
+        self.assertEqual(resp.status_code, 200, resp.text)
+        data = resp.json()['data']
+        self.assertEqual(data['user']['id'], self.admin_user.id)
+        self.assertTrue(data['user']['is_admin'])
+        self.assertEqual(data['user']['aadhaar_login'], {'available': True, 'last4': '9878'})
+
+        resp = self._post('/api/v1/auth/aadhaar/otp-request', {'aadhaar': self.ADMIN_NO})
+        self.assertEqual(resp.json()['data']['email_hint'], mask_email('asha.work@example.com'))
+        self.assertEqual(self.sent[-1]['to'], 'asha.work@example.com')
+        resp = self._post('/api/v1/auth/aadhaar/otp-login', {'aadhaar': self.ADMIN_NO, 'otp': self._last_code()})
+        self.assertEqual(resp.status_code, 200, resp.text)
+        self.assertEqual(resp.json()['data']['user']['id'], self.admin_user.id)
+
+    def test_staff_number_cannot_belong_to_someone_else(self):
+        with self.assertRaises(Exception):
+            self.student.write({'aadhar_card': self.ADMIN_NO})
+
+    def test_staff_role_in_settings_api(self):
+        headers = {'Authorization': 'Bearer %s' % self._post('/api/v1/auth/login', {
+            'login': 'aad_admin_staff', 'password': 'AdminPass1!'}).json()['data']['token']}
+        resp = self._post('/api/v1/admin/aadhaar-login/settings',
+                          {'roles': ['student', 'teacher', 'parent', 'staff']}, headers=headers)
+        self.assertEqual(resp.json()['data']['roles'], ['student', 'teacher', 'parent', 'staff'])
+        self.assertTrue(self.company.bxi_aadhaar_login_allow_staff)
+        self.assertEqual(self._login(self.ADMIN_NO, 'AdminPass1!').status_code, 200)
+
+
+@tagged('post_install', '-at_install')
 class TestAadhaarLoginSettingsApi(AadhaarLoginCase):
 
     def _token(self, login, password):
@@ -401,7 +453,7 @@ class TestAadhaarLoginSettingsApi(AadhaarLoginCase):
         self.assertEqual(self.env['ir.config_parameter'].sudo().get_param('bxi_aadhaar_login.otp_in_response'), 'True')
         resp = self._post('/api/v1/admin/aadhaar-login/settings', {'otp_in_response': 'yes'}, headers=headers)
         self.assertEqual(self._error(resp), 'invalid_otp_in_response')
-        resp = self._post('/api/v1/admin/aadhaar-login/settings', {'roles': ['staff']}, headers=headers)
+        resp = self._post('/api/v1/admin/aadhaar-login/settings', {'roles': ['visitor']}, headers=headers)
         self.assertEqual(self._error(resp), 'invalid_roles')
         resp = self._post('/api/v1/admin/aadhaar-login/settings', {'enabled': 'yes'}, headers=headers)
         self.assertEqual(self._error(resp), 'invalid_enabled')

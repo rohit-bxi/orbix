@@ -140,3 +140,19 @@ class TestAadhaarVerificationProcess(HttpCase):
         self.assertEqual(resp.json()['error']['code'], 'invalid_aadhar')
         with self.assertRaises(UserError):
             legacy.action_verify_aadhar()
+
+    def test_staff_submit_and_review(self):
+        admin = mail_new_test_user(self.env, login='rv_admin', password='AdminPass1!',
+                                   groups='base.group_user,base.group_system')
+        employee = self.env['hr.employee'].create({'name': 'Rev Admin', 'user_id': admin.id})
+        own = self._headers('rv_admin', 'AdminPass1!')
+        resp = self._submit(own, 'staff', employee, '765432109878')
+        self.assertEqual(resp.status_code, 200, resp.text)
+        # An administrator is a reviewer too, so the reply carries the full number.
+        self.assertEqual(resp.json()['data']['aadhaar']['aadhar_number'], '765432109878')
+        pending = self.url_open('/api/v1/identity/aadhar/pending?subject_type=staff',
+                                headers=self._headers('rv_reviewer', 'ReviewPass1!')).json()['data']
+        self.assertEqual([row['subject_id'] for row in pending], [employee.id])
+        resp = self._review(self._headers('rv_reviewer', 'ReviewPass1!'), 'staff', employee, 'verify')
+        self.assertEqual(resp.json()['data']['aadhar_verification_status'], 'verified')
+        self.assertEqual(employee.bxi_aadhaar_last4, '9878')

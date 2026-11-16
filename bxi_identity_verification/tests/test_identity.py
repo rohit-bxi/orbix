@@ -75,7 +75,7 @@ class TestBxiIdentityVerification(HttpCase):
 
     def test_submit_aadhar_invalid_subject_type_rejected(self):
         resp = self.url_open('/api/v1/identity/aadhar/submit', headers=self._headers('id_parent', 'ParentPass1!'), json={
-            'subject_type': 'staff', 'subject_id': self.student.id, 'aadhar_number': '234567890124',
+            'subject_type': 'visitor', 'subject_id': self.student.id, 'aadhar_number': '234567890124',
         })
         self.assertEqual(resp.status_code, 400)
         self.assertEqual(resp.json()['error']['code'], 'invalid_subject_type')
@@ -150,7 +150,7 @@ class TestBxiIdentityVerification(HttpCase):
 
     def test_status_invalid_subject_type_rejected(self):
         resp = self.url_open(
-            f'/api/v1/identity/status?subject_type=staff&subject_id={self.student.id}',
+            f'/api/v1/identity/status?subject_type=visitor&subject_id={self.student.id}',
             headers=self._headers('id_parent', 'ParentPass1!'))
         self.assertEqual(resp.status_code, 400)
         self.assertEqual(resp.json()['error']['code'], 'invalid_subject_type')
