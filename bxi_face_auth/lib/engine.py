@@ -40,7 +40,10 @@ EMBEDDING_SIZE = 128
 MAX_INPUT_PIXELS = 40_000_000   # refuse decompression bombs before decoding
 ANALYSIS_MAX_SIDE = 1280        # detection runs on at most this size
 STORED_MAX_SIDE = 640           # size of the copy kept for staff review
-MIN_DETECTION_SCORE = 0.80
+# YuNet confidence needed to accept a face. Ordinary webcams in office
+# light often score 0.70-0.80 on a clear face; the same-person, liveness
+# and match checks still apply on top.
+MIN_DETECTION_SCORE = 0.70
 MIN_FACE_PIXELS = 80            # face box width in the analysed image
 # A second face whose box is at least this share of the main face's area
 # means two people are in front of the camera.
@@ -53,10 +56,13 @@ MIN_SHARPNESS = 25.0
 class FaceError(Exception):
     """A photo that can't be used. `code` is the API error code."""
 
-    def __init__(self, code, message):
+    def __init__(self, code, message, detail=None):
         super().__init__(message)
         self.code = code
         self.message = message
+        # For the attempt log only (never sent to the app): what was
+        # measured, e.g. "best score 0.64 in 1280x720".
+        self.detail = detail
 
 
 @dataclass
@@ -172,22 +178,28 @@ class FaceEngine:
         with self._lock:
             self._detector.setInputSize((width, height))
             _, faces = self._detector.detect(bgr)
-            faces = [] if faces is None else [f for f in faces if f[14] >= MIN_DETECTION_SCORE]
+            found = [] if faces is None else list(faces)
+            faces = [f for f in found if f[14] >= MIN_DETECTION_SCORE]
             if not faces:
-                raise FaceError('no_face', 'No face was found. Face the camera in good light.')
+                best = max((float(f[14]) for f in found), default=None)
+                detail = ('best score %.2f' % best if best is not None else 'none found') + ' in %dx%d' % (width, height)
+                raise FaceError('no_face', 'No face was found. Face the camera in good light.', detail)
             faces.sort(key=lambda f: f[2] * f[3], reverse=True)
             face = faces[0]
             if len(faces) > 1 and faces[1][2] * faces[1][3] >= SECOND_FACE_AREA_RATIO * face[2] * face[3]:
-                raise FaceError('multiple_faces', 'More than one face is in the picture. Only one person may be in view.')
+                raise FaceError('multiple_faces', 'More than one face is in the picture. Only one person may be in view.',
+                                '%d faces' % len(faces))
             face_pixels = int(min(face[2], face[3]))
             if face_pixels < MIN_FACE_PIXELS:
-                raise FaceError('poor_quality', 'The face is too small. Hold the camera closer.')
+                raise FaceError('poor_quality', 'The face is too small. Hold the camera closer.',
+                                'face %dpx in %dx%d' % (face_pixels, width, height))
 
             aligned = self._recognizer.alignCrop(bgr, face)
             gray = cv2.cvtColor(aligned, cv2.COLOR_BGR2GRAY)
             sharpness = float(cv2.Laplacian(gray, cv2.CV_64F).var())
             if sharpness < MIN_SHARPNESS:
-                raise FaceError('poor_quality', 'The photo is blurred. Hold the camera still.')
+                raise FaceError('poor_quality', 'The photo is blurred. Hold the camera still.',
+                                'sharpness %.0f' % sharpness)
             embedding = normalize(self._recognizer.feature(aligned))
             live_score = self._live_score(bgr, face) if self._antispoof is not None else None
 
