@@ -15443,7 +15443,38 @@
             "description": "Face Login Manager / admin. Any subset; see bxi_face_auth/README.md for every setting and its range.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"enabled\": true,\n  \"allow_student\": true,\n  \"allow_teacher\": true,\n  \"allow_parent\": true,\n  \"match_threshold\": 0.45,\n  \"kiosk_match_threshold\": 0.55,\n  \"kiosk_match_gap\": 0.1,\n  \"max_failures\": 5,\n  \"lockout_minutes\": 15,\n  \"auto_identify_enabled\": true\n}"
+              "raw": "{\n  \"enabled\": true,\n  \"allow_student\": true,\n  \"allow_teacher\": true,\n  \"allow_parent\": true,\n  \"match_threshold\": 0.45,\n  \"kiosk_match_threshold\": 0.55,\n  \"kiosk_match_gap\": 0.1,\n  \"max_failures\": 5,\n  \"lockout_minutes\": 15,\n  \"auto_identify_enabled\": true,\n  \"use_record_photo\": true\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Admin: Sync Faces From Record Photos",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/face/sync-record-photos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "face",
+                "sync-record-photos"
+              ]
+            },
+            "description": "Rebuild faces from the photos on student, teacher and parent records (image_1920). force: true also redoes unchanged photos. Answers {\"sync\": {outcome: count}}.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"force\": false\n}"
             }
           },
           "response": []
