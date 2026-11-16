@@ -70,7 +70,7 @@
       <input id="device" value="Face login demo (browser)">
       <ol class="steps">
         <li>Sit facing the camera, face inside the oval, good light from the front.</li>
-        <li>When asked to turn, turn your head (not just your eyes) about 15° and hold it until the photo is taken.</li>
+        <li>When asked to turn, turn your head (not just your eyes) a little — about 15–20°, both eyes still visible — and hold it while the photos are taken.</li>
         <li>All three photos must be taken within 60 seconds of starting.</li>
       </ol>
       <label>Request log</label>
@@ -84,9 +84,11 @@ const $ = (id) => document.getElementById(id);
 const video = $('video');
 const PROMPTS = {
   center: ['Look straight at the camera', 'Keep still'],
-  right: ['Turn your head to the RIGHT', 'Turn clearly and hold'],
-  left: ['Turn your head to the LEFT', 'Turn clearly and hold'],
+  right: ['Turn your head a little to the RIGHT →', 'About 15–20°, keep both eyes visible'],
+  left: ['← Turn your head a little to the LEFT', 'About 15–20°, keep both eyes visible'],
 };
+// Photos per prompt, taken while the head turns; the server keeps the best.
+const BURST = 4, BURST_GAP_MS = 450;
 const HINTS = {
   liveness_failed: 'The head turn was not clear enough. Turn your head (not just your eyes) about 15° and hold until the photo is taken.',
   head_not_turned: 'Turn your head (not just your eyes) about 15° and hold it until the photo is taken.',
@@ -140,17 +142,16 @@ $('btnCamera').onclick = async () => {
 function capture() {
   const canvas = document.createElement('canvas');
   const w = video.videoWidth, h = video.videoHeight;
-  const scale = Math.min(1, 1280 / Math.max(w, h));
+  const scale = Math.min(1, 960 / Math.max(w, h));
   canvas.width = Math.round(w * scale); canvas.height = Math.round(h * scale);
   canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-  return canvas.toDataURL('image/jpeg', 0.9);
+  return canvas.toDataURL('image/jpeg', 0.85);
 }
 
 async function countdown(action) {
   const [main, small] = PROMPTS[action] || [action, ''];
-  for (let n = 3; n >= 1; n--) { setPrompt(`${main} · ${n}`, small); await sleep(800); }
+  for (let n = 2; n >= 1; n--) { setPrompt(`${main} · ${n}`, small); await sleep(700); }
   setPrompt(`${main} · 📸`, 'Hold…');
-  await sleep(250);
 }
 
 $('btnLogin').onclick = async () => {
@@ -163,11 +164,15 @@ $('btnLogin').onclick = async () => {
     const frames = [];
     for (const action of actions) {
       await countdown(action);
-      const image = capture();
-      frames.push({ action, image });
-      $('thumbs').insertAdjacentHTML('beforeend', `<figure><img src="${image}"><figcaption>${action}</figcaption></figure>`);
+      let last;
+      for (let i = 0; i < BURST; i++) {
+        last = capture();
+        frames.push({ action, image: last });
+        await sleep(BURST_GAP_MS);
+      }
+      $('thumbs').insertAdjacentHTML('beforeend', `<figure><img src="${last}"><figcaption>${action} (${BURST} photos)</figcaption></figure>`);
       setPrompt('Got it', '');
-      await sleep(400);
+      await sleep(300);
     }
     setPrompt('Checking…', 'Matching on the server');
     const body = { challenge_id, device_name: $('device').value, frames };

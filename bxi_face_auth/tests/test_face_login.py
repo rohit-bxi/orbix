@@ -321,3 +321,53 @@ class TestFaceLogin(FaceHttpCase):
         self.assertEqual(resp.status_code, 200, resp.text)
         # Non-sensitive routes work straight away.
         self.assertEqual(self.url_open('/api/v1/auth/me', headers=headers).status_code, 200)
+
+
+@tagged('post_install', '-at_install')
+class TestFaceLoginBursts(FaceHttpCase):
+    """A client may send up to 5 photos per action; the server picks the
+    best ones, so the moment a single photo is taken no longer decides."""
+
+    def _burst_login(self, plan, login_hint='face_teacher'):
+        """plan: {action: [yaw or 'no_face', ...]} - photos of tara."""
+        challenge = self.challenge()
+        frames = []
+        for action in challenge['actions']:
+            for shot in plan[action]:
+                image = photo(error='no_face') if shot == 'no_face' else photo('tara', shot)
+                frames.append({'action': action, 'image': image})
+        return self.url_open('/api/v1/auth/face-login', json={
+            'challenge_id': challenge['challenge_id'], 'login_hint': login_hint, 'frames': frames})
+
+    def test_late_turn_is_caught(self):
+        self.enrol(self.teacher_user, 'tara')
+        resp = self._burst_login({'center': [0.02, 0.0], 'left': [0.01, 0.05, 0.16], 'right': [0.0, -0.04, -0.15]})
+        self.assertEqual(resp.status_code, 200, resp.text)
+        attempt = self.env['bxi.face.login.attempt'].sudo().search([], limit=1)
+        self.assertIn('left +0.16 of [+0.01 +0.05 +0.16]', attempt.yaws)
+
+    def test_side_on_photos_without_a_face_are_skipped(self):
+        self.enrol(self.teacher_user, 'tara')
+        resp = self._burst_login({'center': [0.0], 'left': [0.2, 'no_face'], 'right': ['no_face', -0.25]})
+        self.assertEqual(resp.status_code, 200, resp.text)
+
+    def test_still_returning_from_the_previous_turn(self):
+        # The first 'right' photos still show the head turned the other way.
+        self.enrol(self.teacher_user, 'tara')
+        resp = self._burst_login({'center': [0.0], 'left': [0.3, 0.25], 'right': [0.28, 0.1, -0.2]})
+        self.assertEqual(resp.status_code, 200, resp.text)
+
+    def test_no_turn_in_any_photo_still_fails(self):
+        self.enrol(self.teacher_user, 'tara')
+        resp = self._burst_login({'center': [0.0, 0.01], 'left': [0.02, 0.03], 'right': [0.01, -0.02]})
+        self.assertEqual(resp.json()['error']['code'], 'liveness_failed')
+
+    def test_every_photo_of_an_action_failing_is_reported(self):
+        self.enrol(self.teacher_user, 'tara')
+        resp = self._burst_login({'center': [0.0], 'left': ['no_face', 'no_face'], 'right': [-0.2]})
+        self.assertEqual(resp.json()['error']['code'], 'no_face')
+        self.assertEqual(resp.json()['error']['action'], 'left')
+
+    def test_at_most_five_photos_per_action(self):
+        resp = self._burst_login({'center': [0.0] * 6, 'left': [0.2], 'right': [-0.2]})
+        self.assertEqual(resp.json()['error']['code'], 'invalid_frames')

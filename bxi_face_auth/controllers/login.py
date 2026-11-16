@@ -2,6 +2,10 @@
 # Copyright (c) 2026 BXI Technology Pvt. Ltd. All Rights Reserved.
 # License OPL-1 (Odoo Proprietary License v1.0, see LICENSE file for full text).
 
+import itertools
+
+import numpy as np
+
 from odoo import http
 from odoo.http import request
 
@@ -9,6 +13,7 @@ from odoo.addons.bxi_api.controllers.auth import api_error, api_response, parse_
 from odoo.addons.bxi_api.controllers.main import BxiApiAuthController
 
 from ..lib.engine import FaceError
+from ..lib.matching import SAME_PERSON_MIN
 from ..models.face_challenge import CHALLENGE_TTL_SECONDS, SELECTION_TTL_SECONDS
 from ..models.face_service import FaceEngineUnavailable
 from .common import account_summary, face_error, identity, is_face_manager, read_frames, read_payload
@@ -35,20 +40,30 @@ def _issue(user, kiosk, device_name):
     return response
 
 
+# A client may send a short burst of photos per action (e.g. 4 over 1.5 s)
+# instead of one; the server then picks the best of each (see
+# _Recognition._pick), so a late, too wide or still-returning head turn
+# doesn't fail the challenge.
+MAX_FRAMES_PER_ACTION = 5
+
+
 def _read_challenge_frames(payload, files):
-    """(challenge, {action: photo bytes}, error) - the challenge is used up
-    by this call whatever happens next."""
+    """(challenge, {action: [photo bytes, ...]}, error) - the challenge is
+    used up by this call whatever happens next."""
     challenge = request.env['bxi.face.challenge'].sudo()._consume(payload.get('challenge_id'))
     if not challenge:
         return None, None, api_error('This challenge has expired or was already used. Start again.',
                                      status=400, code='challenge_expired')
     actions = challenge._get_actions()
-    frames, error = read_frames(payload, files, len(actions), len(actions))
+    frames, error = read_frames(payload, files, len(actions), len(actions) * MAX_FRAMES_PER_ACTION)
     if error:
         return None, None, error
-    by_action = {action: content for action, content in frames if action}
-    if set(by_action) != set(actions):
-        return None, None, api_error('Send one photo for each action: %s.' % ', '.join(actions),
+    by_action = {}
+    for action, content in frames:
+        if action:
+            by_action.setdefault(action, []).append(content)
+    if set(by_action) != set(actions) or any(len(photos) > MAX_FRAMES_PER_ACTION for photos in by_action.values()):
+        return None, None, api_error('Send 1 to %s photos for each action: %s.' % (MAX_FRAMES_PER_ACTION, ', '.join(actions)),
                                      status=400, code='invalid_frames')
     return challenge, by_action, None
 
@@ -87,6 +102,32 @@ class _Recognition:
         self.error = face_error(message, status, result, **extra)
         return None, self.users
 
+    @staticmethod
+    def _pick(candidates):
+        """{action: [FaceAnalysis, ...]} -> {action: FaceAnalysis}: the most
+        straight-on photo for 'center', and for the turns the photos that
+        turn the furthest to opposite sides, preferring photos of the same
+        person as the centre one. With one photo per action this simply
+        returns them; the liveness check still judges the result."""
+        center = min(candidates['center'], key=lambda analysis: abs(analysis.yaw))
+        picked = {'center': center}
+
+        def same_person(options):
+            close = [a for a in options if float(np.dot(a.embedding, center.embedding)) >= SAME_PERSON_MIN]
+            return close or options
+
+        turns = [action for action in candidates if action != 'center']
+        options = [same_person(candidates[action]) for action in turns]
+        if len(turns) == 2:
+            def strength(pair):
+                first, second = (analysis.yaw - center.yaw for analysis in pair)
+                return ((first > 0) != (second > 0), min(abs(first), abs(second)))
+            picked.update(zip(turns, max(itertools.product(*options), key=strength)))
+        else:
+            for action, choices in zip(turns, options):
+                picked[action] = max(choices, key=lambda analysis: abs(analysis.yaw - center.yaw))
+        return picked
+
     def run(self):
         Service = self.service
         if self.mode == 'phone':
@@ -100,15 +141,25 @@ class _Recognition:
         except FaceEngineUnavailable:
             return self.fail('face_engine_unavailable',
                              'Face login is temporarily unavailable. Use your password or OTP.', 503)
-        analyses = {}
-        for action, content in self.by_action.items():
-            try:
-                analyses[action] = engine.analyze(content)
-            except FaceError as exc:
-                reason = '%s: %s' % (action, exc.detail) if exc.detail else action
-                return self.fail(exc.code, exc.message, 400, reason=reason, action=action)
+        candidates = {}
+        for action, photos in self.by_action.items():
+            usable, problem = [], None
+            for content in photos:
+                try:
+                    usable.append(engine.analyze(content))
+                except FaceError as exc:
+                    problem = exc
+            if not usable:
+                # Every photo of this action failed: report the last problem.
+                reason = '%s: %s' % (action, problem.detail) if problem.detail else action
+                return self.fail(problem.code, problem.message, 400, reason=reason, action=action)
+            candidates[action] = usable
 
-        self.attempt.yaws = ', '.join('%s %+.2f' % (action, analyses[action].yaw) for action in analyses)
+        analyses = self._pick(candidates)
+        self.attempt.yaws = ', '.join(
+            '%s %+.2f' % (action, analyses[action].yaw)
+            + (' of [%s]' % ' '.join('%+.2f' % a.yaw for a in candidates[action]) if len(candidates[action]) > 1 else '')
+            for action in analyses)
         ok, reason, live_score = Service._check_liveness(analyses, self.company)
         if live_score is not None:
             self.attempt.live_score = live_score

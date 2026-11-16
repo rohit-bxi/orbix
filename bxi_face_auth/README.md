@@ -175,6 +175,14 @@ unmirrored photos are both fine.
    ```
    The response is the same as step 3. No second scan is needed.
 
+**Recommended: a burst per prompt.** Instead of one photo, send 2–5 photos per action, taken about
+0.4 s apart while the person turns (same `action` on each). The server keeps the most straight-on
+photo for `center` and, for the turns, the pair that turns furthest to opposite sides, skipping
+photos with no usable face. A late turn, a turn that goes side-on, or a head still coming back from
+the previous prompt then no longer fails the challenge. One photo per action still works. A photo
+error is only returned when every photo of an action fails. Each attempt logs the chosen and all
+measured angles (`yaws`, e.g. `left +0.16 of [+0.01 +0.05 +0.16]`).
+
 A **challenge is single-use**. After any error, start again from step 1.
 
 ### Kiosk
