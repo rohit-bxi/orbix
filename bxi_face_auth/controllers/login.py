@@ -156,8 +156,10 @@ class _Recognition:
             candidates[action] = usable
 
         analyses = self._pick(candidates)
+        center = analyses['center']
         self.attempt.yaws = ', '.join(
             '%s %+.2f' % (action, analyses[action].yaw)
+            + (' sim %.2f' % float(np.dot(analyses[action].embedding, center.embedding)) if action != 'center' else '')
             + (' of [%s]' % ' '.join('%+.2f' % a.yaw for a in candidates[action]) if len(candidates[action]) > 1 else '')
             for action in analyses)
         ok, reason, live_score = Service._check_liveness(analyses, self.company)

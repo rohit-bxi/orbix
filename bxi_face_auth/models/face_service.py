@@ -187,6 +187,15 @@ class BxiFaceService(models.AbstractModel):
         if not hint:
             return Users
         users = Users.search([('login', 'in', list({hint, hint.lower()}))])
+        if '@' in hint:
+            # The email on the account or on the student/teacher/parent
+            # record: what people type, even when the login differs.
+            partners = self.env['res.partner'].sudo().search([('email', '=ilike', hint)])
+            if partners:
+                users |= Users.search([('partner_id', 'in', partners.ids)])
+                users |= self.env['op.student'].sudo().search([('partner_id', 'in', partners.ids)]).user_id
+                users |= self.env['op.faculty'].sudo().search([('partner_id', 'in', partners.ids)]).user_id
+                users |= self.env['op.parent'].sudo().search([('name', 'in', partners.ids)]).user_id
         digits = sum(ch.isdigit() for ch in hint)
         if digits >= 6 and all(ch.isdigit() or ch in ' +-()' for ch in hint):
             users |= Users._bxi_find_users_by_phone(hint)
