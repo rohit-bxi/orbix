@@ -101,6 +101,19 @@ class TestBxiApiSupportAttendance(ApiSupportHttpCase):
             '/api/v1/attendance/sessions/999999/roster', headers=self._headers('attendance_api_teacher', 'TeacherPass1!'))
         self.assertEqual(resp.status_code, 404)
 
+    def test_second_checkin_while_open_is_a_json_error(self):
+        """hr.attendance refuses a check-in while one is still open; the API
+        reports it as a 400 envelope, not Odoo's HTML 422 page."""
+        headers = self._headers('attendance_api_teacher', 'TeacherPass1!')
+        first = self.url_open('/api/v1/attendance/checkin', headers=headers,
+                              json={'student_id': self.student.id, 'check_in': '2026-03-02 09:00:00'})
+        self.assertEqual(first.status_code, 201)
+        second = self.url_open('/api/v1/attendance/checkin', headers=headers,
+                               json={'student_id': self.student.id, 'check_in': '2026-03-02 09:30:00'})
+        self.assertEqual(second.status_code, 400)
+        self.assertEqual(second.headers['Content-Type'].split(';')[0], 'application/json')
+        self.assertEqual(second.json()['error']['code'], 'validation_error')
+
     def test_checkout_after_checkin(self):
         headers = self._headers('attendance_api_teacher', 'TeacherPass1!')
         checkin = self.url_open(

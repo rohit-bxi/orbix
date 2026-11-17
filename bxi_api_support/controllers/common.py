@@ -28,11 +28,11 @@ from functools import wraps
 import psycopg2
 
 from odoo import fields
-from odoo.exceptions import AccessError, UserError
+from odoo.exceptions import UserError
 from odoo.fields import Domain
 from odoo.http import request
 
-from odoo.addons.bxi_api.controllers.auth import api_error, parse_int
+from odoo.addons.bxi_api.controllers.auth import api_error, model_error, parse_int
 
 
 def school_context(env):
@@ -243,12 +243,12 @@ def safe_create(model, vals):
     (e.g. "refund amount cannot exceed total paid") into a 400 envelope
     instead of an unhandled ValidationError/UserError becoming a generic
     500 - the create()-time counterpart of call_action for action_* methods.
+    A value the database refuses (a required field left empty, an id that
+    does not exist) is reported the same way, in a savepoint so the rest of
+    the request is unaffected.
     Returns (record, None) or (None, api_error(...)).
     """
-    try:
-        return model.create(vals), None
-    except UserError as exc:
-        return None, api_error(str(exc), status=400, code='validation_error')
+    return atomic(lambda: model.create(vals))
 
 
 def parse_pagination(kwargs, default_limit=50, max_limit=200):
@@ -334,6 +334,21 @@ def resolve_record(env, model, value, field_name):
     return record, None
 
 
+def resolve_teacher_for_create(env, payload, may_choose):
+    """The teacher a new teacher-owned record (lesson plan, assessment
+    session) belongs to: the caller's own teacher record, or - for a caller
+    without one who `may_choose` (a coordinator or manager) - the
+    payload's `teacher_id`. Returns (op.faculty, None) or (None, api_error(...))."""
+    faculty = get_own_faculty(env)
+    if faculty:
+        return faculty, None
+    if not may_choose:
+        return None, api_error('Only a teacher or a coordinator can do this.', status=403, code='forbidden')
+    if not payload.get('teacher_id'):
+        return None, api_error('teacher_id is required.', status=400, code='missing_teacher_id')
+    return resolve_record(env, 'op.faculty', payload['teacher_id'], 'teacher_id')
+
+
 def resolve_records(env, model, values, field_name):
     """resolve_record for a JSON id list: (records, None) or (None, api_error(...))."""
     ids, error = parse_ids(values or [], field_name)
@@ -355,14 +370,8 @@ def atomic(func):
     try:
         with request.env.cr.savepoint():
             return func(), None
-    except AccessError as exc:
-        return None, api_error(str(exc), status=403, code='forbidden')
-    except UserError as exc:
-        return None, api_error(str(exc), status=400, code='validation_error')
-    except psycopg2.IntegrityError as exc:
-        return None, api_error(
-            'This conflicts with an existing record: %s' % (exc.diag.message_primary or exc),
-            status=400, code='conflict')
+    except (UserError, psycopg2.IntegrityError) as exc:
+        return None, model_error(exc)
 
 
 TEACHER_PERMISSION_MESSAGES = {

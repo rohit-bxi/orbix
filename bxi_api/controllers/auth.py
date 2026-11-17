@@ -12,12 +12,16 @@ calling, instead of building its own auth or response shape.
 
 import base64
 import binascii
+import re
 import time
 from collections import defaultdict, deque
 from functools import wraps
 
+import psycopg2
+import psycopg2.errors
+
 import odoo.modules.module
-from odoo.exceptions import AccessError, UserError
+from odoo.exceptions import AccessError, MissingError, UserError
 from odoo.http import content_disposition, request
 
 # Largest single upload accepted by parse_request() - homework submissions,
@@ -161,6 +165,62 @@ def call_action(record, method_name, **kwargs):
         return None, api_error(str(exc), status=400, code='invalid_transition')
 
 
+def _model_for_table(env, table):
+    for name in env.registry:
+        model = env[name]
+        if not model._abstract and model._table == table:
+            return model
+    return None
+
+
+def integrity_error(exc):
+    """API error envelope for a constraint the database refused
+    (psycopg2.IntegrityError), worded for an app rather than the backend.
+    The cursor must already be usable again (savepoint or transaction
+    rolled back) - building the message may read the registry tables."""
+    env = request.env
+    diag = exc.diag
+    model = _model_for_table(env, diag.table_name) if diag.table_name else None
+    column = diag.column_name
+
+    def label(col):
+        field = model._fields.get(col) if model is not None and col else None
+        return field.string if field else (col or 'A required value')
+
+    if isinstance(exc, psycopg2.errors.NotNullViolation):
+        return api_error('%s is required.' % label(column), status=400,
+                         code='missing_%s' % column if column else 'missing_field')
+    if isinstance(exc, psycopg2.errors.ForeignKeyViolation):
+        detail = diag.message_detail or ''
+        match = re.search(r'Key \((\w+)\)=\(([^)]*)\) is not present', detail)
+        if match:
+            col, value = match.groups()
+            return api_error('%s %s does not exist.' % (col, value), status=400, code='invalid_%s' % col)
+        return api_error('This record is still used by other records and cannot be deleted. '
+                         'Archive it instead.', status=400, code='in_use')
+    message = None
+    if model is not None:
+        try:
+            message = model._sql_error_to_message(exc)
+        except Exception:  # noqa: BLE001 - fall back to the plain message below
+            message = None
+    return api_error(message or 'This conflicts with an existing record: %s' % (diag.message_primary or exc),
+                     status=400, code='conflict')
+
+
+def model_error(exc):
+    """API error envelope for an Odoo model exception (AccessError,
+    MissingError, ValidationError/UserError) or a refused constraint
+    (psycopg2.IntegrityError)."""
+    if isinstance(exc, psycopg2.IntegrityError):
+        return integrity_error(exc)
+    if isinstance(exc, AccessError):
+        return api_error(str(exc), status=403, code='forbidden')
+    if isinstance(exc, MissingError):
+        return api_error(str(exc), status=404, code='not_found')
+    return api_error(str(exc), status=400, code='validation_error')
+
+
 # What an account signed in with a one-time password (set by the school
 # office) may call before choosing its own password.
 PASSWORD_CHANGE_PENDING_PATHS = frozenset({
@@ -174,6 +234,11 @@ def require_auth(func):
     `request.env` switched to that token's user (so ir.rule/ACLs apply as
     that user, the same as a normal Odoo request). On failure, returns a
     401 envelope without calling the wrapped route at all.
+
+    A model error or refused constraint the route lets escape (a create
+    the route did not guard) rolls the request back and comes back as the
+    usual JSON error envelope, not Odoo's HTML error page. Serialization
+    failures are not caught, so Odoo still retries those.
     """
     @wraps(func)
     def wrapper(*args, **kwargs):
@@ -187,7 +252,11 @@ def require_auth(func):
             return api_error('Change your one-time password to continue.', status=403,
                              code='password_change_required')
         request.update_env(user=token.user_id.id)
-        return func(*args, **kwargs)
+        try:
+            return func(*args, **kwargs)
+        except (UserError, psycopg2.IntegrityError) as exc:
+            request.env.cr.rollback()
+            return model_error(exc)
     return wrapper
 
 

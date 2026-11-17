@@ -77,6 +77,39 @@ class TestBxiApiSupportLessonPlan(ApiSupportHttpCase):
         self.assertEqual(resubmit.status_code, 200)
         self.assertEqual(resubmit.json()['data']['state'], 'pending')
 
+    def _plan_payload(self, **extra):
+        return dict({
+            'subject_id': self.subject.id, 'class_id': self.course.id, 'quarter_id': self.term.id,
+            'topic': 'Decimals', 'objective': 'Understand decimals', 'activities': 'Pair work',
+            'resources': 'Worksheet', 'assessment_method': 'Quiz',
+            'start_date': '2026-07-08', 'end_date': '2026-07-10', 'plan_date': '2026-07-08',
+        }, **extra)
+
+    def test_coordinator_creates_plan_for_a_teacher(self):
+        """A coordinator has no teacher record of their own: they name the teacher."""
+        resp = self.url_open('/api/v1/lesson-plans', headers=self._headers('lp_api_coordinator', 'CoordPass1!'),
+                             json=self._plan_payload(teacher_id=self.faculty.id))
+        self.assertEqual(resp.status_code, 201, resp.text)
+        plan = self.env['bxi.lesson.plan'].browse(resp.json()['data']['id'])
+        self.assertEqual(plan.teacher_id, self.faculty)
+
+    def test_coordinator_must_name_the_teacher(self):
+        headers = self._headers('lp_api_coordinator', 'CoordPass1!')
+        resp = self.url_open('/api/v1/lesson-plans', headers=headers, json=self._plan_payload())
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.json()['error']['code'], 'missing_teacher_id')
+        resp = self.url_open('/api/v1/lesson-plans', headers=headers, json=self._plan_payload(teacher_id=999999))
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.json()['error']['code'], 'invalid_teacher_id')
+
+    def test_login_without_teacher_record_cannot_create_plan(self):
+        """Not a teacher, not a coordinator: refused, even when naming a teacher."""
+        resp = self.url_open('/api/v1/lesson-plans',
+                             headers=self._headers('lp_api_other_teacher', 'OtherTeacherPass1!'),
+                             json=self._plan_payload(teacher_id=self.faculty.id))
+        self.assertEqual(resp.status_code, 403)
+        self.assertFalse(self.env['bxi.lesson.plan'].search([('topic', '=', 'Decimals')]))
+
     def test_teacher_cannot_review(self):
         plan_id = self._create_plan().json()['data']['id']
         resp = self.url_open(

@@ -6,7 +6,7 @@ from odoo.http import request
 
 from odoo.addons.bxi_api.controllers.auth import api_error, api_response, call_action, require_auth
 
-from .common import get_own_faculty, parse_pagination, safe_create, teacher_permission
+from .common import get_own_faculty, parse_pagination, resolve_teacher_for_create, safe_create, teacher_permission
 
 COORDINATOR_GROUP = 'bxi_academic_management.group_academic_coordinator'
 MANAGER_GROUP = 'bxi_academic_management.group_academic_manager'
@@ -78,9 +78,11 @@ class BxiApiSupportLessonPlanController(http.Controller):
             return api_error('Missing required field(s): %s' % ', '.join(missing), status=400, code='missing_fields')
 
         vals = {key: payload[key] for key in CREATE_FIELDS}
-        faculty = get_own_faculty(request.env)
-        if faculty:
-            vals['teacher_id'] = faculty.id
+        teacher, error = resolve_teacher_for_create(
+            request.env, payload, _is_coordinator_or_manager(request.env.user))
+        if error:
+            return error
+        vals['teacher_id'] = teacher.id
         plan, error = safe_create(request.env['bxi.lesson.plan'].sudo(), vals)
         if error:
             return error
