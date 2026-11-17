@@ -16,7 +16,7 @@ class OpFaculty(models.Model):
 
     emergency_contact_relation = fields.Char(string='Emergency Contact Relation')
     certifications = fields.Text(string='Certifications', help='e.g. B.Ed, CTET, first-aid training.')
-    staff_notes = fields.Text(string='Notes')
+    staff_notes = fields.Text(string='Staff Notes')
     assigned_course_ids = fields.Many2many(
         'op.course', 'op_faculty_assigned_course_rel', 'faculty_id', 'course_id', string='Assigned Classes')
     assigned_batch_ids = fields.Many2many(
