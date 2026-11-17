@@ -13878,7 +13878,7 @@
     },
     {
       "name": "Admin Dashboard (bxi_api_support)",
-      "description": "Admin-dashboard lists and forms: classes and sections, fees across students (collection by class, defaulters, fee categories) and events (figures, create/edit, announcement, attendance). Each list returns items, meta (total/limit/offset) and a summary over every matching record.",
+      "description": "Admin-dashboard lists and forms: classes and sections, fees across students (collection by class, defaulters, fee categories), events (figures, create/edit, announcement, attendance) and student attendance (per-student summary or per-period records). Each list returns items, meta (total/limit/offset) and a summary over every matching record.",
       "item": [
         {
           "name": "Admin: List Classes",
@@ -14592,6 +14592,152 @@
               "mode": "raw",
               "raw": "{\n  \"registration_ids\": [\n    1\n  ],\n  \"attended\": true\n}"
             }
+          },
+          "response": []
+        },
+        {
+          "name": "Admin: Student Attendance Summary",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/attendance?view=summary&date_from=2026-11-01&date_to=2026-11-17&class_id=&section_id=&student_id=&subject_id=&q=&include_unmarked=0&max_percentage=&sort=name asc&limit=50&offset=0",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "attendance"
+              ],
+              "query": [
+                {
+                  "key": "view",
+                  "value": "summary"
+                },
+                {
+                  "key": "date_from",
+                  "value": "2026-11-01"
+                },
+                {
+                  "key": "date_to",
+                  "value": "2026-11-17"
+                },
+                {
+                  "key": "class_id",
+                  "value": ""
+                },
+                {
+                  "key": "section_id",
+                  "value": ""
+                },
+                {
+                  "key": "student_id",
+                  "value": ""
+                },
+                {
+                  "key": "subject_id",
+                  "value": ""
+                },
+                {
+                  "key": "q",
+                  "value": ""
+                },
+                {
+                  "key": "include_unmarked",
+                  "value": "0"
+                },
+                {
+                  "key": "max_percentage",
+                  "value": ""
+                },
+                {
+                  "key": "sort",
+                  "value": "name asc"
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
+            },
+            "description": "Every student's attendance between date_from and date_to (default: 1st of this month to today; at most 366 days): one row per student with class, section, roll number, total marked periods, present/absent/late/excused counts and percentage (present / marked), plus totals over every matching student. Filters: class_id, section_id, student_id, subject_id, q (name or GR no.); include_unmarked=1 adds enrolled students with no marks; max_percentage=75 keeps marked students at or below 75%. sort=name|gr_no|class|total|present|absent|late|excused|percentage [asc|desc]. A period-less mark (kiosk scan) counts on its local check-in date. Academic coordinators/managers, back-office admins."
+          },
+          "response": []
+        },
+        {
+          "name": "Admin: Student Attendance Records",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/attendance?view=records&date_from=2026-11-01&date_to=2026-11-17&class_id=&section_id=&student_id=&subject_id=&q=&status=&sort=date desc&limit=50&offset=0",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "attendance"
+              ],
+              "query": [
+                {
+                  "key": "view",
+                  "value": "records"
+                },
+                {
+                  "key": "date_from",
+                  "value": "2026-11-01"
+                },
+                {
+                  "key": "date_to",
+                  "value": "2026-11-17"
+                },
+                {
+                  "key": "class_id",
+                  "value": ""
+                },
+                {
+                  "key": "section_id",
+                  "value": ""
+                },
+                {
+                  "key": "student_id",
+                  "value": ""
+                },
+                {
+                  "key": "subject_id",
+                  "value": ""
+                },
+                {
+                  "key": "q",
+                  "value": ""
+                },
+                {
+                  "key": "status",
+                  "value": ""
+                },
+                {
+                  "key": "sort",
+                  "value": "date desc"
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
+            },
+            "description": "The individual period marks behind the summary, newest first: date, student, GR no., class, section, period, subject, teacher, status, check-in/out and remark. Same filters as the summary plus status=present|absent|late|excused; sort=date [asc|desc]. Academic coordinators/managers, back-office admins."
           },
           "response": []
         }

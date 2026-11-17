@@ -23,6 +23,7 @@ LIST_ROUTES = [
     '/api/v1/announcements', '/api/v1/notices', '/api/v1/dashboards/fees', '/api/v1/dashboards/health',
     '/api/v1/admin/classes', '/api/v1/admin/fees', '/api/v1/admin/fees/by-class', '/api/v1/admin/fees/defaulters',
     '/api/v1/admin/fee-categories', '/api/v1/admin/events', '/api/v1/admin/events/options',
+    '/api/v1/admin/attendance', '/api/v1/admin/attendance?view=records',
 ]
 # Routes taking a record id - an unknown id must give a clean 4xx.
 MISSING_ID_ROUTES = [

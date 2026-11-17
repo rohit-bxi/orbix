@@ -30,6 +30,7 @@ from . import test_teacher_api
 from . import test_operations_api
 from . import test_route_smoke
 from . import test_admin_dashboard_api
+from . import test_admin_attendance_api
 from . import test_people_management_api
 from . import test_people_account_api
 from . import test_people_aadhaar_api

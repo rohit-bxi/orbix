@@ -2,10 +2,13 @@
 # Copyright (c) 2026 BXI Technology Pvt. Ltd. All Rights Reserved.
 # License OPL-1 (Odoo Proprietary License v1.0, see LICENSE file for full text).
 import logging
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
+
+import pytz
 
 from odoo import api, fields, models
 from odoo.exceptions import ValidationError
+from odoo.fields import Domain
 
 _logger = logging.getLogger(__name__)
 
@@ -48,6 +51,44 @@ class HrAttendance(models.Model):
                 lambda line: line.state == 'running')[:1]
             attendance.class_id = enrollment.course_id
             attendance.section_id = enrollment.batch_id
+
+    # A mark's attendance date is its period's date - not check_in, which
+    # for a hand-marked row is the moment the teacher marked it. Only a row
+    # without a dated period falls back to check_in, read in the user's
+    # timezone. _attendance_date() and _date_range_domain() both apply this
+    # rule, so per-student screens and school-wide lists count the same.
+
+    def _attendance_date(self):
+        """This row's attendance date, or None when it has neither a dated
+        period nor a check-in."""
+        self.ensure_one()
+        if self.session_id.session_date:
+            return self.session_id.session_date
+        if self.check_in:
+            return fields.Datetime.context_timestamp(self, self.check_in).date()
+        return None
+
+    @api.model
+    def _date_range_domain(self, date_from=None, date_to=None):
+        """Rows whose _attendance_date() falls between the two dates
+        (inclusive; either may be None), as an exact database domain."""
+        if not (date_from or date_to):
+            return Domain.TRUE
+        dated = Domain('session_id.session_date', '!=', False)
+        undated = Domain('session_id', '=', False) | Domain('session_id.session_date', '=', False)
+        if date_from:
+            dated &= Domain('session_id.session_date', '>=', date_from)
+            undated &= Domain('check_in', '>=', self._local_midnight_utc(date_from))
+        if date_to:
+            dated &= Domain('session_id.session_date', '<=', date_to)
+            undated &= Domain('check_in', '<', self._local_midnight_utc(date_to + timedelta(days=1)))
+        return dated | undated
+
+    @api.model
+    def _local_midnight_utc(self, day):
+        """The start of `day` in the user's timezone, as a naive UTC datetime."""
+        local = self.env.tz.localize(datetime.combine(day, time.min))
+        return local.astimezone(pytz.utc).replace(tzinfo=None)
 
     def _find_matching_session(self, student, check_in):
         """The op.session whose class window a check-in at `check_in` falls
