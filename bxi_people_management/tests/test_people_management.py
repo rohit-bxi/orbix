@@ -97,3 +97,26 @@ class TestStudentParentDerivedFields(TransactionCase):
         parent.invalidate_recordset()
         self.assertEqual(parent.bxi_child_batch_ids, batch_a)
         self.assertEqual(parent.bxi_child_department_ids, department)
+
+    def test_current_enrolment_is_the_one_finished_last(self):
+        course = self.env['op.course'].create({'name': 'PMF Class', 'code': 'PMF-C'})
+        batch_a, batch_b = self.env['op.batch'].create([{
+            'name': name, 'code': name, 'course_id': course.id, 'start_date': '2026-01-01', 'end_date': '2027-12-31',
+        } for name in ('PMF-A', 'PMF-B')])
+        student = self.env['op.student'].create({'first_name': 'Fin', 'last_name': 'Ished', 'gender': 'm'})
+        Line = self.env['op.student.course']
+        line_a = Line.create({'student_id': student.id, 'course_id': course.id, 'batch_id': batch_a.id,
+                              'roll_number': '1'})
+        # A -> B (newer record) -> back to A, then A finished.
+        line_a.state = 'finished'
+        line_b = Line.create({'student_id': student.id, 'course_id': course.id, 'batch_id': batch_b.id,
+                              'roll_number': '2'})
+        line_b.state = 'finished'
+        line_a.state = 'running'
+        line_a.state = 'finished'
+        self.assertGreater(line_a.bxi_finished_order, line_b.bxi_finished_order)
+        self.assertEqual(student._bxi_current_enrolment(), line_a, 'Finished last, though B is newer.')
+        self.assertEqual(student.bxi_current_batch_id, batch_a)
+        # Enrolments finished before the order was recorded fall back to the newest.
+        (line_a | line_b).write({'bxi_finished_order': 0})
+        self.assertEqual(student._bxi_current_enrolment(), line_b)

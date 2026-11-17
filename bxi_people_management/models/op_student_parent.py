@@ -9,6 +9,33 @@ from odoo import api, fields, models
 ENROLMENT_STATES = [('running', 'Running'), ('finished', 'Finished')]
 
 
+class OpStudentCourse(models.Model):
+    _inherit = 'op.student.course'
+
+    bxi_finished_order = fields.Integer(
+        string='Finished Order', readonly=True, copy=False,
+        help="Set when this enrolment is finished: 1 + the highest value among the student's other "
+             "enrolments, so the one finished last is known (setting a student back to running "
+             "reopens it). 0 for enrolments finished before this was recorded.")
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        lines = super().create(vals_list)
+        lines.filtered(lambda line: line.state == 'finished')._bxi_stamp_finished()
+        return lines
+
+    def write(self, vals):
+        res = super().write(vals)
+        if vals.get('state') == 'finished':
+            self._bxi_stamp_finished()
+        return res
+
+    def _bxi_stamp_finished(self):
+        for line in self.sudo():
+            others = line.student_id.course_detail_ids - line
+            line.bxi_finished_order = max(others.mapped('bxi_finished_order') or [0]) + 1
+
+
 class OpStudent(models.Model):
     _inherit = 'op.student'
 
@@ -21,15 +48,20 @@ class OpStudent(models.Model):
         help="The department of the student's current class.")
     bxi_enrolment_state = fields.Selection(
         ENROLMENT_STATES, string='Enrolment Status', compute='_compute_bxi_current_enrolment',
-        help='Status of the current enrolment (the running one, else the latest).')
+        help='Status of the current enrolment (the running one, else the one finished last).')
 
     def _bxi_current_enrolment(self):
-        """The running enrolment, else the latest one."""
+        """The running enrolment, else the one finished last (by
+        bxi_finished_order, then the newest for enrolments finished before
+        that was recorded). After transfers A -> B -> A, finishing A and
+        setting the student running again reopens A, not B."""
         self.ensure_one()
         lines = self.sudo().course_detail_ids
-        return lines.filtered(lambda line: line.state == 'running')[:1] or lines.sorted('id', reverse=True)[:1]
+        return lines.filtered(lambda line: line.state == 'running')[:1] or \
+            lines.sorted(lambda line: (line.bxi_finished_order, line.id), reverse=True)[:1]
 
-    @api.depends('course_detail_ids.state', 'course_detail_ids.course_id', 'course_detail_ids.batch_id')
+    @api.depends('course_detail_ids.state', 'course_detail_ids.course_id', 'course_detail_ids.batch_id',
+                 'course_detail_ids.bxi_finished_order')
     def _compute_bxi_current_enrolment(self):
         for student in self:
             line = student._bxi_current_enrolment() if student.id else self.env['op.student.course']
