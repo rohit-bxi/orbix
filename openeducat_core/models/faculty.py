@@ -93,28 +93,28 @@ class OpFaculty(models.Model):
         help='Upload Teacher related Documents.'
     )
     # ---------- Official Address ----------
-    official_street = fields.Char(string="Street")
-    official_street2 = fields.Char(string="Street2")
-    official_city = fields.Char(string="City")
-    official_state_id = fields.Many2one('res.country.state', string="State")
-    official_zip = fields.Char(string="Zip")
-    official_country_id = fields.Many2one('res.country', string="Country")
+    official_street = fields.Char(string="Official Street")
+    official_street2 = fields.Char(string="Official Street2")
+    official_city = fields.Char(string="Official City")
+    official_state_id = fields.Many2one('res.country.state', string="Official State")
+    official_zip = fields.Char(string="Official Zip")
+    official_country_id = fields.Many2one('res.country', string="Official Country")
 
     # ---------- Postal Address ----------
-    postal_street = fields.Char(string="Street")
-    postal_street2 = fields.Char(string="Street2")
-    postal_city = fields.Char(string="City")
-    postal_state_id = fields.Many2one('res.country.state', string="State")
-    postal_zip = fields.Char(string="Zip")
-    postal_country_id = fields.Many2one('res.country', string="Country")
+    postal_street = fields.Char(string="Postal Street")
+    postal_street2 = fields.Char(string="Postal Street2")
+    postal_city = fields.Char(string="Postal City")
+    postal_state_id = fields.Many2one('res.country.state', string="Postal State")
+    postal_zip = fields.Char(string="Postal Zip")
+    postal_country_id = fields.Many2one('res.country', string="Postal Country")
 
     # ---------- Regional Address ----------
-    regional_street = fields.Char(string="Street")
-    regional_street2 = fields.Char(string="Street2")
-    regional_city = fields.Char(string="City")
-    regional_state_id = fields.Many2one('res.country.state', string="State")
-    regional_zip = fields.Char(string="Zip")
-    regional_country_id = fields.Many2one('res.country', string="Country")
+    regional_street = fields.Char(string="Regional Street")
+    regional_street2 = fields.Char(string="Regional Street2")
+    regional_city = fields.Char(string="Regional City")
+    regional_state_id = fields.Many2one('res.country.state', string="Regional State")
+    regional_zip = fields.Char(string="Regional Zip")
+    regional_country_id = fields.Many2one('res.country', string="Regional Country")
     category_id = fields.Many2one('op.category', 'Category')
     religion = fields.Selection([
         ('hindu', 'Hindu'),

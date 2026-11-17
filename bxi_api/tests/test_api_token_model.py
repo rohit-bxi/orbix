@@ -89,6 +89,23 @@ class TestBxiApiTokenModel(TransactionCase):
         self.assertEqual(result, self.test_user)
         self.assertTrue(record.last_used_at)
 
+    def test_verify_token_bumps_last_used_at_most_once_a_minute(self):
+        """Parallel API calls with one token must not all write its row."""
+        raw_token = self.Token._issue_for_user(self.test_user)
+        record = self.Token.sudo().search([('token_hash', '=', self.Token._hash(raw_token))])
+        recent = fields.Datetime.now() - timedelta(seconds=20)
+        record.write({'last_used_at': recent})
+
+        self.Token._verify_token(raw_token)
+        record.invalidate_recordset(['last_used_at'])
+        self.assertEqual(record.last_used_at, recent, 'used 20 s ago: not written again')
+
+        stale = fields.Datetime.now() - timedelta(minutes=5)
+        record.write({'last_used_at': stale})
+        self.Token._verify_token(raw_token)
+        record.invalidate_recordset(['last_used_at'])
+        self.assertGreater(record.last_used_at, stale)
+
     def test_verify_token_revoked_returns_empty_recordset(self):
         raw_token = self.Token._issue_for_user(self.test_user)
         record = self.Token.sudo().search([('token_hash', '=', self.Token._hash(raw_token))])

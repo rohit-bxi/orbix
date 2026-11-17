@@ -3,14 +3,24 @@
 # License OPL-1 (Odoo Proprietary License v1.0, see LICENSE file for full text).
 
 import hashlib
+import logging
 import secrets
 from datetime import timedelta
 
 from odoo import api, fields, models
 
+_logger = logging.getLogger(__name__)
+
 # How long a password/OTP confirmation counts as "recent" for routes that
 # need one (see require_step_up / require_recent_auth in controllers/auth.py).
 STEP_UP_MINUTES = 10
+
+# last_used_at is bumped at most this often per token. Every API call
+# verifies the token, and an app screen fires several calls at once with
+# the same token; writing the row on each of them made those requests
+# collide ("could not serialize access due to concurrent update") and wait
+# for Odoo's retry.
+LAST_USED_RESOLUTION = timedelta(minutes=1)
 
 
 class BxiApiToken(models.Model):
@@ -102,8 +112,39 @@ class BxiApiToken(models.Model):
             return self.browse()
         if token.expires_at and token.expires_at < fields.Datetime.now():
             return self.browse()
-        token.write({'last_used_at': fields.Datetime.now()})
+        token._touch_last_used()
         return token
+
+    def _touch_last_used(self):
+        """Record that this token was just used, without ever making the
+        request fail, retry or wait on it.
+
+        Throttled to once per LAST_USED_RESOLUTION. SKIP LOCKED leaves the
+        row alone while a parallel request is bumping it, and if one already
+        did since this request's snapshot, PostgreSQL's serialization error
+        is rolled back to the savepoint and ignored instead of failing the
+        whole transaction. It is bookkeeping only: any failure is logged at
+        debug level.
+        """
+        self.ensure_one()
+        now = fields.Datetime.now()
+        cutoff = now - LAST_USED_RESOLUTION
+        if self.last_used_at and self.last_used_at > cutoff:
+            return
+        self.flush_recordset(['last_used_at'])
+        cr = self.env.cr
+        try:
+            with cr.savepoint(flush=False):
+                cr.execute("""
+                    UPDATE bxi_api_token SET last_used_at = %s
+                     WHERE id IN (SELECT id FROM bxi_api_token
+                                   WHERE id = %s AND (last_used_at IS NULL OR last_used_at <= %s)
+                                     FOR NO KEY UPDATE SKIP LOCKED)
+                """, (now, self.id, cutoff), log_exceptions=False)
+        except Exception as e:  # noqa: BLE001 - never fail a request over usage tracking
+            _logger.debug('API token %s: last_used_at not updated: %s', self.id, e)
+            return
+        self.invalidate_recordset(['last_used_at'])
 
     @api.model
     def _revoke_all_for_user(self, user, keep=None):
