@@ -374,8 +374,9 @@ def _apply_emergency_contact(faculty, contact):
 
 
 def _current_enrollment(student):
-    """The running enrolment, else the latest one."""
-    return running_enrollment(student) or student.course_detail_ids.sorted('id', reverse=True)[:1]
+    """The running enrolment, else the one finished last (see
+    op.student._bxi_current_enrolment in bxi_people_management)."""
+    return student._bxi_current_enrolment()
 
 
 def _student_admin_dict(student):

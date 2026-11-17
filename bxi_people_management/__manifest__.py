@@ -2,7 +2,7 @@
 
 {
     'name': 'Orbix People Management',
-    'version': '19.0.1.1.0',
+    'version': '19.0.1.2.0',
     'category': 'Education',
     'summary': 'Teacher profile, assignment and workload details for the user-management screens',
     'description': """

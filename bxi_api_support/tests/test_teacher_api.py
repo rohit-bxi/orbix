@@ -100,7 +100,10 @@ class TestBxiApiSupportTeacher(ApiSupportHttpCase):
         summary = self.url_open(f'/api/v1/attendance/students/{self.students[0].id}/summary',
                                 headers=self._teacher()).json()['data']
         self.assertEqual(summary['summary']['late'], 1)
-        parent_view = self.url_open(f'/api/v1/parent/attendance?student_id={self.students[0].id}',
+        # The parent's own view of the child (same attendance rows as the
+        # parent app's /api/v1/parent/attendance, which lives in
+        # bxi_parent_data_api - not a dependency of this module).
+        parent_view = self.url_open(f'/api/v1/attendance/students/{self.students[0].id}/summary',
                                     headers=self._headers('tch_parent', 'ParentPass1!')).json()['data']
         self.assertEqual(parent_view['summary']['late'], 1, 'Parents see what the teacher marked.')
         self.assertEqual(self.url_open(f'/api/v1/attendance/students/{self.outsider.id}/summary',

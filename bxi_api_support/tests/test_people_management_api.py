@@ -197,6 +197,12 @@ class TestBxiApiSupportPeopleManagement(ApiSupportHttpCase):
 
         finished = self._post(url, {'status': 'finished'}).json()['data']
         self.assertEqual(finished['status'], 'finished')
+        running = self._post(url, {'status': 'running'}).json()['data']
+        self.assertEqual(running['status'], 'running')
+        self.assertEqual(running['section']['id'], self.batch.id,
+                         'Running again reopens the section just finished, not the newest enrolment.')
+        self.assertEqual(student.course_detail_ids.filtered(lambda l: l.state == 'running').batch_id, self.batch)
+        self._post(url, {'status': 'finished'})
         self.assertEqual(self._post(url, {'status': 'expelled'}).json()['error']['code'], 'invalid_status')
 
     # -- parents ------------------------------------------------------------------------
