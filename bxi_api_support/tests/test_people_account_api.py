@@ -69,7 +69,8 @@ class TestBxiApiSupportPeopleAccount(ApiSupportHttpCase):
 
     def _student(self, roll, **extra):
         body = {'first_name': 'Stu', 'last_name': 'Dent%s' % roll, 'gender': 'm', 'email': 'stu%s@uma.test' % roll,
-                'enrollment': {'course_id': self.course.id, 'batch_id': self.batch.id, 'roll_number': roll}}
+                'enrollment': {'course_id': self.course.id, 'batch_id': self.batch.id, 'roll_number': roll},
+                'account': {'username': 'stu%s.uma' % roll, 'password': 'StudentPass%s9' % roll}}
         body.update(extra)
         return self._post('/api/v1/students', body)
 
@@ -126,15 +127,17 @@ class TestBxiApiSupportPeopleAccount(ApiSupportHttpCase):
         self.assertEqual(self.env['op.faculty'].search_count([]), before, 'Nothing is half-created.')
 
     def test_student_and_parent_logins(self):
-        student = self._student('1', account={'username': 'stu.one', 'send_credentials': True, 'channel': 'sms'})
+        student = self._student('1', account={'username': 'stu.one', 'password': 'StudentOne9',
+                                              'send_credentials': True, 'channel': 'sms'})
         self.assertEqual(student.status_code, 201, student.text)
         data = student.json()['data']
         user = self.env['op.student'].browse(data['id']).user_id
         self.assertTrue(user.is_student)
         self.assertTrue(user.has_group('base.group_portal'))
+        self.assertTrue(user.bxi_must_change_password, 'A typed password is still a one-time password.')
         self.assertFalse(data['credentials']['sent'])
         self.assertEqual(data['credentials']['reason'], 'no_phone')
-        self.assertTrue(data['credentials']['one_time_password'], 'Not delivered, so shown once to the office.')
+        self.assertNotIn('one_time_password', data['credentials'], 'The office typed it; it is not echoed back.')
 
         parent = self._post('/api/v1/parents', {
             'name': 'Paula Parent', 'mobile': '9800012345', 'relationship_id': self.relationship.id,
@@ -145,11 +148,34 @@ class TestBxiApiSupportPeopleAccount(ApiSupportHttpCase):
         self.assertEqual(record.user_id.child_ids, user)
         self.assertEqual(self._login('paula.parent', 'ParentTyped9').status_code, 200)
 
-        legacy = self._post('/api/v1/parents', {
-            'name': 'Legacy Parent', 'mobile': '9800012346', 'relationship_id': self.relationship.id,
-            'student_ids': [data['id']], 'email': 'legacy.parent@uma.test', 'create_login': True})
-        self.assertEqual(legacy.status_code, 201, legacy.text)
-        self.assertEqual(legacy.json()['data']['account']['username'], 'legacy.parent@uma.test')
+    def test_student_and_parent_create_require_username_and_password(self):
+        before = self.env['op.student'].search_count([])
+        for account, code in (
+            (None, 'missing_username'),
+            ({'password': 'StudentPass9'}, 'missing_username'),
+            ({'username': 'no.password'}, 'missing_password'),
+            ({'username': 'no.password', 'create_login': False}, 'missing_password'),
+        ):
+            resp = self._student('9', account=account)
+            self.assertEqual(resp.status_code, 400, account)
+            self.assertEqual(resp.json()['error']['code'], code, account)
+        self.assertEqual(self.env['op.student'].search_count([]), before, 'Nothing is half-created.')
+        created = self._student('9', account={'username': 'stu.nine', 'password': 'StudentNine9', 'create_login': False})
+        self.assertEqual(created.status_code, 201, created.text)
+        self.assertEqual(created.json()['data']['account']['username'], 'stu.nine',
+                         'Username and password always come with a login.')
+
+        student_id = created.json()['data']['id']
+        parent_body = {'name': 'Pam Parent', 'mobile': '9800012347', 'relationship_id': self.relationship.id,
+                       'student_ids': [student_id], 'email': 'pam.parent@uma.test'}
+        for extra, code in (({'create_login': True}, 'missing_username'),
+                            ({'account': {'username': 'pam.parent'}}, 'missing_password')):
+            resp = self._post('/api/v1/parents', dict(parent_body, **extra))
+            self.assertEqual(resp.status_code, 400, extra)
+            self.assertEqual(resp.json()['error']['code'], code, extra)
+        self.assertFalse(self.env['op.parent'].search([('mobile', '=', '9800012347')]))
+        # Teachers may still be added without a login (not required by the sheet).
+        self.assertEqual(self._teacher().status_code, 201)
 
     def test_account_routes(self):
         data = self._teacher(email='routes@uma.test').json()['data']

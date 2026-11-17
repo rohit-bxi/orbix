@@ -2,7 +2,7 @@
 
 {
     'name': 'Orbix People Management',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.1.0',
     'category': 'Education',
     'summary': 'Teacher profile, assignment and workload details for the user-management screens',
     'description': """
@@ -19,6 +19,9 @@
           evaluation, exam marks, reports) - enforced by the app API.
         - Teacher documents: Aadhaar card, CV, certificates.
         - Staff responsibilities: a simple tag list.
+        - Student: current class, section, department and enrolment status
+          (read-only, from the running enrolment).
+        - Parent: status, and department / class from the children.
 
         The REST endpoints that use these fields live in bxi_api_support.
     """,
@@ -37,6 +40,7 @@
         'security/people_management_security.xml',
         'views/staff_responsibility_views.xml',
         'views/op_faculty_views.xml',
+        'views/op_student_parent_views.xml',
     ],
     'installable': True,
     'application': False,

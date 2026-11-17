@@ -9,3 +9,4 @@ access_bxi_face_kiosk_system,bxi.face.kiosk system,model_bxi_face_kiosk,base.gro
 access_bxi_face_kiosk_manager,bxi.face.kiosk manager,model_bxi_face_kiosk,group_face_manager,1,0,0,0
 access_bxi_face_login_attempt_system,bxi.face.login.attempt system,model_bxi_face_login_attempt,base.group_system,1,1,1,1
 access_bxi_face_login_attempt_manager,bxi.face.login.attempt manager,model_bxi_face_login_attempt,group_face_manager,1,0,0,0
+access_bxi_face_enable_wizard_user,bxi.face.enable.wizard user,model_bxi_face_enable_wizard,base.group_user,1,1,1,0

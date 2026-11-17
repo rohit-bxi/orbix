@@ -2,7 +2,7 @@
 
 {
     'name': 'Orbix Face Login',
-    'version': '19.0.1.4.2',
+    'version': '19.0.1.5.0',
     'category': 'Education',
     'summary': 'Face-recognition login API for students, teachers and parents',
     'description': """
@@ -52,6 +52,7 @@
         'security/face_groups.xml',
         'security/ir.model.access.csv',
         'data/ir_cron_data.xml',
+        'views/people_face_views.xml',
     ],
     'installable': True,
     'application': False,

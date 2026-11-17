@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <!-- Student: current class, section, department and enrolment status
+         (read-only, from the running enrolment). -->
+    <record id="view_op_student_form_people_management" model="ir.ui.view">
+        <field name="name">op.student.form.people.management</field>
+        <field name="model">op.student</field>
+        <field name="inherit_id" ref="openeducat_core.view_op_student_form"/>
+        <field name="arch" type="xml">
+            <field name="admission_date" position="after">
+                <field name="bxi_current_course_id" invisible="not id"/>
+                <field name="bxi_current_batch_id" invisible="not id"/>
+                <field name="bxi_department_id" invisible="not id"/>
+                <field name="bxi_enrolment_state" widget="badge" invisible="not id"
+                       decoration-success="bxi_enrolment_state == 'running'"
+                       decoration-muted="bxi_enrolment_state == 'finished'"/>
+            </field>
+        </field>
+    </record>
+
+    <!-- Parent: status, and department / class from the children. -->
+    <record id="view_op_parent_form_people_management" model="ir.ui.view">
+        <field name="name">op.parent.form.people.management</field>
+        <field name="model">op.parent</field>
+        <field name="inherit_id" ref="openeducat_parent.view_op_parent_form"/>
+        <field name="arch" type="xml">
+            <field name="relationship_id" position="after">
+                <field name="active" string="Status" widget="boolean_toggle"/>
+                <field name="bxi_child_department_ids" widget="many2many_tags" invisible="not id"/>
+                <field name="bxi_child_batch_ids" widget="many2many_tags" invisible="not id"/>
+            </field>
+        </field>
+    </record>
+</odoo>

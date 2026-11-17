@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <!-- Account & Security on the Student, Teacher and Parent forms: the
+         person's login and the buttons the office uses to manage it (the
+         same service as the people API). Face recognition is added here by
+         bxi_face_auth, ID verification lives in bxi_identity_verification. -->
+    <record id="view_op_student_form_account_security" model="ir.ui.view">
+        <field name="name">op.student.form.account.security</field>
+        <field name="model">op.student</field>
+        <field name="inherit_id" ref="openeducat_core.view_op_student_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Account &amp; Security" name="bxi_account_security"
+                      groups="openeducat_core.group_op_back_office_admin,bxi_academic_management.group_academic_manager,base.group_system">
+                    <group>
+                        <group string="Login" name="bxi_login">
+                            <field name="bxi_has_login" invisible="1"/>
+                            <field name="bxi_account_state" widget="badge"
+                                   decoration-success="bxi_account_state == 'active'"
+                                   decoration-danger="bxi_account_state == 'inactive'"
+                                   decoration-muted="bxi_account_state == 'none'"/>
+                            <field name="bxi_login" invisible="not bxi_has_login"/>
+                            <field name="bxi_must_change_password" invisible="not bxi_has_login"/>
+                            <field name="bxi_temp_password_expires_at" invisible="not bxi_must_change_password"/>
+                            <field name="bxi_last_login" invisible="not bxi_has_login"/>
+                        </group>
+                    </group>
+                    <div class="d-flex flex-wrap gap-2 mb-3" name="bxi_account_buttons" invisible="not id">
+                        <button name="action_bxi_account_wizard" type="object" string="Create Login"
+                                class="btn-primary" icon="fa-user-plus" context="{'bxi_account_mode': 'create'}"
+                                invisible="bxi_has_login"/>
+                        <button name="action_bxi_account_wizard" type="object" string="Reset Password"
+                                class="btn-secondary" icon="fa-key" context="{'bxi_account_mode': 'reset'}"
+                                invisible="not bxi_has_login"/>
+                        <button name="action_bxi_account_wizard" type="object" string="Send Login Credentials"
+                                class="btn-secondary" icon="fa-paper-plane" context="{'bxi_account_mode': 'send'}"
+                                invisible="not bxi_has_login"/>
+                        <button name="action_bxi_enable_login" type="object" string="Enable Sign-in"
+                                class="btn-secondary" icon="fa-unlock" invisible="bxi_account_state != 'inactive'"/>
+                        <button name="action_bxi_disable_login" type="object" string="Disable Sign-in"
+                                class="btn-secondary" icon="fa-lock" invisible="bxi_account_state != 'active'"
+                                confirm="This person will no longer be able to sign in, and is signed out of the app. Continue?"/>
+                    </div>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_op_faculty_form_account_security" model="ir.ui.view">
+        <field name="name">op.faculty.form.account.security</field>
+        <field name="model">op.faculty</field>
+        <field name="inherit_id" ref="openeducat_core.view_op_faculty_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Account &amp; Security" name="bxi_account_security"
+                      groups="openeducat_core.group_op_back_office_admin,bxi_academic_management.group_academic_manager,base.group_system">
+                    <group>
+                        <group string="Login" name="bxi_login">
+                            <field name="bxi_has_login" invisible="1"/>
+                            <field name="bxi_account_state" widget="badge"
+                                   decoration-success="bxi_account_state == 'active'"
+                                   decoration-danger="bxi_account_state == 'inactive'"
+                                   decoration-muted="bxi_account_state == 'none'"/>
+                            <field name="bxi_login" invisible="not bxi_has_login"/>
+                            <field name="bxi_must_change_password" invisible="not bxi_has_login"/>
+                            <field name="bxi_temp_password_expires_at" invisible="not bxi_must_change_password"/>
+                            <field name="bxi_last_login" invisible="not bxi_has_login"/>
+                        </group>
+                    </group>
+                    <div class="d-flex flex-wrap gap-2 mb-3" name="bxi_account_buttons" invisible="not id">
+                        <button name="action_bxi_account_wizard" type="object" string="Create Login"
+                                class="btn-primary" icon="fa-user-plus" context="{'bxi_account_mode': 'create'}"
+                                invisible="bxi_has_login"/>
+                        <button name="action_bxi_account_wizard" type="object" string="Reset Password"
+                                class="btn-secondary" icon="fa-key" context="{'bxi_account_mode': 'reset'}"
+                                invisible="not bxi_has_login"/>
+                        <button name="action_bxi_account_wizard" type="object" string="Send Login Credentials"
+                                class="btn-secondary" icon="fa-paper-plane" context="{'bxi_account_mode': 'send'}"
+                                invisible="not bxi_has_login"/>
+                        <button name="action_bxi_enable_login" type="object" string="Enable Sign-in"
+                                class="btn-secondary" icon="fa-unlock" invisible="bxi_account_state != 'inactive'"/>
+                        <button name="action_bxi_disable_login" type="object" string="Disable Sign-in"
+                                class="btn-secondary" icon="fa-lock" invisible="bxi_account_state != 'active'"
+                                confirm="This person will no longer be able to sign in, and is signed out of the app. Continue?"/>
+                    </div>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_op_parent_form_account_security" model="ir.ui.view">
+        <field name="name">op.parent.form.account.security</field>
+        <field name="model">op.parent</field>
+        <field name="inherit_id" ref="openeducat_parent.view_op_parent_form"/>
+        <field name="arch" type="xml">
+            <field name="student_ids" position="after">
+                <div name="bxi_account_security" groups="openeducat_core.group_op_back_office_admin,bxi_academic_management.group_academic_manager,base.group_system">
+                    <separator string="Account &amp; Security"/>
+                    <group>
+                        <group string="Login" name="bxi_login">
+                            <field name="bxi_has_login" invisible="1"/>
+                            <field name="bxi_account_state" widget="badge"
+                                   decoration-success="bxi_account_state == 'active'"
+                                   decoration-danger="bxi_account_state == 'inactive'"
+                                   decoration-muted="bxi_account_state == 'none'"/>
+                            <field name="bxi_login" invisible="not bxi_has_login"/>
+                            <field name="bxi_must_change_password" invisible="not bxi_has_login"/>
+                            <field name="bxi_temp_password_expires_at" invisible="not bxi_must_change_password"/>
+                            <field name="bxi_last_login" invisible="not bxi_has_login"/>
+                        </group>
+                    </group>
+                    <div class="d-flex flex-wrap gap-2 mb-3" name="bxi_account_buttons" invisible="not id">
+                        <button name="action_bxi_account_wizard" type="object" string="Create Login"
+                                class="btn-primary" icon="fa-user-plus" context="{'bxi_account_mode': 'create'}"
+                                invisible="bxi_has_login"/>
+                        <button name="action_bxi_account_wizard" type="object" string="Reset Password"
+                                class="btn-secondary" icon="fa-key" context="{'bxi_account_mode': 'reset'}"
+                                invisible="not bxi_has_login"/>
+                        <button name="action_bxi_account_wizard" type="object" string="Send Login Credentials"
+                                class="btn-secondary" icon="fa-paper-plane" context="{'bxi_account_mode': 'send'}"
+                                invisible="not bxi_has_login"/>
+                        <button name="action_bxi_enable_login" type="object" string="Enable Sign-in"
+                                class="btn-secondary" icon="fa-unlock" invisible="bxi_account_state != 'inactive'"/>
+                        <button name="action_bxi_disable_login" type="object" string="Disable Sign-in"
+                                class="btn-secondary" icon="fa-lock" invisible="bxi_account_state != 'active'"
+                                confirm="This person will no longer be able to sign in, and is signed out of the app. Continue?"/>
+                    </div>
+                </div>
+            </field>
+        </field>
+    </record>
+</odoo>
