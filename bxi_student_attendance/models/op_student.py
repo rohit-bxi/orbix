@@ -2,9 +2,10 @@
 # Copyright (c) 2026 BXI Technology Pvt. Ltd. All Rights Reserved.
 # License OPL-1 (Odoo Proprietary License v1.0, see LICENSE file for full text).
 from collections import defaultdict
-from datetime import datetime, time, timedelta
+from datetime import datetime
 
 from odoo import api, fields, models
+from odoo.fields import Domain
 
 ATTENDANCE_STATUSES = ('present', 'absent', 'late', 'excused')
 
@@ -51,25 +52,14 @@ class OpStudent(models.Model):
         Rows with no status (e.g. a staff kiosk scan) are not attendance.
         """
         self.ensure_one()
-        domain = [('student_id', '=', self.id), ('status', '!=', False)]
-        # Widened by a day on each side for session-less rows, whose local
-        # date is only known after the timezone conversion below.
-        if date_from:
-            domain += ['|', ('session_id.session_date', '>=', date_from), '&', ('session_id', '=', False),
-                       ('check_in', '>=', datetime.combine(date_from - timedelta(days=1), time.min))]
-        if date_to:
-            domain += ['|', ('session_id.session_date', '<=', date_to), '&', ('session_id', '=', False),
-                       ('check_in', '<=', datetime.combine(date_to + timedelta(days=1), time.max))]
+        Attendance = self.env['hr.attendance'].sudo()
+        domain = (Domain('student_id', '=', self.id) & Domain('status', '!=', False)
+                  & Attendance._date_range_domain(date_from, date_to))
         rows = []
-        for attendance in self.env['hr.attendance'].sudo().search(domain):
+        for attendance in Attendance.search(domain):
             session = attendance.session_id
-            if session.session_date:
-                day = session.session_date
-            elif attendance.check_in:
-                day = fields.Datetime.context_timestamp(self, attendance.check_in).date()
-            else:
-                continue
-            if (date_from and day < date_from) or (date_to and day > date_to):
+            day = attendance._attendance_date()
+            if not day:
                 continue
             rows.append({
                 'id': attendance.id,
