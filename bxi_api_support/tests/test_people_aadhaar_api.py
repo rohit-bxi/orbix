@@ -26,7 +26,8 @@ class TestBxiApiSupportPeopleAadhaar(ApiSupportHttpCase):
 
     def _student(self, roll, **extra):
         body = {'first_name': 'Aad', 'last_name': 'Har%s' % roll, 'gender': 'm', 'email': 'aad%s@umaa.test' % roll,
-                'enrollment': {'course_id': self.course.id, 'batch_id': self.batch.id, 'roll_number': roll}}
+                'enrollment': {'course_id': self.course.id, 'batch_id': self.batch.id, 'roll_number': roll},
+                'account': {'username': 'aad%s.umaa' % roll, 'password': 'AadPass%s99' % roll}}
         body.update(extra)
         return self._post('/api/v1/students', body)
 
@@ -55,7 +56,8 @@ class TestBxiApiSupportPeopleAadhaar(ApiSupportHttpCase):
         student_id = self._student('2').json()['data']['id']
         parent = self._post('/api/v1/parents', {
             'name': 'Aad Parent', 'mobile': '9800099911', 'relationship_id': self.relationship.id,
-            'student_ids': [student_id], 'aadhaar_number': '456789012341'})
+            'student_ids': [student_id], 'aadhaar_number': '456789012341',
+            'account': {'username': 'aad.parent', 'password': 'AadParent99'}})
         self.assertEqual(parent.status_code, 201, parent.text)
         self.assertEqual(parent.json()['data']['aadhaar']['status'], 'verified')
 

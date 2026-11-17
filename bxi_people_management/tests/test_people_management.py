@@ -62,3 +62,38 @@ class TestPeopleManagement(TransactionCase):
         self.assertEqual(document.mimetype, 'application/pdf')
         self.assertEqual(document.file_size, 15)
         self.assertEqual(self.faculty.document_count, 1)
+
+
+@tagged('post_install', '-at_install')
+class TestStudentParentDerivedFields(TransactionCase):
+
+    def test_current_class_and_parent_classes(self):
+        department = self.env['op.department'].create({'name': 'PMD Dept', 'code': 'PMD'})
+        course = self.env['op.course'].create({'name': 'PMD Class', 'code': 'PMD-C', 'department_id': department.id})
+        batch_a, batch_b = self.env['op.batch'].create([{
+            'name': name, 'code': name, 'course_id': course.id, 'start_date': '2026-01-01', 'end_date': '2027-12-31',
+        } for name in ('PMD-A', 'PMD-B')])
+        student = self.env['op.student'].create({'first_name': 'Dee', 'last_name': 'Rived', 'gender': 'f'})
+        self.assertFalse(student.bxi_current_batch_id)
+        self.assertFalse(student.bxi_enrolment_state)
+        old = self.env['op.student.course'].create({
+            'student_id': student.id, 'course_id': course.id, 'batch_id': batch_a.id, 'roll_number': '1'})
+        self.env['op.student.course'].create({
+            'student_id': student.id, 'course_id': course.id, 'batch_id': batch_b.id, 'roll_number': '2',
+            'state': 'finished'})
+        self.assertEqual(student.bxi_current_batch_id, batch_a, 'The running enrolment wins.')
+        self.assertEqual(student.bxi_department_id, department)
+        self.assertEqual(student.bxi_enrolment_state, 'running')
+        old.state = 'finished'
+        self.assertEqual(student.bxi_enrolment_state, 'finished')
+
+        relationship = self.env['op.parent.relationship'].search([], limit=1) or \
+            self.env['op.parent.relationship'].create({'name': 'Guardian'})
+        partner = self.env['res.partner'].create({'name': 'Pa Rent', 'is_parent': True})
+        parent = self.env['op.parent'].create({
+            'name': partner.id, 'relationship_id': relationship.id, 'student_ids': [(6, 0, student.ids)]})
+        self.assertFalse(parent.bxi_child_batch_ids, 'No running enrolment, no class.')
+        old.state = 'running'
+        parent.invalidate_recordset()
+        self.assertEqual(parent.bxi_child_batch_ids, batch_a)
+        self.assertEqual(parent.bxi_child_department_ids, department)

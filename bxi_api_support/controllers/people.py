@@ -87,6 +87,18 @@ def _security_blocks(payload, teacher=False):
     return blocks, None
 
 
+def _require_login(blocks):
+    """Students and parents are created together with their login: the
+    requirement sheet marks Create Username and Create Password as
+    mandatory. The password is still a one-time password."""
+    account = blocks['account'] or {}
+    for key in ('username', 'password'):
+        if not account.get(key):
+            return api_error(f'account.{key} is required.', status=400, code=f'missing_{key}')
+    account['create_login'] = True
+    return None
+
+
 def _apply_security(record, blocks):
     """Apply parsed blocks inside the transaction; returns the credentials
     still to deliver."""
@@ -542,8 +554,10 @@ class BxiApiSupportPeopleController(http.Controller):
     def create_student(self, **kwargs):
         """Office creates and enrols a student: {"first_name", "last_name",
         "gender", "email", ..., "image"?, "address"?, "enrollment":
-        {"course_id", "batch_id", "roll_number", "academic_year_id"?}} -
-        email, class, section and roll number are required."""
+        {"course_id", "batch_id", "roll_number", "academic_year_id"?},
+        "account": {"username", "password", "active"?, "send_credentials"?,
+        "channel"?}} - email, class, section, roll number, username and
+        password are required."""
         if not is_manager(request.env.user):
             return api_error('Not authorized to add students.', status=403, code='forbidden')
         payload = request.get_json_data() or {}
@@ -557,6 +571,9 @@ class BxiApiSupportPeopleController(http.Controller):
         if error:
             return error
         blocks, error = _security_blocks(payload)
+        if error:
+            return error
+        error = _require_login(blocks)
         if error:
             return error
         if _email_taken(payload['email']):
@@ -779,9 +796,9 @@ class BxiApiSupportPeopleController(http.Controller):
     @require_auth
     def create_parent(self, **kwargs):
         """{"name", "mobile", "email"?, "relationship_id", "student_ids",
-        "image"?, "status"?, "create_login"?}: a parent record linked to
-        their children; with create_login, also the portal login they use
-        for the app."""
+        "image"?, "status"?, "account": {"username", "password", "active"?,
+        "send_credentials"?, "channel"?}}: a parent record linked to their
+        children, with the portal login they use for the app."""
         if not is_manager(request.env.user):
             return api_error('Not authorized to add parents.', status=403, code='forbidden')
         payload = request.get_json_data() or {}
@@ -801,10 +818,10 @@ class BxiApiSupportPeopleController(http.Controller):
         student_ids, error = parse_ids(payload['student_ids'], 'student_ids')
         if error:
             return error
-        if payload.get('create_login') and 'account' not in payload:
-            # Older clients: a login named after the parent's email.
-            payload['account'] = {'create_login': True}
         blocks, error = _security_blocks(payload)
+        if error:
+            return error
+        error = _require_login(blocks)
         if error:
             return error
 

@@ -34,3 +34,4 @@ from . import test_admin_attendance_api
 from . import test_people_management_api
 from . import test_people_account_api
 from . import test_people_aadhaar_api
+from . import test_people_account_backend

@@ -51,7 +51,8 @@ class TestBxiApiSupportPeopleManagement(ApiSupportHttpCase):
 
     def _student_body(self, **overrides):
         body = {'first_name': 'Sam', 'last_name': 'Pupil', 'gender': 'm', 'email': 'sam.pupil@um.test',
-                'enrollment': {'course_id': self.course.id, 'batch_id': self.batch.id, 'roll_number': '7'}}
+                'enrollment': {'course_id': self.course.id, 'batch_id': self.batch.id, 'roll_number': '7'},
+                'account': {'username': 'sam.pupil', 'password': 'SamPupil99'}}
         body.update(overrides)
         return body
 
@@ -164,7 +165,8 @@ class TestBxiApiSupportPeopleManagement(ApiSupportHttpCase):
         self.assertTrue(data['has_photo'])
 
         twice = self._post('/api/v1/students', self._student_body(
-            enrollment={'course_id': self.course.id, 'batch_id': self.batch.id, 'roll_number': '8'}))
+            enrollment={'course_id': self.course.id, 'batch_id': self.batch.id, 'roll_number': '8'},
+            account={'username': 'sam.twice', 'password': 'SamTwice99'}))
         self.assertEqual(twice.json()['error']['code'], 'email_taken')
 
     def test_student_transfer_and_status(self):
@@ -204,7 +206,8 @@ class TestBxiApiSupportPeopleManagement(ApiSupportHttpCase):
         self._enroll(student, self.course, self.batch)
         resp = self._post('/api/v1/parents', {
             'name': 'Pia Parent', 'mobile': '9800099911', 'relationship_id': self.relationship.id,
-            'student_ids': [student.id], 'image': PIXEL})
+            'student_ids': [student.id], 'image': PIXEL,
+            'account': {'username': 'pia.parent', 'password': 'PiaParent99'}})
         self.assertEqual(resp.status_code, 201, resp.text)
         data = resp.json()['data']
         self.assertTrue(data['has_photo'])
@@ -226,8 +229,8 @@ class TestBxiApiSupportPeopleManagement(ApiSupportHttpCase):
         before = self.env['op.parent'].search_count([])
         resp = self._post('/api/v1/parents', {
             'name': 'No Email', 'mobile': '9800099922', 'relationship_id': self.relationship.id,
-            'student_ids': [student.id], 'create_login': True})
-        self.assertEqual(resp.status_code, 400, 'A login needs an email.')
+            'student_ids': [student.id], 'account': {'username': 'admin', 'password': 'TakenLogin99'}})
+        self.assertEqual(resp.status_code, 409, 'The username is taken: nothing is created.')
         self.assertEqual(self.env['op.parent'].search_count([]), before)
 
     # -- masters and access -------------------------------------------------------------

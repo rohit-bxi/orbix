@@ -2,7 +2,7 @@
 
 {
     'name': 'Orbix API Support',
-    'version': '19.0.6.2.0',
+    'version': '19.0.6.3.0',
     'category': 'Education',
     'summary': 'REST API for the Orbix mobile app across every Orbix school process',
     'description': """
@@ -82,7 +82,10 @@
         'bxi_identity_verification',
     ],
     'data': [
+        'security/ir.model.access.csv',
         'data/ir_cron_data.xml',
+        'views/people_account_views.xml',
+        'views/people_account_wizard_views.xml',
         'report/hall_ticket.xml',
     ],
     'installable': True,

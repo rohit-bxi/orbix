@@ -121,7 +121,8 @@ class TestBxiApiSupportOperations(ApiSupportHttpCase):
         self.assertEqual(family.status_code, 403)
         created = self.url_open('/api/v1/students', headers=self._office(), json={
             'first_name': 'New', 'last_name': 'Joiner', 'gender': 'm', 'gr_no': 'OPS-NEW', 'email': 'new.joiner@ops.test',
-            'enrollment': {'course_id': self.course.id, 'batch_id': self.batch.id, 'roll_number': '42'}})
+            'enrollment': {'course_id': self.course.id, 'batch_id': self.batch.id, 'roll_number': '42'},
+            'account': {'username': 'new.joiner', 'password': 'NewJoiner99'}})
         self.assertEqual(created.status_code, 201, created.text)
         self.assertEqual(created.json()['data']['roll_number'], '42')
         listing = self.url_open(f'/api/v1/students?batch_id={self.batch.id}', headers=self._office()).json()
@@ -136,7 +137,8 @@ class TestBxiApiSupportOperations(ApiSupportHttpCase):
         relationship = self.env['op.parent.relationship'].search([], limit=1)
         parent = self.url_open('/api/v1/parents', headers=self._office(), json={
             'name': 'Pat Parent', 'mobile': '9800033344', 'relationship_id': relationship.id,
-            'student_ids': [created.json()['data']['id']]})
+            'student_ids': [created.json()['data']['id']],
+            'account': {'username': 'pat.parent', 'password': 'PatParent99'}})
         self.assertEqual(parent.status_code, 201, parent.text)
         bad_ids = self.url_open('/api/v1/parents', headers=self._office(), json={
             'name': 'Bad', 'mobile': '1', 'relationship_id': relationship.id, 'student_ids': ['abc']})

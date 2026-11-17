@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_bxi_people_account_wizard_form" model="ir.ui.view">
+        <field name="name">bxi.people.account.wizard.form</field>
+        <field name="model">bxi.people.account.wizard</field>
+        <field name="arch" type="xml">
+            <form>
+                <field name="state" invisible="1"/>
+                <field name="mode" invisible="1"/>
+                <field name="res_model" invisible="1"/>
+                <field name="res_id" invisible="1"/>
+                <group invisible="state != 'draft'">
+                    <field name="person_name" readonly="1"/>
+                    <field name="username" required="mode == 'create'" invisible="mode != 'create'"/>
+                    <field name="password" password="True" invisible="mode == 'send'"
+                           placeholder="Leave empty to generate one"/>
+                    <field name="send_credentials" invisible="mode == 'send'"/>
+                    <field name="channel" widget="radio" options="{'horizontal': true}"
+                           invisible="mode != 'send' and not send_credentials"
+                           required="mode == 'send' or send_credentials"/>
+                </group>
+                <div class="text-muted" invisible="state != 'draft'">
+                    Every password set here is a one-time password: the person must choose their own
+                    at the first sign-in, and it stops working if it is not used soon.
+                    <span invisible="mode == 'create'">Setting it signs the person out of the app.</span>
+                </div>
+                <group invisible="state != 'done'">
+                    <field name="result_message" nolabel="1" colspan="2"/>
+                    <field name="one_time_password" invisible="not one_time_password" class="fw-bold"/>
+                </group>
+                <footer>
+                    <button name="action_apply" type="object" string="Confirm" class="btn-primary"
+                            invisible="state != 'draft'"/>
+                    <button string="Cancel" special="cancel" class="btn-secondary" invisible="state != 'draft'"/>
+                    <button string="Close" special="cancel" class="btn-primary" invisible="state != 'done'"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

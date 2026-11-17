@@ -41,21 +41,11 @@ from odoo.addons.bxi_api.controllers.auth import (
 
 from odoo.addons.bxi_identity_verification.models.aadhaar import mask_aadhaar, normalize_aadhaar
 
-from ..models.people_service import CREDENTIAL_CHANNELS, PeopleError
+from ..models.people_service import CREDENTIAL_CHANNELS, MANAGER_GROUPS, PeopleError, is_manager  # noqa: F401
 from .common import atomic, check_selection, ref
 
-# Who may add and edit people records.
-MANAGER_GROUPS = (
-    'openeducat_core.group_op_back_office_admin',
-    'bxi_academic_management.group_academic_manager',
-    'base.group_system',
-)
 KIND_MODELS = {'teachers': 'op.faculty', 'students': 'op.student', 'parents': 'op.parent'}
 KINDS = 'any("teachers", "students", "parents")'
-
-
-def is_manager(user):
-    return any(user.has_group(group) for group in MANAGER_GROUPS)
 
 
 def _is_id_reviewer(user):
@@ -239,53 +229,18 @@ def parse_documents(entries):
 
 
 def _guard_target(user):
-    if user and user.has_group('base.group_system') and not request.env.user.has_group('base.group_system'):
-        raise PeopleError("Only an administrator can change an administrator's login.", 'forbidden', status=403)
+    request.env['bxi.people.service']._guard_account(user)
 
 
 def set_active(user, active):
-    if not active and user == request.env.user:
-        raise PeopleError("You can't deactivate your own login.", 'cannot_deactivate_self')
-    user.sudo().active = active
-    if not active:
-        request.env['bxi.api.token'].sudo()._revoke_all_for_user(user)
+    request.env['bxi.people.service']._set_account_active(user, active)
 
 
 def apply_account(record, account):
     """Create/update the person's login from a parsed account block.
     Returns the credentials still to deliver after the transaction
     ({user, password, generated, channel}) or None."""
-    if not account:
-        return None
-    service = request.env['bxi.people.service']
-    user = record.user_id.sudo()
-    _guard_target(user)
-    password, generated = None, False
-    if not user:
-        if not account['create_login']:
-            raise PeopleError('This person has no login yet: send account.create_login true.', 'no_account')
-        login = account.get('username') or service._partner(record).email
-        if not login:
-            raise PeopleError('account.username is required.', 'missing_username')
-        user = service._create_login(record, login.strip())
-        password = user._bxi_set_temporary_password(account.get('password'))
-        generated = not account.get('password')
-    else:
-        if account.get('username') and account['username'] != user.login:
-            if service._login_taken(account['username'], user):
-                raise PeopleError('This username is already taken.', 'login_taken', status=409)
-            user.write({'login': account['username']})
-        if account.get('password'):
-            password = user._bxi_set_temporary_password(account['password'])
-    if 'active' in account and account['active'] != user.active:
-        set_active(user, account['active'])
-    if account.get('send_credentials'):
-        if not password:
-            password, generated = user._bxi_set_temporary_password(), True
-        return {'user': user, 'password': password, 'generated': generated, 'channel': account['channel']}
-    if generated:
-        return {'user': user, 'password': password, 'generated': True, 'channel': None}
-    return None
+    return request.env['bxi.people.service']._apply_account(record, account)
 
 
 def apply_face(record, face):
@@ -331,17 +286,7 @@ def apply_documents(faculty, documents):
 def deliver(record, delivery):
     """Send pending credentials (after the transaction succeeded) and
     describe the outcome for the response."""
-    if not delivery:
-        return None
-    if delivery['channel']:
-        result = request.env['bxi.people.service']._send_credentials(
-            record, delivery['user'], delivery['password'], delivery['channel'])
-    else:
-        result = {'channel': None, 'sent': False, 'reason': 'not_requested'}
-    if delivery['generated'] and not result['sent']:
-        # Shown once, so the office can hand it over in person.
-        result['one_time_password'] = delivery['password']
-    return result
+    return request.env['bxi.people.service']._deliver_credentials(record, delivery)
 
 
 # -- response shapes ----------------------------------------------------------------------
