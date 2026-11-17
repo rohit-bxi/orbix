@@ -6,7 +6,7 @@ from odoo.http import request
 
 from odoo.addons.bxi_api.controllers.auth import api_error, api_response, parse_int, require_auth
 
-from .common import get_viewable_student, session_students
+from .common import get_viewable_student, safe_create, session_students
 
 # Same three groups bxi_student_attendance's own ir.rule domains already use
 # to widen visibility on hr.attendance for student rows.
@@ -62,10 +62,14 @@ class BxiApiSupportAttendanceController(http.Controller):
             return api_error('Student has no attendance record set up.', status=400, code='no_employee')
 
         check_in = payload.get('check_in') or fields.Datetime.to_string(fields.Datetime.now())
-        attendance = request.env['hr.attendance'].sudo().create({
+        # hr.attendance refuses a check-in while the previous one is still
+        # open; safe_create reports that as a 400 instead of an HTML page.
+        attendance, error = safe_create(request.env['hr.attendance'].sudo(), {
             'employee_id': student.employee_id.id,
             'check_in': check_in,
         })
+        if error:
+            return error
         return api_response(_attendance_dict(attendance), status=201)
 
     @http.route('/api/v1/attendance/checkout/<int:attendance_id>', type='http', auth='public', methods=['POST'], csrf=False)

@@ -3525,7 +3525,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"exam_id\": 1,\n  \"class_id\": 1,\n  \"student_ids\": [\n    1,\n    2\n  ],\n  \"exam_date\": \"2026-09-20\",\n  \"exam_time\": 9.0\n}"
+              "raw": "{\n  \"exam_id\": 1,\n  \"class_id\": 1,\n  \"student_ids\": [\n    1,\n    2\n  ],\n  \"exam_date\": \"2026-09-20\",\n  \"exam_time\": 9.0,\n  \"teacher_id\": {{teacher_id}}\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/v1/assessments/sessions",
@@ -3539,7 +3539,7 @@
                 "sessions"
               ]
             },
-            "description": "Auto-creates a blank submission + answers per student."
+            "description": "Auto-creates a blank submission + answers per student. Teacher: the session is always their own. Coordinator/manager (no teacher record of their own): teacher_id is required; anyone else gets 403."
           },
           "response": []
         },
@@ -4389,7 +4389,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"subject_id\": 1,\n  \"class_id\": 1,\n  \"quarter_id\": 1,\n  \"topic\": \"Fractions\",\n  \"objective\": \"Understand fractions\",\n  \"activities\": \"Group work\",\n  \"resources\": \"Textbook\",\n  \"assessment_method\": \"Quiz\",\n  \"start_date\": \"2026-07-01\",\n  \"end_date\": \"2026-07-05\",\n  \"plan_date\": \"2026-07-01\"\n}"
+              "raw": "{\n  \"subject_id\": 1,\n  \"class_id\": 1,\n  \"quarter_id\": 1,\n  \"topic\": \"Fractions\",\n  \"objective\": \"Understand fractions\",\n  \"activities\": \"Group work\",\n  \"resources\": \"Textbook\",\n  \"assessment_method\": \"Quiz\",\n  \"start_date\": \"2026-07-01\",\n  \"end_date\": \"2026-07-05\",\n  \"plan_date\": \"2026-07-01\",\n  \"teacher_id\": {{teacher_id}}\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/v1/lesson-plans",
@@ -4402,7 +4402,7 @@
                 "lesson-plans"
               ]
             },
-            "description": "Teacher (defaults teacher_id to self). All fields required."
+            "description": "Teacher: the plan is always their own. Coordinator/manager (no teacher record of their own): teacher_id is required and names the teacher; anyone else gets 403. All other fields required."
           },
           "response": []
         },

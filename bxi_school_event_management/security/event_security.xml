@@ -5,4 +5,13 @@
         <field name="privilege_id" ref="event.res_groups_privilege_events"/>
         <field name="implied_ids" eval="[(4, ref('event.group_event_user'))]"/>
     </record>
+
+    <!-- Events Administrator includes the coordinator rights. Both groups sit
+         under the same "Events" privilege, which the user form shows as one
+         dropdown: without this, choosing Administrator dropped Coordinator
+         and an event administrator was refused the coordinator screens and
+         API routes (e.g. GET /api/v1/events/<id>/registrations). -->
+    <record id="event.group_event_manager" model="res.groups">
+        <field name="implied_ids" eval="[(4, ref('group_school_event_coordinator'))]"/>
+    </record>
 </odoo>

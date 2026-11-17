@@ -6,7 +6,9 @@ from odoo.http import request
 
 from odoo.addons.bxi_api.controllers.auth import api_error, api_response, call_action, parse_int, require_auth
 
-from .common import get_own_faculty, get_own_student_ids, parse_pagination, safe_create, teacher_permission
+from .common import (
+    get_own_faculty, get_own_student_ids, parse_pagination, resolve_teacher_for_create, safe_create, teacher_permission,
+)
 
 COORDINATOR_GROUP = 'bxi_academic_management.group_academic_coordinator'
 MANAGER_GROUP = 'bxi_academic_management.group_academic_manager'
@@ -182,17 +184,19 @@ class BxiApiSupportAssessmentController(http.Controller):
         if not payload.get('student_ids'):
             return api_error('student_ids is required.', status=400, code='missing_student_ids')
 
-        faculty = get_own_faculty(request.env)
+        teacher, error = resolve_teacher_for_create(
+            request.env, payload, _is_coordinator_or_manager(request.env.user))
+        if error:
+            return error
         vals = {
             'exam_id': payload['exam_id'], 'class_id': payload['class_id'],
             'student_ids': [(6, 0, payload['student_ids'])],
+            'teacher_id': teacher.id,
         }
         if payload.get('exam_date'):
             vals['exam_date'] = payload['exam_date']
         if payload.get('exam_time') is not None:
             vals['exam_time'] = payload['exam_time']
-        if faculty:
-            vals['teacher_id'] = faculty.id
         session, error = safe_create(request.env['bxi.assessment.session'].sudo(), vals)
         if error:
             return error
