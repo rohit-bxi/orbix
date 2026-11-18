@@ -44,6 +44,8 @@ MISSING_ID_ROUTES = [
     ('POST', '/api/v1/leaves/999999/approve'), ('GET', '/api/v1/admissions/999999'),
     ('POST', '/api/v1/admissions/999999/confirm'), ('POST', '/api/v1/admissions/rte/999999/documents'),
     ('GET', '/api/v1/admissions/rte/999999/lottery-result'), ('POST', '/api/v1/students/999999/update'),
+    ('GET', '/api/v1/students/999999'), ('GET', '/api/v1/students/999999/documents/1'),
+    ('GET', '/api/v1/parents/999999/documents/1'),
     ('GET', '/api/v1/teachers/999999'), ('POST', '/api/v1/teachers/999999/update'),
     ('POST', '/api/v1/parents/999999/update'), ('POST', '/api/v1/visits/999999/checkout'),
     ('POST', '/api/v1/subject-registrations/999999/approve'), ('GET', '/api/v1/certificates/999999/pdf'),
