@@ -268,3 +268,233 @@ class TestBxiApiSupportPeopleManagement(ApiSupportHttpCase):
         self.assertEqual(self.url_open(f'/api/v1/parents/{parent_id}',
                                        headers=self._headers('um_parent', 'ParentPass1!')).status_code, 403)
         self.assertEqual(self.url_open('/api/v1/parents/999999', headers=self._office()).status_code, 404)
+
+    # -- every form field (2026-11-18) ----------------------------------------------------
+
+    def _masters(self):
+        title = self.env['res.partner.title'].create({'name': 'UM Doctor', 'shortcut': 'Dr.'})
+        category = self.env['op.category'].create({'name': 'UM General', 'code': 'UMGEN'})
+        state = self.env.ref('base.state_in_mh')
+        return title, category, state
+
+    def test_student_update_every_field_reads_back(self):
+        title, category, state = self._masters()
+        student_id = self._post('/api/v1/students', self._student_body()).json()['data']['id']
+        student = self.env['op.student'].browse(student_id)
+        parent = self._create_parent(self.parent_user, self._create_student('UM-SIB'))
+        url = f'/api/v1/students/{student_id}/update'
+        health = {'is_allergy': True, 'allergy': 'Peanuts', 'chronic_conditions': 'Asthma',
+                  'disabilities': 'None', 'dietary_restrictions': 'Vegetarian', 'primary_physician': 'Dr Rao',
+                  'physician_contact': '9800000001', 'insurance_provider': 'LIC', 'insurance_policy_no': 'P-1',
+                  'medical_notes': 'Inhaler in bag'}
+        resp = self._post(url, {
+            'middle_name': 'K', 'title_id': title.id, 'nick_name': 'Sammy', 'lang': 'en_US', 'religion': 'hindu',
+            'category_id': category.id, 'visa_info': 'N/A', 'trait': 'Curious', 'mode_of_transport': 'school_bus',
+            'enrollment_status': 'active', 'scolar_number': 'SC-9', 'other_sibling': 'Ria, class 3',
+            'pickup_person': 'Grandfather', 'special_needs_and_abilities': 'Chess', 'id_number': 'ID-77',
+            'admission_date': '2026-06-01', 'nationality_id': self.env.ref('base.in').id,
+            'address': {'street': '2 Lane', 'state_id': state.id, 'country_id': self.env.ref('base.in').id},
+            'parent_ids': [parent.id], 'emergency_contact': {'name': 'Uncle Raj', 'phone': '9800000002'},
+            'health': health, 'documents': {'birth_certificate': [{'data': PIXEL, 'filename': 'birth.png'}],
+                                            'medical_records': [PIXEL]},
+        })
+        self.assertEqual(resp.status_code, 200, resp.text)
+        data = resp.json()['data']
+        expected = {
+            'middle_name': 'K', 'nick_name': 'Sammy', 'lang': 'en_US', 'religion': 'hindu', 'visa_info': 'N/A',
+            'trait': 'Curious', 'mode_of_transport': 'school_bus', 'enrollment_status': 'active',
+            'scolar_number': 'SC-9', 'other_sibling': 'Ria, class 3', 'pickup_person': 'Grandfather',
+            'special_needs_and_abilities': 'Chess', 'id_number': 'ID-77', 'admission_date': '2026-06-01',
+            'first_name': 'Sam', 'last_name': 'Pupil', 'active': True,
+        }
+        self.assertEqual({key: data[key] for key in expected}, expected)
+        self.assertEqual(data['title']['id'], title.id)
+        self.assertEqual(data['category']['id'], category.id)
+        self.assertEqual(data['nationality']['id'], self.env.ref('base.in').id)
+        self.assertEqual(data['address']['state']['id'], state.id)
+        self.assertEqual([p['id'] for p in data['parents']], [parent.id])
+        self.assertEqual(data['emergency_contact'], {'name': 'Uncle Raj', 'phone': '9800000002'})
+        self.assertEqual(data['health'], health)
+        self.assertEqual(data['documents']['birth_certificate'][0]['name'], 'birth.png')
+        self.assertEqual(len(data['documents']['medical_records']), 1)
+        self.assertEqual(data['documents']['transfer_certificate'], [])
+
+        fetched = self.url_open(f'/api/v1/students/{student_id}', headers=self._office())
+        self.assertEqual(fetched.status_code, 200, fetched.text)
+        self.assertEqual(fetched.json()['data']['nick_name'], 'Sammy')
+
+        kept = data['documents']['birth_certificate'][0]['id']
+        removed = data['documents']['medical_records'][0]['id']
+        download = self.url_open(f'/api/v1/students/{student_id}/documents/{kept}', headers=self._office())
+        self.assertEqual(download.status_code, 200)
+        self.assertEqual(self.url_open(f'/api/v1/students/{student_id}/documents/{kept}',
+                                       headers=self._headers('um_parent', 'ParentPass1!')).status_code, 403)
+
+        cleared = self._post(url, {
+            'nick_name': None, 'category_id': None, 'title_id': '', 'parent_ids': [], 'emergency_contact': None,
+            'health': {'allergy': None, 'is_allergy': False}, 'active': False,
+            'documents': {'birth_certificate': [kept, PIXEL], 'medical_records': []},
+        }).json()['data']
+        self.assertIsNone(cleared['nick_name'])
+        self.assertIsNone(cleared['category'])
+        self.assertIsNone(cleared['title'])
+        self.assertEqual(cleared['parents'], [])
+        self.assertIsNone(cleared['emergency_contact'])
+        self.assertIsNone(cleared['health']['allergy'])
+        self.assertEqual(cleared['health']['chronic_conditions'], 'Asthma', 'Keys not sent are kept.')
+        self.assertFalse(cleared['active'])
+        self.assertEqual(len(cleared['documents']['birth_certificate']), 2)
+        self.assertIn(kept, [d['id'] for d in cleared['documents']['birth_certificate']])
+        self.assertEqual(cleared['documents']['medical_records'], [])
+        self.assertFalse(self.env['ir.attachment'].browse(removed).exists(), 'A removed file is deleted.')
+        self.assertEqual(self.url_open(f'/api/v1/students/{student_id}/documents/{removed}',
+                                       headers=self._office()).status_code, 404)
+        self.assertFalse(student.active)
+        self.assertEqual(self.url_open(f'/api/v1/students/{student_id}', headers=self._office()).status_code, 200,
+                         'An archived student can still be opened.')
+
+    def test_student_update_validation(self):
+        student_id = self._post('/api/v1/students', self._student_body()).json()['data']['id']
+        url = f'/api/v1/students/{student_id}/update'
+        student = self.env['op.student'].browse(student_id)
+        for body, code in (
+            ({'religion': 'pastafarian'}, 'invalid_religion'),
+            ({'lang': 'xx_XX'}, 'invalid_lang'),
+            ({'category_id': 999999}, 'invalid_category_id'),
+            ({'birth_date': '31-12-2010'}, 'invalid_birth_date'),
+            ({'nick_name': {'a': 1}}, 'invalid_nick_name'),
+            ({'active': 'no'}, 'invalid_active'),
+            ({'first_name': None}, 'missing_first_name'),
+            ({'gender': ''}, 'missing_gender'),
+            ({'email': None}, 'missing_email'),
+            ({'health': 'fine'}, 'invalid_health'),
+            ({'documents': {'passport': [PIXEL]}}, 'invalid_documents'),
+            ({'documents': {'birth_certificate': 'x'}}, 'invalid_documents'),
+            ({'documents': {'birth_certificate': ['aGVsbG8=']}}, 'invalid_file_type'),
+            ({'nick_name': 'Rolled', 'documents': {'birth_certificate': [999999]}}, 'invalid_documents'),
+        ):
+            resp = self._post(url, body)
+            self.assertEqual(resp.status_code, 400, body)
+            self.assertEqual(resp.json()['error']['code'], code, body)
+        self.assertFalse(student.nick_name, 'A rejected document list rolls back the rest of the update.')
+        # Keys of the other kinds of person used to reach the model and 500.
+        for body in ({'relationship_id': self.relationship.id}, {'main_department_id': self.department.id}):
+            self.assertEqual(self._post(url, body).status_code, 200, body)
+        self.assertEqual(self.url_open('/api/v1/students/999999', headers=self._office()).status_code, 404)
+
+    def test_teacher_update_every_field_reads_back(self):
+        title, category, state = self._masters()
+        faculty_id = self._post('/api/v1/teachers', self._teacher_body()).json()['data']['id']
+        url = f'/api/v1/teachers/{faculty_id}/update'
+        india = self.env.ref('base.in').id
+        resp = self._post(url, {
+            'title_id': title.id, 'lang': 'en_US', 'religion': 'sikh', 'category_id': category.id, 'cast': 'General',
+            'visa_info': 'Work visa', 'nationality': india, 'main_department_id': self.department.id,
+            'allowed_department_ids': [self.department.id], 'joining_date': '2025-04-01',
+            'official_address': {'street': 'School Campus', 'city': 'Pune', 'state_id': state.id, 'country_id': india},
+            'postal_address': {'city': 'Mumbai'}, 'regional_address': {'zip': '411002'},
+            'health': {'is_allergy': True, 'allergy': 'Dust', 'medical_notes': 'None'},
+            'workload': {'available_days': ['monday', 'friday']},
+        })
+        self.assertEqual(resp.status_code, 200, resp.text)
+        data = resp.json()['data']
+        self.assertEqual(data['title']['id'], title.id)
+        self.assertEqual((data['lang'], data['religion'], data['cast'], data['visa_info']),
+                         ('en_US', 'sikh', 'General', 'Work visa'))
+        self.assertEqual(data['category']['id'], category.id)
+        self.assertEqual(data['department']['id'], self.department.id)
+        self.assertEqual([d['id'] for d in data['allowed_departments']], [self.department.id])
+        self.assertEqual(data['official_address']['city'], 'Pune')
+        self.assertEqual(data['official_address']['state']['id'], state.id)
+        self.assertEqual(data['postal_address']['city'], 'Mumbai')
+        self.assertEqual(data['regional_address']['zip'], '411002')
+        self.assertIsNone(data['address']['city'], 'The main address is separate.')
+        self.assertEqual(data['health']['allergy'], 'Dust')
+        self.assertEqual(data['workload']['available_days'], ['monday', 'friday'])
+        self.assertEqual(data['first_name'], 'Uma')
+        self.assertTrue(data['active'])
+
+        cleared = self._post(url, {'nationality': None, 'allowed_department_ids': [], 'active': False,
+                                   'official_address': {'state_id': None}}).json()['data']
+        self.assertIsNone(cleared['nationality'])
+        self.assertEqual(cleared['allowed_departments'], [])
+        self.assertIsNone(cleared['official_address']['state'])
+        self.assertEqual(cleared['official_address']['city'], 'Pune')
+        self.assertFalse(cleared['active'])
+
+        for body, code in (
+            ({'workload': {'available_days': ['sunday']}}, 'invalid_available_days'),
+            ({'official_address': 'Pune'}, 'invalid_official_address'),
+            ({'postal_address': {'country_id': 999999}}, 'invalid_country_id'),
+            ({'birth_date': None}, 'missing_birth_date'),
+            ({'religion': 'none'}, 'invalid_religion'),
+        ):
+            resp = self._post(url, body)
+            self.assertEqual(resp.status_code, 400, body)
+            self.assertEqual(resp.json()['error']['code'], code, body)
+        self.assertEqual(self._post(url, {'relationship_id': self.relationship.id}).status_code, 200)
+
+    def test_parent_update_every_field_reads_back(self):
+        student = self._create_student('UM-P3')
+        other = self._create_student('UM-P4')
+        state = self.env.ref('base.state_in_mh')
+        created = self._post('/api/v1/parents', {
+            'name': 'Asha Parent', 'mobile': '9800099933', 'email': 'asha@um.test',
+            'relationship_id': self.relationship.id, 'student_ids': [student.id], 'gender': 'f',
+            'birth_date': '1985-05-06', 'address': {'city': 'Nagpur', 'state_id': state.id},
+            'documents': {'additional': [PIXEL]},
+            'account': {'username': 'asha.parent', 'password': 'AshaParent99'}})
+        self.assertEqual(created.status_code, 201, created.text)
+        data = created.json()['data']
+        self.assertEqual((data['gender'], data['birth_date']), ('f', '1985-05-06'))
+        self.assertEqual(data['address']['city'], 'Nagpur')
+        self.assertEqual(data['address']['state']['id'], state.id)
+        self.assertEqual(len(data['documents']['additional']), 1)
+        document_id = data['documents']['additional'][0]['id']
+        self.assertEqual(self.url_open(f"/api/v1/parents/{data['id']}/documents/{document_id}",
+                                       headers=self._office()).status_code, 200)
+
+        parent = self.env['op.parent'].browse(data['id'])
+        url = f"/api/v1/parents/{data['id']}/update"
+        resp = self._post(url, {
+            'email': 'asha.new@um.test', 'mobile': '9800099944', 'street': '5 Top Level Rd',
+            'student_ids': [student.id, other.id],
+            'rte': {'category': 'sc', 'bpl_number': 'BPL-1', 'bpl_list_type': 'state',
+                    'income_certificate_financial_year': '2025-26',
+                    'category_certificate': {'data': PIXEL, 'filename': 'caste.png'}},
+        })
+        self.assertEqual(resp.status_code, 200, resp.text)
+        data = resp.json()['data']
+        self.assertEqual((data['email'], data['mobile']), ('asha.new@um.test', '9800099944'))
+        self.assertEqual((parent.name.email, parent.name.phone), ('asha.new@um.test', '9800099944'),
+                         'The contact login credentials go to follows the parent.')
+        self.assertEqual(data['address']['street'], '5 Top Level Rd')
+        self.assertEqual(data['address']['city'], 'Nagpur')
+        self.assertEqual(len(data['students']), 2)
+        self.assertEqual(data['rte']['category'], 'sc')
+        self.assertEqual(data['rte']['bpl_list_type'], 'state')
+        self.assertEqual(data['rte']['category_certificate'], {'filename': 'caste.png'})
+        self.assertIsNone(data['rte']['income_certificate'])
+
+        removed = self._post(url, {'rte': {'category_certificate': None}}).json()['data']
+        self.assertIsNone(removed['rte']['category_certificate'])
+
+        for body, code in (
+            ({'relationship_id': None}, 'missing_relationship_id'),
+            ({'name': ' '}, 'missing_name'),
+            ({'student_ids': []}, 'missing_student_ids'),
+            ({'student_ids': [999999]}, 'invalid_student_ids'),
+            ({'gender': 'x'}, 'invalid_gender'),
+            ({'rte': {'category': 'rich'}}, 'invalid_category'),
+            ({'rte': {'annual_income': -5}}, 'invalid_annual_income'),
+            ({'address': {'state_id': 999999}}, 'invalid_state_id'),
+        ):
+            resp = self._post(url, body)
+            self.assertEqual(resp.status_code, 400, body)
+            self.assertEqual(resp.json()['error']['code'], code, body)
+        # The RTE income cap is the model's check: a 400, nothing saved.
+        capped = self._post(url, {'rte': {'category': 'weaker_section', 'annual_income': 900000}})
+        self.assertEqual(capped.status_code, 400, capped.text)
+        self.assertEqual(parent.rte_category, 'sc')
+        # A student-only key used to 500 on parents.
+        self.assertEqual(self._post(url, {'nationality': self.env.ref('base.in').id}).status_code, 200)

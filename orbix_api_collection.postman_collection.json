@@ -13765,7 +13765,7 @@
                 "students"
               ]
             },
-            "description": "Office creates and enrols a student. Required: first_name, last_name, gender, email, enrollment.course_id, enrollment.batch_id, enrollment.roll_number (the section must belong to the class), account.username and account.password (400 missing_username / missing_password). Account & Security blocks: \"account\" (username and password required; active, send_credentials, channel email|sms optional), \"face\" (enabled, image|images, consent_reference for students), \"id_verification\" (document|documents image/PDF, doc_type). The password is a one-time password the person must change at first sign-in. Everything is saved together or not at all.",
+            "description": "Office creates and enrols a student. Required: first_name, last_name, gender, email, enrollment.course_id, enrollment.batch_id, enrollment.roll_number (the section must belong to the class), account.username and account.password (400 missing_username / missing_password). Account & Security blocks: \"account\" (username and password required; active, send_credentials, channel email|sms optional), \"face\" (enabled, image|images, consent_reference for students), \"id_verification\" (document|documents image/PDF, doc_type). The password is a one-time password the person must change at first sign-in. Everything is saved together or not at all. Every field of the matching update request is accepted here too.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"first_name\": \"Aarav\",\n  \"last_name\": \"Patel\",\n  \"gender\": \"m\",\n  \"birth_date\": \"2016-04-12\",\n  \"gr_no\": \"GR-1001\",\n  \"email\": \"aarav.patel@school.test\",\n  \"blood_group\": \"O+\",\n  \"image\": \"<base64 photo>\",\n  \"enrollment\": {\n    \"course_id\": 1,\n    \"batch_id\": 1,\n    \"roll_number\": \"12\",\n    \"academic_year_id\": 1\n  },\n  \"account\": {\n    \"create_login\": true,\n    \"username\": \"aarav.patel\",\n    \"password\": \"Welcome@2026\",\n    \"active\": true,\n    \"send_credentials\": true,\n    \"channel\": \"sms\"\n  },\n  \"face\": {\n    \"enabled\": true,\n    \"image\": \"<base64 photo>\",\n    \"consent_reference\": \"Form 2026/118 (students only)\"\n  },\n  \"id_verification\": {\n    \"document\": {\n      \"data\": \"<base64 image or PDF>\",\n      \"filename\": \"aadhaar.pdf\"\n    },\n    \"doc_type\": \"aadhaar\"\n  }\n}"
@@ -13802,11 +13802,71 @@
                 }
               ]
             },
-            "description": "Any create field, plus \"transfer\" {batch_id, course_id?, roll_number} to move to another section (the old enrolment is finished, history kept) and \"status\" running|finished for the current enrolment. Account & Security blocks (all optional): \"account\" (create_login, username, password, active, send_credentials, channel email|sms), \"face\" (enabled, image|images, consent_reference for students), \"id_verification\" (document|documents image/PDF, doc_type). Any password the office sets is a one-time password the person must change at first sign-in. Everything is saved together or not at all; when the server generated the password and it was not delivered, the response carries it once in credentials.one_time_password.",
+            "description": "Only the keys sent are changed; null or \"\" clears a value (first_name, last_name, gender and email are required and answer 400 missing_<key>). Profile: first_name, middle_name, last_name, title_id, gender, birth_date, email, phone, blood_group, nationality (or nationality_id), id_number, lang, religion, category_id, visa_info, gr_no, admission_date, nick_name, scolar_number, enrollment_status (new_admission|active|transferred|alumni|dropped), mode_of_transport, trait, other_sibling, pickup_person, special_needs_and_abilities, parent_ids, active (archive). Objects: image, address {street, street2, city, zip, state_id, country_id}, emergency_contact {name, phone}, health {is_allergy, allergy, chronic_conditions, disabilities, dietary_restrictions, primary_physician, physician_contact, insurance_provider, insurance_policy_no, medical_notes}, documents {birth_certificate, transfer_certificate, previous_school_certificate, medical_records}: each a list of files (base64 or {data, filename}) and/or ids of files already there - the list becomes the whole set, files left out are deleted. Enrolment: \"transfer\" {batch_id, course_id?, roll_number} moves to another section (history kept); \"status\" running|finished for the current enrolment. Account & Security blocks (all optional): \"account\" (create_login, username, password, active, send_credentials, channel email|sms), \"face\" (enabled, image|images, consent_reference), \"id_verification\" (document|documents image/PDF, doc_type), \"aadhaar_number\". Everything is saved together or not at all.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"blood_group\": \"B+\",\n  \"email\": \"aarav.p@school.test\",\n  \"transfer\": {\n    \"batch_id\": 2,\n    \"roll_number\": \"7\"\n  },\n  \"status\": \"running\",\n  \"account\": {\n    \"active\": true\n  }\n}"
+              "raw": "{\n  \"middle_name\": \"Kumar\",\n  \"title_id\": 1,\n  \"nick_name\": \"Aru\",\n  \"lang\": \"en_US\",\n  \"religion\": \"hindu\",\n  \"category_id\": 1,\n  \"enrollment_status\": \"active\",\n  \"mode_of_transport\": \"school_bus\",\n  \"scolar_number\": \"SC-104\",\n  \"id_number\": \"ID-2231\",\n  \"other_sibling\": \"Riya, Class 3\",\n  \"pickup_person\": \"Grandfather\",\n  \"special_needs_and_abilities\": \"Chess\",\n  \"blood_group\": \"B+\",\n  \"email\": \"aarav.p@school.test\",\n  \"parent_ids\": [\n    3\n  ],\n  \"address\": {\n    \"street\": \"12 MG Road\",\n    \"city\": \"Pune\",\n    \"zip\": \"411001\",\n    \"state_id\": 596,\n    \"country_id\": 104\n  },\n  \"emergency_contact\": {\n    \"name\": \"Raj Patel\",\n    \"phone\": \"9800000002\"\n  },\n  \"health\": {\n    \"is_allergy\": true,\n    \"allergy\": \"Peanuts\",\n    \"primary_physician\": \"Dr Rao\",\n    \"insurance_provider\": \"LIC\"\n  },\n  \"documents\": {\n    \"birth_certificate\": [\n      {\n        \"data\": \"<base64 image or PDF>\",\n        \"filename\": \"birth.pdf\"\n      }\n    ],\n    \"medical_records\": []\n  },\n  \"transfer\": {\n    \"batch_id\": 2,\n    \"roll_number\": \"7\"\n  },\n  \"status\": \"running\",\n  \"account\": {\n    \"active\": true\n  }\n}"
             }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Student",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/students/:student_id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "students",
+                ":student_id"
+              ],
+              "variable": [
+                {
+                  "key": "student_id",
+                  "value": "{{student_id}}"
+                }
+              ]
+            },
+            "description": "Office staff: the full student record - every profile field, enrolment, parents, emergency contact, health, documents, account, face, ID verification and Aadhaar. Families and teachers use /students/:student_id/profile."
+          },
+          "response": []
+        },
+        {
+          "name": "Download Student Document",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/students/:student_id/documents/:attachment_id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "students",
+                ":student_id",
+                "documents",
+                ":attachment_id"
+              ],
+              "variable": [
+                {
+                  "key": "student_id",
+                  "value": "{{student_id}}"
+                },
+                {
+                  "key": "attachment_id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "One file from the student's documents sets (ids come from documents.<set>[].id)."
           },
           "response": []
         },
@@ -13888,7 +13948,7 @@
                 "teachers"
               ]
             },
-            "description": "Required: first_name, last_name, gender, birth_date. status: active|on_leave|resigned (employment). permissions: lesson_plans, homework, evaluate_assignments, exam_marks, reports (default all on). documents: teacher files (aadhaar|cv|certificate|other). Account & Security blocks (all optional): \"account\" (create_login, username, password, active, send_credentials, channel email|sms), \"face\" (enabled, image|images, consent_reference for students), \"id_verification\" (document|documents image/PDF, doc_type). Any password the office sets is a one-time password the person must change at first sign-in. Everything is saved together or not at all; when the server generated the password and it was not delivered, the response carries it once in credentials.one_time_password.",
+            "description": "Required: first_name, last_name, gender, birth_date. status: active|on_leave|resigned (employment). permissions: lesson_plans, homework, evaluate_assignments, exam_marks, reports (default all on). documents: teacher files (aadhaar|cv|certificate|other). Account & Security blocks (all optional): \"account\" (create_login, username, password, active, send_credentials, channel email|sms), \"face\" (enabled, image|images, consent_reference for students), \"id_verification\" (document|documents image/PDF, doc_type). Any password the office sets is a one-time password the person must change at first sign-in. Everything is saved together or not at all; when the server generated the password and it was not delivered, the response carries it once in credentials.one_time_password. Every field of the matching update request is accepted here too.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"first_name\": \"Rahul\",\n  \"last_name\": \"Tiwari\",\n  \"gender\": \"male\",\n  \"birth_date\": \"1990-04-12\",\n  \"email\": \"rahul.tiwari@school.test\",\n  \"phone\": \"9876543210\",\n  \"image\": \"<base64 photo>\",\n  \"address\": {\n    \"street\": \"12 MG Road\",\n    \"city\": \"Pune\",\n    \"zip\": \"411001\",\n    \"state_id\": 1,\n    \"country_id\": 104\n  },\n  \"emergency_contact\": {\n    \"name\": \"Priya Tiwari\",\n    \"phone\": \"9876500000\",\n    \"relation\": \"Spouse\"\n  },\n  \"joining_date\": \"2026-06-01\",\n  \"highest_qualification\": \"M.Sc Physics\",\n  \"specialization_subject_id\": 1,\n  \"subject_ids\": [\n    1,\n    2\n  ],\n  \"years_of_experience\": \"8\",\n  \"previous_school\": \"Green Valley School\",\n  \"certifications\": \"B.Ed, CTET\",\n  \"assignments\": {\n    \"course_ids\": [\n      1\n    ],\n    \"batch_ids\": [\n      1,\n      2\n    ]\n  },\n  \"workload\": {\n    \"max_weekly_periods\": 28,\n    \"timetable_auto_assign\": false\n  },\n  \"designation_id\": 1,\n  \"responsibility_ids\": [\n    1\n  ],\n  \"status\": \"active\",\n  \"notes\": \"Prefers morning periods\",\n  \"permissions\": {\n    \"lesson_plans\": true,\n    \"homework\": true,\n    \"evaluate_assignments\": true,\n    \"exam_marks\": true,\n    \"reports\": false\n  },\n  \"account\": {\n    \"create_login\": true,\n    \"username\": \"rahul.tiwari\",\n    \"password\": \"Welcome@2026\",\n    \"active\": true,\n    \"send_credentials\": true,\n    \"channel\": \"email\"\n  },\n  \"face\": {\n    \"enabled\": true,\n    \"image\": \"<base64 photo>\"\n  },\n  \"id_verification\": {\n    \"document\": {\n      \"data\": \"<base64 image or PDF>\",\n      \"filename\": \"aadhaar.pdf\"\n    },\n    \"doc_type\": \"aadhaar\"\n  },\n  \"documents\": [\n    {\n      \"doc_type\": \"aadhaar\",\n      \"file\": \"<base64>\",\n      \"filename\": \"aadhaar.jpg\"\n    },\n    {\n      \"doc_type\": \"cv\",\n      \"file\": \"<base64>\",\n      \"filename\": \"cv.pdf\"\n    },\n    {\n      \"doc_type\": \"certificate\",\n      \"name\": \"B.Ed\",\n      \"file\": \"<base64>\",\n      \"filename\": \"bed.pdf\"\n    }\n  ]\n}"
@@ -13925,10 +13985,10 @@
                 }
               ]
             },
-            "description": "Any create field; only the keys sent change. Account & Security blocks (all optional): \"account\" (create_login, username, password, active, send_credentials, channel email|sms), \"face\" (enabled, image|images, consent_reference for students), \"id_verification\" (document|documents image/PDF, doc_type). Any password the office sets is a one-time password the person must change at first sign-in. Everything is saved together or not at all; when the server generated the password and it was not delivered, the response carries it once in credentials.one_time_password.",
+            "description": "Only the keys sent are changed; null or \"\" clears a value (first_name, last_name, gender and birth_date are required). Profile: first_name, middle_name, last_name, title_id, gender, birth_date, email, phone, blood_group, nationality, id_number, lang, religion, category_id, cast, visa_info, joining_date, highest_qualification, years_of_experience, previous_school, certifications, main_department_id, allowed_department_ids, active (archive), subject_ids, specialization_subject_id, designation_id, responsibility_ids, status (employment), notes. Objects: image, address, official_address, postal_address, regional_address (each {street, street2, city, zip, state_id, country_id}), emergency_contact {name, phone, relation}, health {...same keys as students}, assignments {course_ids, batch_ids}, permissions {lesson_plans, homework, evaluate_assignments, exam_marks, reports}, workload {max_weekly_periods, timetable_auto_assign, available_days: [monday..saturday]}, documents [{doc_type, name, file}], plus the Account & Security blocks.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"designation_id\": 2,\n  \"responsibility_ids\": [\n    1,\n    2\n  ],\n  \"status\": \"on_leave\",\n  \"assignments\": {\n    \"batch_ids\": [\n      3\n    ]\n  },\n  \"workload\": {\n    \"max_weekly_periods\": 24\n  },\n  \"permissions\": {\n    \"exam_marks\": false\n  },\n  \"account\": {\n    \"active\": true\n  }\n}"
+              "raw": "{\n  \"title_id\": 1,\n  \"religion\": \"sikh\",\n  \"cast\": \"General\",\n  \"lang\": \"en_US\",\n  \"category_id\": 1,\n  \"visa_info\": \"Work visa\",\n  \"main_department_id\": 1,\n  \"allowed_department_ids\": [\n    1,\n    2\n  ],\n  \"joining_date\": \"2025-04-01\",\n  \"official_address\": {\n    \"street\": \"School Campus\",\n    \"city\": \"Pune\",\n    \"state_id\": 596,\n    \"country_id\": 104\n  },\n  \"postal_address\": {\n    \"city\": \"Mumbai\"\n  },\n  \"health\": {\n    \"is_allergy\": false,\n    \"medical_notes\": \"None\"\n  },\n  \"workload\": {\n    \"max_weekly_periods\": 28,\n    \"available_days\": [\n      \"monday\",\n      \"tuesday\",\n      \"wednesday\",\n      \"thursday\",\n      \"friday\"\n    ]\n  },\n  \"permissions\": {\n    \"exam_marks\": true\n  },\n  \"status\": \"active\"\n}"
             }
           },
           "response": []
@@ -13980,7 +14040,7 @@
                 "parents"
               ]
             },
-            "description": "Required: name, mobile, relationship_id, student_ids, account.username and account.password (400 missing_username / missing_password; the old top-level \"create_login\" flag alone is no longer enough). status: active|inactive. Department and classes in the response come from the children. Account & Security blocks: \"account\" (username and password required; active, send_credentials, channel email|sms optional), \"face\" (enabled, image|images), \"id_verification\" (document|documents image/PDF, doc_type). The password is a one-time password the person must change at first sign-in. Everything is saved together or not at all.",
+            "description": "Required: name, mobile, relationship_id, student_ids, account.username and account.password (400 missing_username / missing_password; the old top-level \"create_login\" flag alone is no longer enough). status: active|inactive. Department and classes in the response come from the children. Account & Security blocks: \"account\" (username and password required; active, send_credentials, channel email|sms optional), \"face\" (enabled, image|images), \"id_verification\" (document|documents image/PDF, doc_type). The password is a one-time password the person must change at first sign-in. Everything is saved together or not at all. Every field of the matching update request is accepted here too.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"name\": \"Neha Patel\",\n  \"mobile\": \"9800011122\",\n  \"email\": \"neha.patel@school.test\",\n  \"relationship_id\": 1,\n  \"student_ids\": [\n    1\n  ],\n  \"image\": \"<base64 photo>\",\n  \"status\": \"active\",\n  \"account\": {\n    \"create_login\": true,\n    \"username\": \"neha.patel\",\n    \"password\": \"Welcome@2026\",\n    \"active\": true,\n    \"send_credentials\": true,\n    \"channel\": \"email\"\n  },\n  \"face\": {\n    \"enabled\": false\n  },\n  \"id_verification\": {\n    \"document\": {\n      \"data\": \"<base64 image or PDF>\",\n      \"filename\": \"aadhaar.pdf\"\n    },\n    \"doc_type\": \"aadhaar\"\n  }\n}"
@@ -14017,10 +14077,10 @@
                 }
               ]
             },
-            "description": "Any create field. Account & Security blocks (all optional): \"account\" (create_login, username, password, active, send_credentials, channel email|sms), \"face\" (enabled, image|images, consent_reference for students), \"id_verification\" (document|documents image/PDF, doc_type). Any password the office sets is a one-time password the person must change at first sign-in. Everything is saved together or not at all; when the server generated the password and it was not delivered, the response carries it once in credentials.one_time_password.",
+            "description": "Only the keys sent are changed; null or \"\" clears a value (name, mobile, gender, relationship_id and student_ids are required). Profile: name, email, mobile (both also set on the parent's contact, where login credentials go), gender (m|f|o), birth_date, relationship_id, student_ids, status active|inactive, image, address {street, street2, city, zip, state_id, country_id} (top-level street/city/... keys also work), rte {category, annual_income, bpl_number, bpl_list_type, income_certificate_financial_year, income_certificate, category_certificate (file or null)}, documents {additional: [file | existing id]}, plus the Account & Security blocks.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"mobile\": \"9800011199\",\n  \"status\": \"active\",\n  \"image\": \"<base64 photo>\",\n  \"account\": {\n    \"active\": false\n  }\n}"
+              "raw": "{\n  \"name\": \"Sunita Patel\",\n  \"email\": \"sunita.p@school.test\",\n  \"mobile\": \"9800099944\",\n  \"gender\": \"f\",\n  \"birth_date\": \"1985-05-06\",\n  \"relationship_id\": 1,\n  \"student_ids\": [\n    12,\n    15\n  ],\n  \"address\": {\n    \"street\": \"12 MG Road\",\n    \"city\": \"Pune\",\n    \"zip\": \"411001\",\n    \"state_id\": 596,\n    \"country_id\": 104\n  },\n  \"rte\": {\n    \"category\": \"sc\",\n    \"bpl_number\": \"BPL-1\",\n    \"bpl_list_type\": \"state\",\n    \"income_certificate_financial_year\": \"2025-26\",\n    \"category_certificate\": {\n      \"data\": \"<base64 image or PDF>\",\n      \"filename\": \"caste.pdf\"\n    }\n  },\n  \"documents\": {\n    \"additional\": [\n      {\n        \"data\": \"<base64 image or PDF>\",\n        \"filename\": \"address-proof.pdf\"\n      }\n    ]\n  },\n  \"status\": \"active\"\n}"
             }
           },
           "response": []
@@ -14049,6 +14109,39 @@
               ]
             },
             "description": "Parent with children, classes, account, face and ID verification."
+          },
+          "response": []
+        },
+        {
+          "name": "Download Parent Document",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/parents/:parent_id/documents/:attachment_id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "parents",
+                ":parent_id",
+                "documents",
+                ":attachment_id"
+              ],
+              "variable": [
+                {
+                  "key": "parent_id",
+                  "value": "{{parent_id}}"
+                },
+                {
+                  "key": "attachment_id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "One file from the parent's documents.additional."
           },
           "response": []
         },
