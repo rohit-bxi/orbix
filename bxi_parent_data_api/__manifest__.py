@@ -2,7 +2,7 @@
 
 {
     'name': 'Orbix Parent Data API',
-    'version': '19.0.1.1.0',
+    'version': '19.0.1.2.0',
     'category': 'Education',
     'summary': 'Read-only exam/results, attendance, timetable and dashboard endpoints for the Orbix mobile app',
     'description': """

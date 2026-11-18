@@ -2,7 +2,7 @@
 
 {
     'name': 'Orbix API Support',
-    'version': '19.0.6.3.1',
+    'version': '19.0.7.0.0',
     'category': 'Education',
     'summary': 'REST API for the Orbix mobile app across every Orbix school process',
     'description': """
@@ -39,6 +39,11 @@
         one-time passwords, sending credentials, face recognition, ID
         verification), teacher documents and per-teacher lesson &
         evaluation permissions.
+        Back-office set-up: exam sessions, papers, seating, result
+        templates and marksheets; year-end promotion; lab attendance and
+        results; library catalogue, copies, cards, fines and purchase
+        requests; transport routes, buses and drivers; PTMs, holidays and
+        archiving notices.
     """,
     'author': 'BXI Technology Pvt. Ltd.',
     'maintainer': 'BXI Technology Pvt. Ltd.',

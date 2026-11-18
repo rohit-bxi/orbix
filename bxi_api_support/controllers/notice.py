@@ -48,6 +48,7 @@ def _notice_dict(notice):
         'expires_on': notice.expires_on and notice.expires_on.isoformat(),
         'is_expired': notice.is_expired,
         'is_pinned': notice.is_pinned,
+        'active': notice.active,
         'posted_date': notice.posted_date and notice.posted_date.isoformat(),
     }
 
@@ -123,4 +124,18 @@ class BxiApiSupportNoticeController(http.Controller):
         if not notice.exists():
             return api_error('Notice not found.', status=404, code='not_found')
         notice.action_toggle_pin()
+        return api_response(_notice_dict(notice))
+
+    @http.route('/api/v1/notices/<int:notice_id>/<any("archive", "restore"):action>',
+                type='http', auth='public', methods=['POST'], csrf=False)
+    @require_auth
+    def archive_notice(self, notice_id, action, **kwargs):
+        """Take a notice off every board (archive), or put it back
+        (restore). Archived notices stay on record but no one sees them."""
+        if not _is_notice_manager(request.env.user):
+            return api_error('Not authorized to manage notices.', status=403, code='forbidden')
+        notice = request.env['bxi.notice'].sudo().with_context(active_test=False).browse(notice_id)
+        if not notice.exists():
+            return api_error('Notice not found.', status=404, code='not_found')
+        notice.active = action == 'restore'
         return api_response(_notice_dict(notice))
