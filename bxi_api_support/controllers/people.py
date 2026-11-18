@@ -47,7 +47,7 @@ from .people_fields import (
     DOCUMENT_SETS, PARENT_SPEC, REQUIRED, STUDENT_SPEC, TEACHER_ADDRESSES, TEACHER_SPEC, WEEKDAYS, address_dict,
     apply_document_sets, documents_dict, emergency_contact_dict, fields_dict, health_dict, parse_address,
     parse_available_days, parse_document_sets, parse_fields, parse_health, parse_rte, parse_teacher_addresses,
-    rte_dict,
+    parse_teacher_documents, rte_dict,
 )
 from .profile import _image_response, _student_detail, student_summary
 
@@ -299,6 +299,7 @@ def _teacher_detail(faculty):
         'permissions': {key: faculty[field] for key, field in TEACHER_PERMISSION_FIELDS.items()},
         'health': health_dict(faculty),
         'documents': [document_dict(d) for d in faculty.document_ids],
+        'academic_documents': documents_dict(faculty)['academic_documents'],
     })
     for name in TEACHER_ADDRESSES:
         data['%s_address' % name] = address_dict(faculty, prefix='%s_' % name)
@@ -757,14 +758,16 @@ class BxiApiSupportPeopleController(http.Controller):
             return error
         return api_response(_with_credentials(_student_admin_dict(student), student, delivery))
 
-    @http.route('/api/v1/<any("students", "parents"):kind>/<int:record_id>/documents/<int:attachment_id>',
+    @http.route(['/api/v1/<any("students", "parents"):kind>/<int:record_id>/documents/<int:attachment_id>',
+                 '/api/v1/<any("teachers"):kind>/<int:record_id>/academic-documents/<int:attachment_id>'],
                 type='http', auth='public', methods=['GET'], csrf=False)
     @require_auth
     def person_document(self, kind, record_id, attachment_id, **kwargs):
-        """Download one file of a student's or parent's "documents" sets."""
+        """Download one file of a student's or parent's "documents" sets, or
+        of a teacher's "academic_documents"."""
         if not _can_list_students(request.env.user):
             return api_error('Not authorized for these documents.', status=403, code='forbidden')
-        model = 'op.student' if kind == 'students' else 'op.parent'
+        model = {'students': 'op.student', 'parents': 'op.parent', 'teachers': 'op.faculty'}[kind]
         record = request.env[model].sudo().with_context(active_test=False).browse(record_id).exists()
         if not record:
             return api_error('Not found.', status=404, code='not_found')
@@ -844,12 +847,16 @@ class BxiApiSupportPeopleController(http.Controller):
         blocks, error = _security_blocks(payload, teacher=True)
         if error:
             return error
+        documents, error = parse_teacher_documents(payload)
+        if error:
+            return error
         if _email_taken(vals.get('email')):
             return _email_taken_error()
 
         def create():
             faculty = request.env['op.faculty'].sudo().create(vals)
             _apply_emergency_contact(faculty, contact)
+            apply_document_sets(faculty, documents)
             return faculty, _apply_security(faculty, blocks)
 
         result, error = transaction(create)
@@ -868,8 +875,8 @@ class BxiApiSupportPeopleController(http.Controller):
         "specialization_subject_id", "designation_id", "responsibility_ids",
         "status", "notes", "assignments", "permissions", "workload":
         {"max_weekly_periods", "timetable_auto_assign", "available_days"},
-        "documents" and the Account & Security blocks); only the keys sent
-        are changed."""
+        "documents", "academic_documents", "employee_id" and the Account &
+        Security blocks); only the keys sent are changed."""
         if not is_manager(request.env.user):
             return api_error('Not authorized to edit teachers.', status=403, code='forbidden')
         faculty = request.env['op.faculty'].sudo().with_context(active_test=False).browse(faculty_id)
@@ -884,6 +891,9 @@ class BxiApiSupportPeopleController(http.Controller):
         blocks, error = _security_blocks(payload, teacher=True)
         if error:
             return error
+        documents, error = parse_teacher_documents(payload)
+        if error:
+            return error
         if vals.get('email') and _email_taken(vals['email'], faculty.partner_id):
             return _email_taken_error()
 
@@ -891,6 +901,7 @@ class BxiApiSupportPeopleController(http.Controller):
             if vals:
                 faculty.write(vals)
             _apply_emergency_contact(faculty, contact)
+            apply_document_sets(faculty, documents)
             return _apply_security(faculty, blocks)
 
         delivery, error = transaction(write)
