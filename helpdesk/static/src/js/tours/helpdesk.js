@@ -3,14 +3,10 @@ import { registry } from "@web/core/registry";
 import { markup } from "@odoo/owl";
 
 registry.category("web_tour.tours").add("helpdesk_tour", {
-    url: "/odoo",
+    // Opens Helpdesk directly: Community (and Orbix's home_theme) has no
+    // Enterprise home-screen tile for a first "click Helpdesk" step.
+    url: "/odoo/helpdesk",
     steps: () => [
-        {
-    trigger: '.o_app[data-menu-xmlid="helpdesk.menu_helpdesk_root"]',
-    content: markup(_t('Want to <b>boost your customer satisfaction</b>?<br/><i>Click Helpdesk to start.</i>')),
-    tooltipPosition: 'bottom',
-            run: "click",
-        },
         {
             trigger: ".o_helpdesk_ticket_btn",
         },

@@ -18,4 +18,4 @@ class TestDocumentFolderRights(HttpCase):
             "type": "folder",
         })
 
-        self.start_tour("/odoo", 'test_document_folder_rights_for_multi_company', login='admin')
+        self.start_tour("/odoo/documents", 'test_document_folder_rights_for_multi_company', login='admin')

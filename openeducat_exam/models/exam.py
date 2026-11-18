@@ -134,8 +134,11 @@ class OpExam(models.Model):
             if not record.subject_id or not record.start_time or not record.end_time:
                 continue
 
+            # Orbix: only the same section's students can be double-booked,
+            # so Grade 9 and Grade 10 may sit the same subject at once.
             existing_exams = self.env['op.exam'].search([
                 ('subject_id', '=', record.subject_id.id),
+                ('batch_id', '=', record.batch_id.id),
                 ('id', '!=', record.id),
                 ('start_time', '<', record.end_time),
                 ('end_time', '>', record.start_time),
@@ -143,7 +146,7 @@ class OpExam(models.Model):
             if existing_exams:
                 raise ValidationError(_(
                     'The exam time overlaps with an existing exam for the same '
-                    'subject : %s' %
+                    'subject in this section: %s' %
                     ', '.join(existing_exams.mapped('name'))
                 ))
 

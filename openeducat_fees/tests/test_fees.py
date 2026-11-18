@@ -75,10 +75,15 @@ class TestStudentFees(TestFeesCommon):
             'amount': 500.0,
             'state': 'draft',
         })
-        # Manually attach a dummy invoice
+        # Manually attach a dummy invoice. A database without a chart of
+        # accounts has no sales journal, so make one for the test.
+        journal = self.env['account.journal'].search([
+            ('type', '=', 'sale'), ('company_id', '=', self.env.company.id)], limit=1) or \
+            self.env['account.journal'].create({'name': 'Fees Test Sales', 'code': 'FTSJ', 'type': 'sale'})
         invoice = self.env['account.move'].create({
             'move_type': 'out_invoice',
             'partner_id': student.partner_id.id,
+            'journal_id': journal.id,
         })
         fee.invoice_id = invoice.id
         result = fee.action_get_invoice()

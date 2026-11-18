@@ -203,6 +203,10 @@ class TestBxiApiSupportHomeworkExam(ApiSupportHttpCase):
         line = self.env['op.marksheet.line'].search([('marksheet_reg_id', '=', register_id)])
         card = self.url_open(f'/api/v1/exams/report-card/{line.id}', headers=self._headers('hw_parent', 'ParentPass1!'))
         self.assertEqual(card.status_code, 200)
+        # Exam staff can print it too; another family can't.
+        self.assertEqual(self.url_open(f'/api/v1/exams/report-card/{line.id}', headers=staff).status_code, 200)
+        self.assertEqual(self.url_open(f'/api/v1/exams/report-card/{line.id}',
+                                       headers=self._headers('hw_other_parent', 'OtherPass1!')).status_code, 403)
 
     def test_my_submission(self):
         assignment_id = self._create_homework().json()['data']['id']

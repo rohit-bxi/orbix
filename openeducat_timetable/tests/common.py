@@ -28,19 +28,38 @@ class SessionFixtureCase(common.TransactionCase):
         cls.Users = cls.env['res.users']
         cls.Partner = cls.env['res.partner']
 
-        # Reuse the demo records shipped by openeducat_core so we
-        # don't need to spin up a full course/batch graph from
-        # scratch. Fall back to search() if refs go missing on some
-        # customer installs.
-        cls.course = cls._safe_ref(
-            'openeducat_core.op_course_2') or cls.Course.search([], limit=1)
-        cls.batch = cls._safe_ref(
-            'openeducat_core.op_batch_1') or cls.Batch.search([], limit=1)
-        cls.faculty = cls._safe_ref(
-            'openeducat_core.op_faculty_1') or cls.Faculty.search([], limit=1)
-        cls.subject = cls._safe_ref(
-            'openeducat_core.op_subject_1') or cls.Subject.search([], limit=1)
-        cls.students = cls.Student.search([], limit=3)
+        # Build our own small school instead of relying on openeducat demo
+        # records, which aren't there on a database created without demo
+        # data (that left course_id empty and every session create failed).
+        cls.course = cls.Course.create({'name': 'TT Fixture Class', 'code': 'TTFIX-C'})
+        cls.batch = cls.Batch.create({
+            'name': 'TT Fixture Section', 'code': 'TTFIX-B', 'course_id': cls.course.id,
+            'start_date': '2026-01-01', 'end_date': '2027-12-31',
+        })
+        cls.subject = cls.Subject.create({'name': 'TT Fixture Maths', 'code': 'TTFIX-S'})
+        faculty_user = cls.Users.create({
+            'name': 'TT Fixture Teacher', 'login': 'ttfix_teacher',
+            'group_ids': [(6, 0, [cls.env.ref('base.group_user').id])],
+        })
+        cls.faculty = cls.Faculty.create({
+            'first_name': 'TT', 'last_name': 'Fixture', 'gender': 'male',
+            'birth_date': '1985-01-01', 'user_id': faculty_user.id,
+        })
+        cls.students = cls.Student
+        portal = cls.env.ref('base.group_portal')
+        for index in range(3):
+            user = cls.Users.create({
+                'name': 'TT Fixture Student %s' % index, 'login': 'ttfix_student_%s' % index,
+                'group_ids': [(6, 0, [portal.id])],
+            })
+            student = cls.Student.create({
+                'first_name': 'TT', 'last_name': 'Student %s' % index, 'gender': 'm',
+                'gr_no': 'TTFIX-%s' % index, 'user_id': user.id,
+            })
+            cls.env['op.student.course'].create({
+                'student_id': student.id, 'course_id': cls.course.id, 'batch_id': cls.batch.id,
+            })
+            cls.students |= student
 
     @classmethod
     def _safe_ref(cls, xml_id):

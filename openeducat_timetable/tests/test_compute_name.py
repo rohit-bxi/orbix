@@ -14,10 +14,12 @@ class TestComputeName(SessionFixtureCase):
 
     def _make(self, tz):
         self.env.user.tz = tz
+        # env.tz is cached per environment in Odoo 19, so pass the zone
+        # through the context (as the web client does) on a fresh env.
         return self._make_session(
             start=datetime(2026, 7, 20, 10, 0),
             end=datetime(2026, 7, 20, 11, 0),
-        )
+        ).with_context(tz=tz)
 
     def test_name_utc(self):
         session = self._make('UTC')

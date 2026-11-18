@@ -1,4 +1,3 @@
-from datetime import datetime
 import re
 
 # from AptUrl.Helpers import _
@@ -132,7 +131,8 @@ class Visit(models.Model):
     work_email = fields.Char(related='employee_id.work_email', string="Email", readonly=False)
     dept = fields.Many2one(related='employee_id.department_id', string="Department", readonly=False)
     job_title = fields.Char(related='employee_id.job_title', string=" Job Position")
-    check_in_date = fields.Datetime(string='Check-In', default=lambda self: datetime.today(), readonly=True)
+    # UTC like every Odoo datetime (datetime.today() is the server's local clock).
+    check_in_date = fields.Datetime(string='Check-In', default=fields.Datetime.now, readonly=True)
     check_out_date = fields.Datetime(string='Check-Out', )
     # check_out = fields.Boolean(string="Check-Out")
     state = fields.Selection([
