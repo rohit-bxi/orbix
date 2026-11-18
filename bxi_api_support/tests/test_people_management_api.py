@@ -593,3 +593,35 @@ class TestBxiApiSupportPeopleManagement(ApiSupportHttpCase):
         faculty.sudo().id_document_status = 'pending'
         detail = self.url_open(f'/api/v1/teachers/{faculty_id}', headers=self._office()).json()['data']
         self.assertEqual(detail['verification_status'], 'pending')
+
+    def test_teacher_employee_link_and_academic_documents(self):
+        teacher = self._post('/api/v1/teachers', self._teacher_body(
+            academic_documents=[{'data': PIXEL, 'filename': 'degree.png'}])).json()['data']
+        self.assertEqual([d['name'] for d in teacher['academic_documents']], ['degree.png'])
+        url = f"/api/v1/teachers/{teacher['id']}/update"
+        employee = self.env['hr.employee'].create({'name': 'UM Linked Employee'})
+        kept = teacher['academic_documents'][0]['id']
+        updated = self._post(url, {'employee_id': employee.id, 'academic_documents': [
+            kept, {'data': PIXEL, 'filename': 'bed.png'}]})
+        self.assertEqual(updated.status_code, 200, updated.text)
+        data = updated.json()['data']
+        self.assertEqual(data['employee']['id'], employee.id)
+        self.assertEqual(sorted(d['name'] for d in data['academic_documents']), ['bed.png', 'degree.png'])
+        faculty = self.env['op.faculty'].browse(teacher['id'])
+        self.assertEqual(faculty.emp_id, employee)
+        self.assertEqual(len(faculty.teacher_documents_ids), 2)
+
+        download = self.url_open(f"/api/v1/teachers/{teacher['id']}/academic-documents/{kept}", headers=self._office())
+        self.assertEqual(download.status_code, 200, download.text[:200])
+        self.assertEqual(download.content[:4], b'\x89PNG')
+        self.assertEqual(self.url_open(f"/api/v1/teachers/{teacher['id']}/academic-documents/{kept}",
+                                       headers=self._headers('um_parent', 'ParentPass1!')).status_code, 403)
+
+        # The list sent is the whole set: leaving a file out removes it.
+        trimmed = self._post(url, {'academic_documents': [kept]}).json()['data']
+        self.assertEqual([d['id'] for d in trimmed['academic_documents']], [kept])
+        self.assertEqual(self._post(url, {'employee_id': 999999}).json()['error']['code'], 'invalid_employee_id')
+        self.assertEqual(self._post(url, {'academic_documents': 'x'}).json()['error']['code'], 'invalid_documents')
+        cleared = self._post(url, {'employee_id': None, 'academic_documents': []}).json()['data']
+        self.assertIsNone(cleared['employee'])
+        self.assertEqual(cleared['academic_documents'], [])

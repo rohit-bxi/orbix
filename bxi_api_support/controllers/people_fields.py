@@ -14,6 +14,8 @@ Shared shapes:
                     "dietary_restrictions", "primary_physician", "physician_contact",
                     "insurance_provider", "insurance_policy_no", "medical_notes"}
   "documents"      (students, parents) {"<set>": [<file> | <attachment id>, ...]}
+  "academic_documents" (teachers) [<file> | <attachment id>, ...] - the
+                   Teacher Documents attachments of the Academic Details tab
                    A file is "<base64>" or {"data", "filename"} (image or PDF).
                    The list sent becomes the whole set: ids keep files already
                    there, files are added, anything left out is removed.
@@ -87,6 +89,7 @@ STUDENT_SPEC = _spec(
 TEACHER_SPEC = _spec(
     **_PERSON,
     teacher_code=F('teacher_code'),
+    employee_id=F('emp_id', M2O, 'hr.employee', out='employee'),
     joining_date=F('joining_date', DATE), highest_qualification=F('highest_qualification'),
     years_of_experience=F('years_of_experience'), previous_school=F('previous_school'),
     certifications=F('certifications'), cast=F('cast'),
@@ -143,6 +146,9 @@ DOCUMENT_SETS = {
         'medical_records': 'medical_record_ids',
     },
     'op.parent': {'additional': 'additional_document_ids'},
+    # Sent as a plain "academic_documents" list (teachers' "documents" are
+    # their typed teacher-document records).
+    'op.faculty': {'academic_documents': 'teacher_documents_ids'},
 }
 
 WEEKDAYS = ('monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday')
@@ -296,20 +302,37 @@ def parse_document_sets(model, payload):
                                code='invalid_documents')
     sets = {}
     for name, entries in block.items():
-        entries = entries or []
-        if not isinstance(entries, list):
-            return None, api_error('documents.%s must be a list.' % name, status=400, code='invalid_documents')
-        checked = []
-        for index, entry in enumerate(entries):
-            if isinstance(entry, int) and not isinstance(entry, bool):
-                checked.append(entry)
-                continue
-            file, error = _file_entry(entry, name, index)
-            if error:
-                return None, error
-            checked.append(file)
-        sets[names[name]] = checked
+        sets[names[name]], error = _document_entries(entries, name, 'documents.%s' % name)
+        if error:
+            return None, error
     return sets, None
+
+
+def _document_entries(entries, name, label):
+    """(list of attachment ids and files, error) for one document set."""
+    entries = entries or []
+    if not isinstance(entries, list):
+        return None, api_error('%s must be a list.' % label, status=400, code='invalid_documents')
+    checked = []
+    for index, entry in enumerate(entries):
+        if isinstance(entry, int) and not isinstance(entry, bool):
+            checked.append(entry)
+            continue
+        file, error = _file_entry(entry, name, index)
+        if error:
+            return None, error
+        checked.append(file)
+    return checked, None
+
+
+def parse_teacher_documents(payload):
+    """(sets, error) for a teacher's optional "academic_documents" list."""
+    if 'academic_documents' not in payload:
+        return {}, None
+    entries, error = _document_entries(payload['academic_documents'], 'academic_documents', 'academic_documents')
+    if error:
+        return None, error
+    return {'teacher_documents_ids': entries}, None
 
 
 # -- applying (inside the transaction) ----------------------------------------------------------
