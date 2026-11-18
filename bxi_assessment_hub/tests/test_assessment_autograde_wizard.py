@@ -77,3 +77,27 @@ class TestAssessmentAutogradeWizard(TransactionCase):
         for submission in self.session.submission_ids:
             self.assertEqual(submission.status, 'auto_graded')
             self.assertEqual(submission.total_score, 2.0)
+
+    def test_mcq_only_batch_needs_no_api_key(self):
+        self.env['ir.config_parameter'].sudo().set_param('bxi_assessment_hub.anthropic_api_key', False)
+        exam = self.env['bxi.exam'].create({
+            'name': 'MCQ Quiz', 'class_id': self.course.id, 'subject_id': self.subject.id,
+            'teacher_id': self.teacher.id,
+        })
+        question = self.env['bxi.exam.question'].create({
+            'exam_id': exam.id, 'question_type': 'mcq', 'question_text': '1+1?', 'marks': 1})
+        right = self.env['bxi.exam.question.option'].create(
+            {'question_id': question.id, 'option_text': '2', 'is_correct': True})
+        self.env['bxi.exam.question.option'].create(
+            {'question_id': question.id, 'option_text': '3', 'is_correct': False})
+        exam.action_publish()
+        session = self.env['bxi.assessment.session'].create({
+            'exam_id': exam.id, 'class_id': self.course.id, 'teacher_id': self.teacher.id,
+            'exam_date': '2026-10-02', 'exam_time': 9.0, 'student_ids': [(6, 0, self.student1.ids)],
+        })
+        submission = session.submission_ids
+        submission.answer_ids.selected_option_id = right
+        submission.action_mark_submitted()
+        wizard = self.env['bxi.assessment.autograde.wizard'].create({'submission_ids': [(6, 0, submission.ids)]})
+        wizard.action_start_grading()
+        self.assertEqual((wizard.graded_count, submission.total_score), (1, 1.0))

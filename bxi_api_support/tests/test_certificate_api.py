@@ -166,6 +166,16 @@ class TestBxiApiSupportCertificate(ApiSupportHttpCase):
         self.assertEqual(self.url_open('/api/v1/certificates/999999/reset', headers=self._staff_headers(),
                                        method='POST').status_code, 404)
 
+    def test_issued_certificate_cannot_be_reset(self):
+        cert_id = self._generated()
+        self.url_open(f'/api/v1/certificates/{cert_id}/issue', headers=self._staff_headers(), method='POST')
+        resp = self.url_open(f'/api/v1/certificates/{cert_id}/reset', headers=self._staff_headers(), method='POST')
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.json()['error']['code'], 'invalid_transition')
+        cert = self.env['op.certificate'].browse(cert_id)
+        self.assertEqual(cert.state, 'issued')
+        self.assertTrue(cert.certificate_number)
+
     def test_pdf_download(self):
         cert_id = self._generated()
         student = self._headers('cert_api_student', 'StudentPass1!')

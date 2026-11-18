@@ -209,13 +209,8 @@ class TestBxiApiSupportAssessment(ApiSupportHttpCase):
         _exam_id, session_id, submission_id = self._submitted()
         url = f'/api/v1/assessments/sessions/{session_id}/autograde-all'
         self.assertEqual(self.url_open(url, headers=self._other_teacher(), method='POST').status_code, 403)
-        # The bulk wizard insists on an AI key even when every question is MCQ.
-        no_key = self.url_open(url, headers=self._teacher_headers(), method='POST')
-        self.assertEqual(no_key.status_code, 400)
-        self.assertIn('AI grading is not configured', no_key.json()['error']['message'])
-        with patch.object(type(self.env['bxi.ai.client']), '_get_config', autospec=True,
-                          return_value={'api_key': 'test-key'}):
-            graded = self.url_open(url, headers=self._teacher_headers(), method='POST')
+        # MCQ answers are graded locally, so no AI key is needed.
+        graded = self.url_open(url, headers=self._teacher_headers(), method='POST')
         self.assertEqual(graded.status_code, 200, graded.text)
         self.assertEqual((graded.json()['data']['graded_count'], graded.json()['data']['failed_count']), (1, 0))
         self.assertEqual(graded.json()['data']['submissions'][0]['id'], submission_id)
@@ -319,3 +314,39 @@ class TestBxiApiSupportAssessment(ApiSupportHttpCase):
                          .json()['data']['sessions'], [])
         coordinator = self.url_open('/api/v1/assessments/sessions', headers=self._headers('assess_api_coordinator', 'CoordPass1!'))
         self.assertIn(session_id, [s['id'] for s in coordinator.json()['data']['sessions']])
+
+    def test_autograde_all_written_answers_need_ai_key(self):
+        exam = self._create_exam()
+        question = self.env['bxi.exam.question'].sudo().create({
+            'exam_id': exam['id'], 'question_type': 'short_answer', 'question_text': 'Define a fraction.',
+            'marks': 3, 'sample_answer_keywords': 'part, whole'})
+        self.url_open(f"/api/v1/assessments/exams/{exam['id']}/publish", headers=self._teacher_headers(), method='POST')
+        session = self.url_open('/api/v1/assessments/sessions', headers=self._teacher_headers(), json={
+            'exam_id': exam['id'], 'class_id': self.course.id, 'student_ids': [self.student.id]}).json()['data']
+        submission = self.env['bxi.assessment.submission'].sudo().search([('session_id', '=', session['id'])])
+        self.url_open(f'/api/v1/assessments/submissions/{submission.id}/answers', headers=self._teacher_headers(), json={
+            'answers': [{'question_id': question.id, 'student_answer_text': 'A part of a whole'}]})
+        self.url_open(f'/api/v1/assessments/submissions/{submission.id}/mark-submitted',
+                      headers=self._teacher_headers(), method='POST')
+        resp = self.url_open(f"/api/v1/assessments/sessions/{session['id']}/autograde-all",
+                             headers=self._teacher_headers(), method='POST')
+        self.assertEqual(resp.status_code, 400)
+        self.assertIn('AI grading is not configured', resp.json()['error']['message'])
+
+    def test_exam_and_session_detail_access(self):
+        student_user = mail_new_test_user(
+            self.env, login='assess_api_sitter', groups='base.group_user', password='StudentPass1!')
+        sitter = self._create_student('ASSAPI-004', user=student_user)
+        stranger_user = mail_new_test_user(
+            self.env, login='assess_api_stranger', groups='base.group_user', password='StrangerPass1!')
+        self._create_student('ASSAPI-005', user=stranger_user)
+        exam_id, session_id, _submission_id = self._submitted(sitter)
+        exam_url, session_url = f'/api/v1/assessments/exams/{exam_id}', f'/api/v1/assessments/sessions/{session_id}'
+        for headers, expected in (
+                (self._teacher_headers(), 200),
+                (self._headers('assess_api_coordinator', 'CoordPass1!'), 200),
+                (self._headers('assess_api_sitter', 'StudentPass1!'), 200),
+                (self._other_teacher(), 403),
+                (self._headers('assess_api_stranger', 'StrangerPass1!'), 403)):
+            self.assertEqual(self.url_open(exam_url, headers=headers).status_code, expected)
+            self.assertEqual(self.url_open(session_url, headers=headers).status_code, expected)

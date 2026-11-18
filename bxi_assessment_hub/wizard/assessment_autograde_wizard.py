@@ -30,8 +30,11 @@ class BxiAssessmentAutogradeWizard(models.TransientModel):
         self.ensure_one()
         if not self.submission_ids:
             raise UserError(_('There are no pending submissions to grade.'))
-        config = self.env['bxi.ai.client']._get_config()
-        if not config.get('api_key'):
+        # Only written answers go to the AI; MCQ and blank answers are
+        # graded locally, so an MCQ-only batch needs no API key.
+        needs_ai = self.submission_ids.answer_ids.filtered(
+            lambda answer: answer.question_type != 'mcq' and answer.student_answer_text)
+        if needs_ai and not self.env['bxi.ai.client']._get_config().get('api_key'):
             raise UserError(_(
                 'AI grading is not configured. Add an API key under Settings > Assessments & Exams.'))
 

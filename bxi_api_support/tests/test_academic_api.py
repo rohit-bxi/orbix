@@ -89,6 +89,9 @@ class TestBxiApiSupportAcademic(ApiSupportHttpCase):
         by_teacher = self.url_open(f'/api/v1/academic/subject-mappings?teacher_id={teacher_b.id}', headers=headers).json()
         self.assertEqual([m['id'] for m in by_teacher['data']['mappings']], [second.id])
         self.assertEqual(by_teacher['meta']['total'], 1)
+        mail_new_test_user(self.env, login='academic_api_parent', groups='base.group_portal', password='ParentPass1!')
+        self.assertEqual(self.url_open('/api/v1/academic/subject-mappings',
+                                       headers=self._headers('academic_api_parent', 'ParentPass1!')).status_code, 403)
 
     def test_curricula_list_and_detail(self):
         headers = self._headers('academic_api_coordinator', 'CoordPass1!')

@@ -18,6 +18,23 @@ def _is_coordinator_or_manager(user):
     return user.has_group(COORDINATOR_GROUP) or user.has_group(MANAGER_GROUP)
 
 
+def _can_view_session(env, session):
+    """Coordinators/managers, the session's or the exam's teacher, and the
+    family of a student sitting it - the same people the lists show it to."""
+    user = env.user
+    if _is_coordinator_or_manager(user) or user in (session.teacher_id.user_id | session.exam_id.teacher_id.user_id):
+        return True
+    return bool(set(session.student_ids.ids) & set(get_own_student_ids(env)))
+
+
+def _can_view_exam(env, exam):
+    user = env.user
+    if _is_coordinator_or_manager(user) or exam.teacher_id.user_id == user:
+        return True
+    sessions = env['bxi.assessment.session'].sudo().search([('exam_id', '=', exam.id)])
+    return any(_can_view_session(env, session) for session in sessions)
+
+
 def _exam_dict(exam):
     return {
         'id': exam.id,
@@ -100,6 +117,8 @@ class BxiApiSupportAssessmentController(http.Controller):
         exam = request.env['bxi.exam'].sudo().browse(exam_id)
         if not exam.exists():
             return api_error('Exam not found.', status=404, code='not_found')
+        if not _can_view_exam(request.env, exam):
+            return api_error('Not authorized for this exam.', status=403, code='forbidden')
         return api_response(_exam_dict(exam))
 
     @http.route('/api/v1/assessments/exams', type='http', auth='public', methods=['POST'], csrf=False)
@@ -171,6 +190,8 @@ class BxiApiSupportAssessmentController(http.Controller):
         session = request.env['bxi.assessment.session'].sudo().browse(session_id)
         if not session.exists():
             return api_error('Session not found.', status=404, code='not_found')
+        if not _can_view_session(request.env, session):
+            return api_error('Not authorized for this session.', status=403, code='forbidden')
         return api_response(_session_dict(session))
 
     @http.route('/api/v1/assessments/sessions', type='http', auth='public', methods=['POST'], csrf=False)
