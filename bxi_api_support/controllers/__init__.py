@@ -42,3 +42,9 @@ from . import admin_fees
 from . import admin_events
 from . import admin_attendance
 from . import people_account
+from . import exam_admin
+from . import promotion
+from . import lab_records
+from . import library_admin
+from . import transport_admin
+from . import academic_admin

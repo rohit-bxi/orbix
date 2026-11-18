@@ -35,3 +35,9 @@ from . import test_people_management_api
 from . import test_people_account_api
 from . import test_people_aadhaar_api
 from . import test_people_account_backend
+from . import test_exam_admin_api
+from . import test_promotion_api
+from . import test_lab_records_api
+from . import test_library_admin_api
+from . import test_transport_admin_api
+from . import test_academic_admin_api

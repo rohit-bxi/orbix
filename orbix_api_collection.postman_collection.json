@@ -1010,7 +1010,7 @@
                 }
               ]
             },
-            "description": "Requires auth. Staff or a parent linked to the student."
+            "description": "Requires auth. Staff or a parent linked to the student. A student signed in to the app may leave student_id out: it defaults to their own record."
           },
           "response": []
         },
@@ -1045,7 +1045,7 @@
                 }
               ]
             },
-            "description": "Requires auth. date_from/date_to are optional (default range applies if omitted)."
+            "description": "Requires auth. date_from/date_to are optional (default range applies if omitted). A student signed in to the app may leave student_id out: it defaults to their own record."
           },
           "response": []
         },
@@ -1080,7 +1080,7 @@
                 }
               ]
             },
-            "description": "Requires auth. date_from/date_to are optional."
+            "description": "Requires auth. date_from/date_to are optional. A student signed in to the app may leave student_id out: it defaults to their own record."
           },
           "response": []
         },
@@ -1107,7 +1107,7 @@
                 }
               ]
             },
-            "description": "Requires auth. Combined attendance %, upcoming sessions, latest exam result."
+            "description": "Requires auth. Combined attendance %, upcoming sessions, latest exam result. A student signed in to the app may leave student_id out: it defaults to their own record."
           },
           "response": []
         }
@@ -4325,6 +4325,100 @@
             "description": "PTMs the caller is expected at (invited, child's class, or a class taught). ?include_past=1."
           },
           "response": []
+        },
+        {
+          "name": "Coordinator: Schedule PTM",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/academic/ptm-meetings",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "academic",
+                "ptm-meetings"
+              ]
+            },
+            "description": "Times in UTC. Parents of the classes' students and the classes' teachers are notified.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Term 1 PTM\",\n  \"start_datetime\": \"2026-12-12 04:30:00\",\n  \"end_datetime\": \"2026-12-12 07:30:00\",\n  \"venue\": \"Main Hall\",\n  \"class_ids\": [\n    1,\n    2\n  ]\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Coordinator: Update PTM",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/academic/ptm-meetings/1/update",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "academic",
+                "ptm-meetings",
+                "1",
+                "update"
+              ]
+            },
+            "description": "Changing time, venue or classes notifies everyone again.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"venue\": \"Library\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Coordinator: Cancel PTM",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/academic/ptm-meetings/1/archive",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "academic",
+                "ptm-meetings",
+                "1",
+                "archive"
+              ]
+            },
+            "description": "Archive (cancel). Use /restore to bring it back.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          },
+          "response": []
         }
       ]
     },
@@ -6526,6 +6620,37 @@
             "description": "Notice manager only."
           },
           "response": []
+        },
+        {
+          "name": "Notice Manager: Archive Notice",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/notices/1/archive",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "notices",
+                "1",
+                "archive"
+              ]
+            },
+            "description": "Takes the notice off every board. Use /restore to put it back.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          },
+          "response": []
         }
       ]
     },
@@ -8221,6 +8346,192 @@
             "description": "Drivers with licence expiry and verification."
           },
           "response": []
+        },
+        {
+          "name": "Transport Staff: Create Route",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/transport/routes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "transport",
+                "routes"
+              ]
+            },
+            "description": "A draft route with its stops; activate it with /routes/<id>/activate. The bus must be a school bus.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"North Route\",\n  \"code\": \"RT-N\",\n  \"vehicle_id\": 1,\n  \"academic_year_id\": null,\n  \"distance_km\": 14.5,\n  \"fee_amount\": 900,\n  \"fee_product_id\": null,\n  \"stops\": [\n    {\n      \"name\": \"City Gate\",\n      \"pickup_time\": 7.25,\n      \"drop_time\": 14.5,\n      \"fee_amount\": 900\n    },\n    {\n      \"name\": \"Market\"\n    }\n  ]\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Transport Staff: Update Route",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/transport/routes/1/update",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "transport",
+                "routes",
+                "1",
+                "update"
+              ]
+            },
+            "description": "Any create field except stops (use the stop routes). Changing the bus checks its seats against current riders.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"distance_km\": 15,\n  \"fee_amount\": 950\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Transport Staff: Add School Bus",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/transport/vehicles",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "transport",
+                "vehicles"
+              ]
+            },
+            "description": "Vehicle models: /masters/vehicle-models. driver_id is a driver profile.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"model_id\": 1,\n  \"license_plate\": \"KA-01-AB-1234\",\n  \"seats\": 40,\n  \"driver_id\": 1,\n  \"attendant\": {\n    \"name\": \"Ravi\",\n    \"phone\": \"9000000000\"\n  },\n  \"academic_year_id\": null\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Transport Staff: Update School Bus",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/transport/vehicles/1/update",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "transport",
+                "vehicles",
+                "1",
+                "update"
+              ]
+            },
+            "description": "Any create field, plus active. attendant: null removes the attendant.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"seats\": 45\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Transport Staff: Add Driver",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/transport/drivers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "transport",
+                "drivers"
+              ]
+            },
+            "description": "license_type: lmv, hmv or psv.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Suresh Kumar\",\n  \"phone\": \"9000000001\",\n  \"email\": \"\",\n  \"license_number\": \"DL-0420110012345\",\n  \"license_type\": \"hmv\",\n  \"license_expiry\": \"2030-06-30\",\n  \"badge_verified\": true,\n  \"status\": \"active\",\n  \"employee_id\": null\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Transport Staff: Update Driver",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/transport/drivers/1/update",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "transport",
+                "drivers",
+                "1",
+                "update"
+              ]
+            },
+            "description": "status: active, on_leave, suspended.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"on_leave\",\n  \"phone\": \"9000000002\"\n}"
+            }
+          },
+          "response": []
         }
       ]
     },
@@ -9378,6 +9689,157 @@
                 }
               ]
             }
+          },
+          "response": []
+        },
+        {
+          "name": "Lab: Session Attendance",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/lab/sessions/1/attendance",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "lab",
+                "sessions",
+                "1",
+                "attendance"
+              ]
+            },
+            "description": "Roster with each student's mark and a summary. Lab admins or the session's instructor."
+          },
+          "response": []
+        },
+        {
+          "name": "Lab: Mark Attendance",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/lab/sessions/1/attendance",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "lab",
+                "sessions",
+                "1",
+                "attendance"
+              ]
+            },
+            "description": "Once the session is confirmed. status: present, absent or late. All rows saved or none.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"records\": [\n    {\n      \"student_id\": 1,\n      \"status\": \"present\"\n    },\n    {\n      \"student_id\": 2,\n      \"status\": \"late\",\n      \"remark\": \"Bus late\"\n    }\n  ]\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Lab: Session Results",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/lab/sessions/1/results?experiment_id=",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "lab",
+                "sessions",
+                "1",
+                "results"
+              ],
+              "query": [
+                {
+                  "key": "experiment_id",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Experiment results for the session."
+          },
+          "response": []
+        },
+        {
+          "name": "Lab: Enter Results",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/lab/sessions/1/results",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "lab",
+                "sessions",
+                "1",
+                "results"
+              ]
+            },
+            "description": "Once the session has started. experiment_id defaults to the session's; marks run 0 to the experiment's maximum; grade is computed.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"experiment_id\": null,\n  \"results\": [\n    {\n      \"student_id\": 1,\n      \"marks_obtained\": 18,\n      \"remark\": \"Neat work\"\n    }\n  ]\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Lab: Student Lab Results (family)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/lab/results?student_id={{student_id}}&limit=50&offset=0",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "lab",
+                "results"
+              ],
+              "query": [
+                {
+                  "key": "student_id",
+                  "value": "{{student_id}}"
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
+            },
+            "description": "A student's experiment results and lab attendance. Student, parents, teachers, office."
           },
           "response": []
         }
@@ -11009,6 +11471,314 @@
             "description": ""
           },
           "response": []
+        },
+        {
+          "name": "Exam Staff: Create Exam Session",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/exams/sessions",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "exams",
+                "sessions"
+              ]
+            },
+            "description": "Create an exam session and its papers in one go (all or nothing). A missing paper code is made from the session and subject codes; subjects must belong to the class. Exam staff and academic coordinators.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Mid Term\",\n  \"exam_code\": \"G9A-MT\",\n  \"class_id\": 1,\n  \"section_id\": 1,\n  \"exam_type_id\": 1,\n  \"start_date\": \"2026-12-01\",\n  \"end_date\": \"2026-12-05\",\n  \"evaluation_type\": \"normal\",\n  \"exams\": [\n    {\n      \"subject_id\": 1,\n      \"start_time\": \"2026-12-01 04:00:00\",\n      \"end_time\": \"2026-12-01 06:00:00\",\n      \"total_marks\": 100,\n      \"passing_marks\": 35,\n      \"responsible_ids\": [\n        1\n      ]\n    }\n  ]\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Exam Staff: Get Exam Session",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/exams/sessions/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "exams",
+                "sessions",
+                "1"
+              ]
+            },
+            "description": "The session with its papers (attendee count, results entered, responsible teachers) and its result templates. Exam staff, or a teacher of the class."
+          },
+          "response": []
+        },
+        {
+          "name": "Exam Staff: Update Exam Session",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/exams/sessions/1/update",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "exams",
+                "sessions",
+                "1",
+                "update"
+              ]
+            },
+            "description": "Any create field except exams. Only while the session is draft.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Mid Term (revised)\",\n  \"end_date\": \"2026-12-06\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Exam Staff: Add Paper to Session",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/exams/sessions/1/exams",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "exams",
+                "sessions",
+                "1",
+                "exams"
+              ]
+            },
+            "description": "Add one paper to a draft or scheduled session.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subject_id\": 2,\n  \"start_time\": \"2026-12-02 04:00:00\",\n  \"end_time\": \"2026-12-02 06:00:00\",\n  \"total_marks\": 100,\n  \"passing_marks\": 35\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Exam Staff: Update Paper",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/exams/1/update",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "exams",
+                "1",
+                "update"
+              ]
+            },
+            "description": "Edit a draft paper.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"total_marks\": 80,\n  \"passing_marks\": 28\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Exam Staff: Assign Attendees & Rooms",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/exams/1/assign-attendees",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "exams",
+                "1",
+                "assign-attendees"
+              ]
+            },
+            "description": "Who sits the paper and where. Without student_ids: the section's current students (electives: students registered for the subject). Rooms fill in order up to capacity; a room booked by an overlapping exam is refused. Replaces earlier seating; only before the paper is held.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"student_ids\": [],\n  \"room_ids\": [\n    1,\n    2\n  ]\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Exam Staff: List Result Templates",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/exams/result-templates?session_id=&state=&limit=50&offset=0",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "exams",
+                "result-templates"
+              ],
+              "query": [
+                {
+                  "key": "session_id",
+                  "value": ""
+                },
+                {
+                  "key": "state",
+                  "value": ""
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
+            },
+            "description": "Filters: session_id, state."
+          },
+          "response": []
+        },
+        {
+          "name": "Exam Staff: Create Result Template",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/exams/result-templates",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "exams",
+                "result-templates"
+              ]
+            },
+            "description": "Every paper of the session must be done first. Then call Generate Results.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"exam_session_id\": 1,\n  \"name\": \"Mid Term Result\",\n  \"result_date\": \"2026-12-20\",\n  \"grade_ids\": [\n    1,\n    2\n  ]\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Exam Staff: List Marksheets",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/exams/marksheets?session_id=&state=draft&limit=50&offset=0",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "exams",
+                "marksheets"
+              ],
+              "query": [
+                {
+                  "key": "session_id",
+                  "value": ""
+                },
+                {
+                  "key": "state",
+                  "value": "draft"
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
+            },
+            "description": "Marksheet registers. Filters: session_id, state (draft, validated, cancelled)."
+          },
+          "response": []
+        },
+        {
+          "name": "Exam Staff: Get Marksheet",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/exams/marksheets/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "exams",
+                "marksheets",
+                "1"
+              ]
+            },
+            "description": "One line per student with marks per paper. A line id is what /exams/report-card/<id> takes once published."
+          },
+          "response": []
         }
       ]
     },
@@ -11321,6 +12091,380 @@
               ]
             },
             "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Librarian: Add Book",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/library/catalog",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "library",
+                "catalog"
+              ]
+            },
+            "description": "Catalogue entry. Authors/publishers by id or by name (new names are created). total_copies creates that many copies.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Atlas of India\",\n  \"genre_id\": 1,\n  \"author_ids\": [],\n  \"authors\": [\n    \"R. Sharma\"\n  ],\n  \"publishers\": [\n    \"NCERT\"\n  ],\n  \"isbn\": \"978-81-7450-000-1\",\n  \"edition\": \"2nd\",\n  \"media_type_id\": null,\n  \"language\": \"en\",\n  \"publish_year\": 2024,\n  \"pages\": 120,\n  \"shelf_location\": \"B-2\",\n  \"class_ids\": [\n    1\n  ],\n  \"subject_ids\": [],\n  \"total_copies\": 3\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Librarian: Update Book",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/library/catalog/{{media_id}}/update",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "library",
+                "catalog",
+                "{{media_id}}",
+                "update"
+              ]
+            },
+            "description": "Any create field, plus active. Lowering total_copies archives copies on the shelf.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"shelf_location\": \"C-1\",\n  \"total_copies\": 4\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Librarian: List Copies",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/library/catalog/{{media_id}}/units",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "library",
+                "catalog",
+                "{{media_id}}",
+                "units"
+              ]
+            },
+            "description": "Physical copies with barcode and state."
+          },
+          "response": []
+        },
+        {
+          "name": "Librarian: Add Copies",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/library/catalog/{{media_id}}/units",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "library",
+                "catalog",
+                "{{media_id}}",
+                "units"
+              ]
+            },
+            "description": "Add copies: count, or one per barcode given (otherwise barcodes come from the library sequence).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"count\": 2,\n  \"barcodes\": [\n    \"LIB-0001\",\n    \"LIB-0002\"\n  ]\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Librarian: List Library Cards",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/library/cards?student_id=&teacher_id=&q=",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "library",
+                "cards"
+              ],
+              "query": [
+                {
+                  "key": "student_id",
+                  "value": ""
+                },
+                {
+                  "key": "teacher_id",
+                  "value": ""
+                },
+                {
+                  "key": "q",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Filters: student_id, teacher_id, q."
+          },
+          "response": []
+        },
+        {
+          "name": "Librarian: Issue Library Card",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/library/cards",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "library",
+                "cards"
+              ]
+            },
+            "description": "One card per borrower (409 card_exists). Card types: /masters/library-card-types.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"student_id\": 1,\n  \"teacher_id\": null,\n  \"card_type_id\": 1\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Librarian: List Fines",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/library/fines?status=unsettled&student_id=&limit=50&offset=0",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "library",
+                "fines"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "unsettled"
+                },
+                {
+                  "key": "student_id",
+                  "value": ""
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
+            },
+            "description": "Returned loans with a late fine. status: unsettled (default), settled, all."
+          },
+          "response": []
+        },
+        {
+          "name": "Librarian: Invoice Fine",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/library/loans/1/fine-invoice",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "library",
+                "loans",
+                "1",
+                "fine-invoice"
+              ]
+            },
+            "description": "Posts a customer invoice for the fine to the student (or teacher). Pay it like any invoice, then settle.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Librarian: Settle / Waive Fine",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/library/loans/1/settle-fine",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "library",
+                "loans",
+                "1",
+                "settle-fine"
+              ]
+            },
+            "description": "Without waive the fine's invoice must be paid (400 fine_unpaid). waive closes it and cancels an unpaid invoice.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"waive\": false,\n  \"note\": \"\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Library: List Purchase Requests",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/library/purchase-requests?state=",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "library",
+                "purchase-requests"
+              ],
+              "query": [
+                {
+                  "key": "state",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Library staff see all; a teacher sees their own. Filter: state (draft, request, accept, reject)."
+          },
+          "response": []
+        },
+        {
+          "name": "Library: Request Book Purchase",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/library/purchase-requests",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "library",
+                "purchase-requests"
+              ]
+            },
+            "description": "Teachers and library staff. Submitted straight away.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Concepts of Physics\",\n  \"author\": \"H. C. Verma\",\n  \"class_id\": 1,\n  \"subject_id\": 1,\n  \"edition\": \"\",\n  \"publisher\": \"\",\n  \"media_type_id\": null\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Librarian: Accept Purchase Request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/library/purchase-requests/1/accept",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "library",
+                "purchase-requests",
+                "1",
+                "accept"
+              ]
+            },
+            "description": "Library staff. Use /reject to refuse.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
           },
           "response": []
         }
@@ -11679,6 +12823,100 @@
               ]
             },
             "description": "Holidays, exams, events and PTMs on one timeline (default: next 90 days)."
+          },
+          "response": []
+        },
+        {
+          "name": "Coordinator: Add Holiday",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/calendar/holidays",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "calendar",
+                "holidays"
+              ]
+            },
+            "description": "School-wide closure. Whole days as YYYY-MM-DD (school time zone) or UTC date-times.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Winter Break\",\n  \"date_from\": \"2026-12-24\",\n  \"date_to\": \"2027-01-01\",\n  \"description\": \"\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Coordinator: Update Holiday",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/calendar/holidays/1/update",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "calendar",
+                "holidays",
+                "1",
+                "update"
+              ]
+            },
+            "description": "Any create field.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date_to\": \"2027-01-02\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Coordinator: Delete Holiday",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/calendar/holidays/1/delete",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "calendar",
+                "holidays",
+                "1",
+                "delete"
+              ]
+            },
+            "description": "Removes the holiday.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
           },
           "response": []
         }
@@ -14740,6 +15978,67 @@
             "description": "The individual period marks behind the summary, newest first: date, student, GR no., class, section, period, subject, teacher, status, check-in/out and remark. Same filters as the summary plus status=present|absent|late|excused; sort=date [asc|desc]. Academic coordinators/managers, back-office admins."
           },
           "response": []
+        },
+        {
+          "name": "Admin: Promotion Preview",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/promotions/preview",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "promotions",
+                "preview"
+              ]
+            },
+            "description": "What a promotion would do, without changing anything: per student the new roll number, blockers (not_in_section, missing_roll_number, roll_number_taken) and warnings (fees_overdue - never blocks). mode: promote (needs to_section_id) or graduate. roll_numbers: keep or renumber (alphabetical, after the section's highest). Back-office admins, academic managers.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"from_section_id\": 1,\n  \"to_section_id\": 2,\n  \"mode\": \"promote\",\n  \"academic_year_id\": 2,\n  \"student_ids\": [],\n  \"roll_numbers\": \"keep\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Admin: Promote Students",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/promotions",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "promotions"
+              ]
+            },
+            "description": "Same body as the preview. Each current enrolment is finished and a running one opened in the new section. All or nothing: any blocked student gives 400 promotion_blocked with the rows, unless skip_blocked is true.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"from_section_id\": 1,\n  \"to_section_id\": 2,\n  \"mode\": \"promote\",\n  \"academic_year_id\": 2,\n  \"roll_numbers\": \"keep\",\n  \"skip_blocked\": false\n}"
+            }
+          },
+          "response": []
         }
       ]
     },
@@ -15901,6 +17200,210 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"enabled\": true,\n  \"otp_enabled\": true,\n  \"requires_verified\": true,\n  \"roles\": [\n    \"student\",\n    \"teacher\",\n    \"parent\",\n    \"staff\"\n  ],\n  \"otp_in_response\": false\n}"
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "eLearning (bxi_elearning_api)",
+      "item": [
+        {
+          "name": "eLearning: Classes & Sections",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/elearning/classes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "elearning",
+                "classes"
+              ]
+            },
+            "description": "eLearning classes and sections with published course counts (eLearning classes are their own list, not the school's classes)."
+          },
+          "response": []
+        },
+        {
+          "name": "eLearning: List Courses",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/elearning/courses?class_id=&section_id=&q=&joined=&limit=50&offset=0",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "elearning",
+                "courses"
+              ],
+              "query": [
+                {
+                  "key": "class_id",
+                  "value": ""
+                },
+                {
+                  "key": "section_id",
+                  "value": ""
+                },
+                {
+                  "key": "q",
+                  "value": ""
+                },
+                {
+                  "key": "joined",
+                  "value": ""
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
+            },
+            "description": "Courses the signed-in user may see. Filters: class_id, section_id (eLearning ids), q, joined=1."
+          },
+          "response": []
+        },
+        {
+          "name": "eLearning: Course Detail",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/elearning/courses/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "elearning",
+                "courses",
+                "1"
+              ]
+            },
+            "description": "Lessons grouped by section, with the user's progress."
+          },
+          "response": []
+        },
+        {
+          "name": "eLearning: Join Course",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/elearning/courses/1/join",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "elearning",
+                "courses",
+                "1",
+                "join"
+              ]
+            },
+            "description": "Join an open course, or accept an invitation.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "eLearning: Open Lesson",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/elearning/lessons/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "elearning",
+                "lessons",
+                "1"
+              ]
+            },
+            "description": "Lesson content (members, or a preview lesson). Records it as viewed."
+          },
+          "response": []
+        },
+        {
+          "name": "eLearning: Lesson File",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/elearning/lessons/1/file",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "elearning",
+                "lessons",
+                "1",
+                "file"
+              ]
+            },
+            "description": "The lesson's PDF or infographic image."
+          },
+          "response": []
+        },
+        {
+          "name": "eLearning: Mark Lesson Completed",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/elearning/lessons/1/complete",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "elearning",
+                "lessons",
+                "1",
+                "complete"
+              ]
+            },
+            "description": "Members only; quiz lessons complete by passing the quiz on the website.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
             }
           },
           "response": []

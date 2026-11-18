@@ -296,3 +296,36 @@ class TestBxiParentDataApi(HttpCase):
         self.assertEqual(data['attendance_last_30_days']['attendance_percentage'], 0.0)
         self.assertEqual(data['upcoming_sessions'], [])
         self.assertIsNone(data['latest_exam_result'])
+
+    # -- the student's own login ------------------------------------------------------
+
+    def _student_headers(self):
+        """Signs the fixture student in through their own portal account."""
+        if not self.student.user_id:
+            user = mail_new_test_user(
+                self.env, login='dash_student', groups='base.group_portal', password='StudentPass1!')
+            self.student.user_id = user
+        return self._headers('dash_student', 'StudentPass1!')
+
+    def test_student_reads_own_data(self):
+        headers = self._student_headers()
+        for path in ('exam-results', 'attendance', 'timetable', 'dashboard'):
+            resp = self.url_open(f'/api/v1/parent/{path}?student_id={self.student.id}', headers=headers)
+            self.assertEqual(resp.status_code, 200, path)
+
+    def test_student_defaults_to_own_record(self):
+        headers = self._student_headers()
+        resp = self.url_open('/api/v1/parent/dashboard', headers=headers)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.json()['data']['student']['id'], self.student.id)
+        resp = self.url_open('/api/v1/parent/exam-results', headers=headers)
+        self.assertEqual(resp.json()['data']['results'][0]['subjects'][0]['marks'], 82)
+
+    def test_student_cannot_read_another_student(self):
+        headers = self._student_headers()
+        classmate = self.env['op.student'].create({
+            'first_name': 'Class', 'last_name': 'Mate', 'gr_no': 'DASH-003', 'gender': 'm',
+        })
+        for path in ('exam-results', 'attendance', 'timetable', 'dashboard'):
+            resp = self.url_open(f'/api/v1/parent/{path}?student_id={classmate.id}', headers=headers)
+            self.assertEqual(resp.status_code, 403, path)

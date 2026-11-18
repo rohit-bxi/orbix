@@ -24,6 +24,9 @@ LIST_ROUTES = [
     '/api/v1/admin/classes', '/api/v1/admin/fees', '/api/v1/admin/fees/by-class', '/api/v1/admin/fees/defaulters',
     '/api/v1/admin/fee-categories', '/api/v1/admin/events', '/api/v1/admin/events/options',
     '/api/v1/admin/attendance', '/api/v1/admin/attendance?view=records',
+    '/api/v1/exams/marksheets', '/api/v1/exams/result-templates', '/api/v1/library/cards', '/api/v1/library/fines',
+    '/api/v1/library/purchase-requests', '/api/v1/masters/exam-rooms', '/api/v1/masters/grade-configurations',
+    '/api/v1/masters/library-authors', '/api/v1/masters/vehicle-models',
 ]
 # Routes taking a record id - an unknown id must give a clean 4xx.
 MISSING_ID_ROUTES = [
@@ -54,6 +57,17 @@ MISSING_ID_ROUTES = [
     ('POST', '/api/v1/admin/fee-categories/999999/update'), ('GET', '/api/v1/admin/events/999999'),
     ('POST', '/api/v1/admin/events/999999/update'), ('POST', '/api/v1/admin/events/999999/post-announcement'),
     ('POST', '/api/v1/admin/events/999999/attendance'),
+    ('GET', '/api/v1/exams/sessions/999999'), ('POST', '/api/v1/exams/sessions/999999/update'),
+    ('POST', '/api/v1/exams/sessions/999999/exams'), ('POST', '/api/v1/exams/999999/update'),
+    ('POST', '/api/v1/exams/999999/assign-attendees'), ('GET', '/api/v1/exams/marksheets/999999'),
+    ('GET', '/api/v1/lab/sessions/999999/attendance'), ('POST', '/api/v1/lab/sessions/999999/results'),
+    ('POST', '/api/v1/library/catalog/999999/update'), ('GET', '/api/v1/library/catalog/999999/units'),
+    ('POST', '/api/v1/library/loans/999999/fine-invoice'), ('POST', '/api/v1/library/loans/999999/settle-fine'),
+    ('POST', '/api/v1/library/purchase-requests/999999/accept'), ('POST', '/api/v1/transport/routes/999999/update'),
+    ('POST', '/api/v1/transport/vehicles/999999/update'), ('POST', '/api/v1/transport/drivers/999999/update'),
+    ('POST', '/api/v1/academic/ptm-meetings/999999/update'), ('POST', '/api/v1/academic/ptm-meetings/999999/archive'),
+    ('POST', '/api/v1/calendar/holidays/999999/update'), ('POST', '/api/v1/calendar/holidays/999999/delete'),
+    ('POST', '/api/v1/notices/999999/archive'),
 ]
 
 

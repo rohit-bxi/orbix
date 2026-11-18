@@ -13,10 +13,10 @@ from odoo.addons.bxi_api.controllers.auth import api_error, api_response, parse_
 
 def _user_can_access_student(env, student):
     """Same rule as the other parent-facing modules: staff (any regular
-    backend user) or a parent linked to the student.
+    backend user), the student themself, or a parent linked to the student.
     """
     user = env.user
-    if user.has_group('base.group_user'):
+    if user.has_group('base.group_user') or student.user_id == user:
         return True
     return bool(env['op.parent'].sudo().search_count([
         ('user_id', '=', user.id), ('student_ids', 'in', student.id),
@@ -33,7 +33,12 @@ def _sessions_domain(student):
 
 
 def _get_authorized_student(payload_student_id):
+    """The student a /parent/* route reports on. A student signing in to
+    the app may leave student_id out: it defaults to their own record."""
     if not payload_student_id:
+        own = request.env['op.student'].sudo().search([('user_id', '=', request.env.user.id)], limit=1)
+        if own:
+            return own, None
         return None, api_error('student_id is required.', status=400, code='missing_student_id')
     student_id, error = parse_int(payload_student_id, 'student_id')
     if error:
