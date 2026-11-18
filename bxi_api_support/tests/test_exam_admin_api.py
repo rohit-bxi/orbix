@@ -170,16 +170,16 @@ class TestBxiApiSupportExamAdmin(ApiSupportHttpCase):
         self._post(f"/api/v1/exams/{first['exams'][0]['id']}/assign-attendees",
                    {'room_ids': [self.room_a.id, self.room_b.id]})
         self._post(f"/api/v1/exams/{first['exams'][0]['id']}/schedule")
-        # Another class's paper at the same time (openeducat refuses the
-        # same subject twice at once, so a different one).
+        # Another class sits the same subject at the same time - allowed,
+        # but it can't use a room the first paper already fills.
         course, batch = self._create_class('EXC')
-        science = self.env['op.subject'].create({'name': 'Exc Science', 'code': 'EXCS'})
-        course.subject_ids = science
+        course.subject_ids = self.maths
         other = self._create_student('EXC-001')
         self._enroll(other, course, batch)
         payload = self._session_payload(exam_code='EXC-MT', class_id=course.id, section_id=batch.id)
-        payload['exams'][0]['subject_id'] = science.id
-        second = self._post('/api/v1/exams/sessions', payload).json()['data']
+        second_resp = self._post('/api/v1/exams/sessions', payload)
+        self.assertEqual(second_resp.status_code, 201, second_resp.text)
+        second = second_resp.json()['data']
         resp = self._post(f"/api/v1/exams/{second['exams'][0]['id']}/assign-attendees", {'room_ids': [self.room_a.id]})
         self.assertEqual(resp.json()['error']['code'], 'room_busy')
 
@@ -220,3 +220,17 @@ class TestBxiApiSupportExamAdmin(ApiSupportHttpCase):
         self.assertIn(self.grade_pass.id, [g['id'] for g in grades['items']])
         self.assertEqual(self.url_open('/api/v1/masters/exam-rooms',
                                        headers=self._headers('exa_parent', 'ParentPass1!')).status_code, 403)
+
+    def test_same_subject_overlap_only_blocked_within_a_section(self):
+        self.assertEqual(self._post('/api/v1/exams/sessions', self._session_payload()).status_code, 201)
+        # Same section, same subject, overlapping time: refused.
+        clash = self._post('/api/v1/exams/sessions', self._session_payload(exam_code='EXA-MT2'))
+        self.assertEqual(clash.status_code, 400)
+        self.assertIn('same subject in this section', clash.json()['error']['message'])
+        # Another section of the same class at the same time: allowed.
+        batch_b = self.env['op.batch'].create({'name': 'Exa B', 'code': 'EXA-B2', 'course_id': self.course.id,
+                                               'start_date': '2026-06-01', 'end_date': '2027-03-31'})
+        other = self._create_student('EXA-B-001')
+        self._enroll(other, self.course, batch_b)
+        ok = self._post('/api/v1/exams/sessions', self._session_payload(exam_code='EXA-MT3', section_id=batch_b.id))
+        self.assertEqual(ok.status_code, 201, ok.text)

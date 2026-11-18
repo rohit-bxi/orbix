@@ -29,20 +29,22 @@ class TestClassroom(TestClassroomCommon):
         super(TestClassroom, self).setUp()
 
     def test_case_classroom_1(self):
-        classroom = self.op_classroom.search([])
-        if not classroom:
-            raise AssertionError(
-                'Error in data, please check for reference Classroom')
-        for record in classroom:
-            info('      Class Name: %s' % record.name)
-            info('      Code : %s' % record.code)
-            info('      Course Name : %s' % record.course_id.name)
-            info('      Capacity : %s' % record.capacity)
-            for rec in record.facilities:
-                info('      facilities : %s' % rec.facility_id.name)
-            for rec1 in record.asset_line:
-                info('      asset_line : %s' % rec1.product_id.name)
-            record.onchange_course()
+        # Builds its own classroom rather than searching for demo data,
+        # which a database created without demo records doesn't have.
+        course = self.env['op.course'].create({'name': 'Classroom Course', 'code': 'CLR-C1'})
+        batch = self.env['op.batch'].create({
+            'name': 'Classroom Batch', 'code': 'CLR-B1', 'course_id': course.id,
+            'start_date': '2026-01-01', 'end_date': '2026-12-31',
+        })
+        record = self.op_classroom.create({
+            'name': 'Room 101', 'code': 'CLR-101', 'capacity': 40,
+            'course_id': course.id, 'batch_id': batch.id,
+        })
+        info('      Class Name: %s' % record.name)
+        self.assertEqual((record.capacity, record.course_id), (40, course))
+        # Changing the course clears the section.
+        record.onchange_course()
+        self.assertFalse(record.batch_id)
 
 
 class TestAsset(TestClassroomCommon):

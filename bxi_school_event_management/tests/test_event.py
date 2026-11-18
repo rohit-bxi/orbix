@@ -37,8 +37,10 @@ class TestSchoolEvent(TransactionCase):
     def test_venue_non_overlap_allowed(self):
         start = datetime(2026, 9, 1, 10, 0)
         self._make_event(start, start + timedelta(hours=2), self.venue)
-        # Should not raise: starts exactly when the first event ends.
-        self._make_event(start + timedelta(hours=2), start + timedelta(hours=4), self.venue)
+        # Starts exactly when the first event ends, so both bookings stand.
+        second = self._make_event(start + timedelta(hours=2), start + timedelta(hours=4), self.venue)
+        self.assertEqual(self.env['event.event'].search_count([('venue_id', '=', self.venue.id)]), 2)
+        self.assertEqual(second.venue_id, self.venue)
 
     def test_paid_event_blocks_confirm_without_payment(self):
         income_account = self.env['account.account'].search([
@@ -88,3 +90,68 @@ class TestSchoolEvent(TransactionCase):
         wizard.action_create_registrations()
         self.assertEqual(len(event.registration_ids), 1)
         self.assertEqual(event.registration_ids.student_id, self.student)
+
+    def test_paid_event_needs_fee_product(self):
+        event = self._make_event(datetime(2026, 9, 2, 10, 0), datetime(2026, 9, 2, 12, 0))
+        with self.assertRaises(ValidationError):
+            event.write({'is_paid_event': True})
+
+    def test_permission_slip_gates_confirmation(self):
+        event = self._make_event(datetime(2026, 9, 3, 10, 0), datetime(2026, 9, 3, 12, 0))
+        event.requires_permission_slip = True
+        registration = self.env['event.registration'].create({
+            'event_id': event.id, 'student_id': self.student.id, 'partner_id': self.student.partner_id.id})
+        with self.assertRaises(UserError):
+            registration.action_confirm()
+        registration.action_sign_permission_slip('A Parent')
+        self.assertTrue(registration.permission_slip_signed)
+        self.assertEqual(registration.signed_by, 'A Parent')
+        self.assertTrue(registration.signed_date)
+        registration.action_confirm()
+        self.assertEqual(registration.state, 'open')
+
+    def test_over_capacity_flag(self):
+        event = self._make_event(datetime(2026, 9, 4, 10, 0), datetime(2026, 9, 4, 12, 0), self.venue)
+        event.write({'seats_limited': True, 'seats_max': 150})
+        self.assertFalse(event.over_capacity)
+        event.seats_max = 250
+        self.assertTrue(event.over_capacity)
+
+    def test_participation_certificates(self):
+        event = self._make_event(datetime(2026, 9, 5, 10, 0), datetime(2026, 9, 5, 12, 0))
+        cert_type = self.env['op.certificate.type'].create({'name': 'Participation', 'code': 'EVT-PART'})
+        registration = self.env['event.registration'].create({
+            'event_id': event.id, 'student_id': self.student.id, 'partner_id': self.student.partner_id.id})
+        # Only checked-in attendees get one.
+        with self.assertRaises(UserError):
+            event.action_generate_participation_certificates(cert_type.id)
+        registration.state = 'done'
+        event.action_generate_participation_certificates(cert_type.id)
+        self.assertEqual(registration.certificate_id.student_id, self.student)
+        self.assertEqual(registration.certificate_id.certificate_type_id, cert_type)
+        # Running it again doesn't issue a second certificate.
+        with self.assertRaises(UserError):
+            event.action_generate_participation_certificates(cert_type.id)
+
+    def test_post_announcement_once(self):
+        event = self._make_event(datetime(2026, 9, 6, 10, 0), datetime(2026, 9, 6, 12, 0))
+        event.action_post_announcement()
+        announcement = event.announcement_id
+        self.assertEqual((announcement.title, announcement.category), ('Test Event', 'event'))
+        event.action_post_announcement()
+        self.assertEqual(event.announcement_id, announcement)
+        self.assertEqual(self.env['bxi.announcement'].search_count([('title', '=', 'Test Event')]), 1)
+
+    def test_ptm_converts_to_event(self):
+        course = self.env['op.course'].create({'name': 'Event PTM Class', 'code': 'EVT-PTM'})
+        meeting = self.env['bxi.ptm.meeting'].create({
+            'name': 'Term 1 PTM', 'start_datetime': datetime(2026, 9, 7, 9, 0),
+            'end_datetime': datetime(2026, 9, 7, 12, 0), 'venue': 'Hall B', 'class_ids': [(6, 0, course.ids)]})
+        meeting.action_convert_to_event()
+        event = meeting.event_id
+        self.assertEqual((event.name, event.event_category), ('Term 1 PTM', 'ptm'))
+        self.assertEqual(event.course_ids, course)
+        self.assertIn('Venue: Hall B', event.note)  # an HTML field
+        # Converting again keeps the same event.
+        meeting.action_convert_to_event()
+        self.assertEqual(meeting.event_id, event)

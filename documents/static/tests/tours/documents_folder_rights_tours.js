@@ -1,14 +1,10 @@
 import { registry } from "@web/core/registry";
-import { stepUtils } from "@web_tour/tour_utils";
 
 registry.category("web_tour.tours").add("test_document_folder_rights_for_multi_company", {
-    url: "/odoo",
+    // Opens Documents directly rather than through the app switcher,
+    // which Orbix's home_theme replaces.
+    url: "/odoo/documents",
     steps: () => [
-        stepUtils.showAppsMenuItem(),
-        {
-            trigger: '.o_app[data-menu-xmlid="documents.menu_root"]',
-            run: "click",
-        },
         {
             trigger: 'li[title="All"]',
             content: "Verify that the All folder is opened by default",

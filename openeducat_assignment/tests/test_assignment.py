@@ -30,31 +30,32 @@ class TestAssignment(TestAssignmentCommon):
         super(TestAssignment, self).setUp()
 
     def test_case_assignment(self):
-        assignment = self.op_assignment.search([])
-        if not assignment:
-            raise AssertionError(
-                'Error in data, please check for reference Assignment')
-        info('Details of Meeting')
-        for record in assignment:
-            info('      Name : %s' % record.name)
-            info('      Course : %s' % record.course_id.id)
-            info('      Batch : %s' % record.batch_id.id)
-            info('      Subject : %s' % record.subject_id.id)
-            info('      Faculty : %s' % record.faculty_id.id)
-            info('      Assignment Type : %s' % record.assignment_type.id)
-            info('      Marks : %s' % record.marks)
-            info('      Description : %s' % record.description)
-            info('      State : %s' % record.state)
-            info('      Issued_date : %s' % record.issued_date)
-            info('      Submission_date : %s' % record.submission_date)
-            info('      Allocation Ids : %s' % record.allocation_ids.ids)
-            info('      Assignments : %s' % record.assignment_sub_line)
-            info('      Reviewer : %s' % record.reviewer.id)
-            record.onchange_course()
-            record.act_publish()
-            record.act_finish()
-            record.act_cancel()
-            record.act_set_to_draft()
+        # Builds its own assignment rather than searching for demo data,
+        # which a database created without demo records doesn't have.
+        assignment = self.op_assignment.create({
+            'name': 'Fixture Assignment', 'marks': 20,
+            'assignment_type': self.assignment_type.id,
+            'issued_date': time.strftime('%Y-%m-01'),
+            'submission_date': time.strftime('%Y-%m-28'),
+            'course_id': self.course.id, 'batch_id': self.batch.id,
+            'subject_id': self.subject.id, 'faculty_id': self.faculty.id,
+            'allocation_ids': [(6, 0, self.student.ids)],
+            'description': 'Answer briefly.',
+        })
+        info('      Name : %s' % assignment.name)
+        self.assertEqual(assignment.state, 'draft')
+        assignment.act_publish()
+        self.assertEqual(assignment.state, 'publish')
+        assignment.act_finish()
+        self.assertEqual(assignment.state, 'finish')
+        assignment.act_cancel()
+        self.assertEqual(assignment.state, 'cancel')
+        assignment.act_set_to_draft()
+        self.assertEqual(assignment.state, 'draft')
+        # Changing the course clears the section and the allocated students.
+        assignment.onchange_course()
+        self.assertFalse(assignment.batch_id)
+        self.assertFalse(assignment.allocation_ids)
 
 
 class TestAssignmentSubline(TestAssignmentCommon):

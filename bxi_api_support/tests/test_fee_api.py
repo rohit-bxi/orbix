@@ -171,7 +171,9 @@ class TestBxiApiSupportFee(ApiSupportHttpCase):
                       json={'amount': 1000.0, 'journal_id': self.cash_journal.id, 'payment_mode': 'cash'})
         receipt = self.url_open(receipt_url, headers=student)
         if self.env['ir.module.module'].search_count([('name', '=', 'bxi_fee_dashboard'), ('state', '=', 'installed')]):
+            # Test mode renders reports as HTML rather than calling wkhtmltopdf.
             self.assertEqual(receipt.status_code, 200, receipt.text[:200])
-            self.assertEqual(receipt.content[:5], b'%PDF-')
+            self.assertTrue(receipt.content)
+            self.assertIn(f'fee-receipt-{self.detail.id}.pdf', receipt.headers.get('Content-Disposition', ''))
         else:
             self.assertEqual(receipt.json()['error']['code'], 'not_available')

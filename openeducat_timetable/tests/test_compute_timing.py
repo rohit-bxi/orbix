@@ -18,10 +18,12 @@ class TestComputeTiming(SessionFixtureCase):
         # Regression guard: `pytz.timezone(self.env.user.tz)` used to
         # crash when tz was None. context_timestamp falls back to UTC.
         self.env.user.tz = tz
+        # env.tz is cached per environment in Odoo 19, so pass the zone
+        # through the context (as the web client does) on a fresh env.
         return self._make_session(
             start=datetime(2026, 7, 20, start_hour_utc, 0),
             end=datetime(2026, 7, 20, end_hour_utc, 0),
-        )
+        ).with_context(tz=tz)
 
     def test_timing_utc(self):
         session = self._make(10, 11, tz='UTC')

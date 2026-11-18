@@ -140,9 +140,11 @@ class BxiApiSupportExamController(http.Controller):
         line = request.env['op.marksheet.line'].sudo().browse(marksheet_line_id)
         if not line.exists() or line.marksheet_reg_id.state != 'validated':
             return api_error('Report card not found.', status=404, code='not_found')
-        _student, error = get_viewable_student(request.env, line.student_id.id)
-        if error:
-            return error
+        # Exam staff print report cards for any student; others must be able to see the student.
+        if not _is_exam_staff(request.env.user):
+            _student, error = get_viewable_student(request.env, line.student_id.id)
+            if error:
+                return error
         return _render_pdf('openeducat_exam.report_marksheet', line, f'report-card-{line.id}.pdf')
 
     # -- staff / teacher ------------------------------------------------------
