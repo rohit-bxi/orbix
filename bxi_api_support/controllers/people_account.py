@@ -22,6 +22,7 @@ per-person routes below:
       Image or PDF, sent for review (status "pending").
   "documents" (teachers): [{"doc_type": "aadhaar" | "cv" | "certificate" |
                             "other", "name"?, "file": "<base64>", "filename"?}]
+      Images, PDF and Word (.doc/.docx) files.
   "aadhaar_number": "1234 5678 9012" | null
       The person's Aadhaar number (spaces/dashes allowed; null clears it).
       Set by the office it counts as verified, so it can be used for
@@ -68,9 +69,17 @@ def _dt(value):
 # -- files ------------------------------------------------------------------------------
 
 
-def _file_entry(entry, field, index=0):
+# Word files, accepted for teacher documents (CVs, certificates) only.
+WORD_MIMETYPES = {
+    'application/msword': 'doc',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
+}
+
+
+def _file_entry(entry, field, index=0, word=False):
     """({name, content, mimetype}, error) from a base64 string or an object
-    {"data" | "file", "filename" | "name"?}. Images and PDFs only."""
+    {"data" | "file", "filename" | "name"?}. Images and PDFs, plus Word
+    files when `word` is set."""
     name = None
     if isinstance(entry, dict):
         name = entry.get('filename') or entry.get('name')
@@ -83,10 +92,10 @@ def _file_entry(entry, field, index=0):
         content = base64.b64decode(''.join(entry.split()), validate=True)
     except (binascii.Error, ValueError):
         return None, api_error('%s must be a base64 file.' % field, status=400, code='invalid_%s' % field)
-    return _checked_file({'name': name, 'content': content}, field, index)
+    return _checked_file({'name': name, 'content': content}, field, index, word=word)
 
 
-def _checked_file(file, field, index=0):
+def _checked_file(file, field, index=0, word=False):
     content = file['content']
     if not content:
         return None, api_error('%s is empty.' % field, status=400, code='invalid_%s' % field)
@@ -94,9 +103,13 @@ def _checked_file(file, field, index=0):
         return None, api_error('Each file must be %s MB or smaller.' % (MAX_UPLOAD_BYTES // (1024 * 1024)),
                                status=413, code='file_too_large')
     mimetype = guess_mimetype(content)
-    if not (mimetype.startswith('image/') or mimetype == 'application/pdf'):
-        return None, api_error('%s must be an image or a PDF.' % field, status=400, code='invalid_file_type')
-    extension = 'pdf' if mimetype == 'application/pdf' else mimetype.split('/')[-1]
+    if word and mimetype in WORD_MIMETYPES:
+        extension = WORD_MIMETYPES[mimetype]
+    elif mimetype.startswith('image/') or mimetype == 'application/pdf':
+        extension = 'pdf' if mimetype == 'application/pdf' else mimetype.split('/')[-1]
+    else:
+        return None, api_error('%s must be an image or a PDF%s.' % (field, ' or a Word file' if word else ''),
+                               status=400, code='invalid_file_type')
     return {'name': file.get('name') or '%s-%s.%s' % (field, index + 1, extension), 'content': content,
             'mimetype': mimetype}, None
 
@@ -218,7 +231,7 @@ def parse_documents(entries):
         error = check_selection(Document, 'doc_type', doc_type, key='doc_type')
         if error:
             return None, error
-        file, error = _file_entry(entry, 'file', index)
+        file, error = _file_entry(entry, 'file', index, word=True)
         if error:
             return None, error
         documents.append({'doc_type': doc_type, 'name': entry.get('name') or file['name'], 'file': file})
@@ -343,9 +356,22 @@ def document_dict(document):
     }
 
 
+def verification_status(record):
+    """One status for "Profile Verification": rejected if the ID document
+    or Aadhaar was rejected, else pending while either awaits review, else
+    verified once either is verified, else unverified."""
+    record = record.sudo()
+    statuses = {record.id_document_status, record.aadhar_verification_status}
+    for status in ('rejected', 'pending', 'verified'):
+        if status in statuses:
+            return status
+    return 'unverified'
+
+
 def security_dict(record):
     user = record.user_id.sudo()
     return {
+        'verification_status': verification_status(record),
         'account': account_dict(record),
         'face': request.env['bxi.people.service']._face_status(user) if user else None,
         'id_verification': id_verification_dict(record),
@@ -610,7 +636,7 @@ class BxiApiSupportPeopleAccountController(http.Controller):
                 return error
             documents = []
             for index, file in enumerate(files):
-                file, error = _checked_file(file, 'file', index)
+                file, error = _checked_file(file, 'file', index, word=True)
                 if error:
                     return error
                 documents.append({'doc_type': doc_type, 'name': payload.get('name') or file['name'], 'file': file})

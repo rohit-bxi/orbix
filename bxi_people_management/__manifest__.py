@@ -2,7 +2,7 @@
 
 {
     'name': 'Orbix People Management',
-    'version': '19.0.1.2.0',
+    'version': '19.0.1.3.0',
     'category': 'Education',
     'summary': 'Teacher profile, assignment and workload details for the user-management screens',
     'description': """
@@ -11,7 +11,7 @@
         The data behind the office's Teacher / Student / Parent create and
         update screens that the core records lack:
 
-        - Teacher: emergency-contact relation, certifications, notes,
+        - Teacher: Teacher ID (T-0001... sequence), emergency-contact relation, certifications, notes,
           assigned classes and sections, timetable auto-assign flag,
           designation (HR Job Position), other responsibilities and
           employment status.
@@ -38,10 +38,12 @@
     'data': [
         'security/ir.model.access.csv',
         'security/people_management_security.xml',
+        'data/teacher_code_sequence.xml',
         'views/staff_responsibility_views.xml',
         'views/op_faculty_views.xml',
         'views/op_student_parent_views.xml',
     ],
+    'post_init_hook': 'post_init_hook',
     'installable': True,
     'application': False,
     'license': 'OPL-1',

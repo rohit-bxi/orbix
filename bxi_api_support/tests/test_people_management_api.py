@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) 2026 BXI Technology Pvt. Ltd. All Rights Reserved.
 # License OPL-1 (Odoo Proprietary License v1.0, see LICENSE file for full text).
+import base64
+import io
+import zipfile
+
 from odoo.tests import tagged
 
 from odoo.addons.mail.tests.common import mail_new_test_user
@@ -117,7 +121,6 @@ class TestBxiApiSupportPeopleManagement(ApiSupportHttpCase):
             ({'workload': {'max_weekly_periods': -1}}, 'invalid_max_weekly_periods'),
             ({'gender': 'm'}, 'invalid_gender'),
             ({'image': 'not base64!'}, 'invalid_image'),
-            ({'emergency_contact': {'phone': '3'}}, 'missing_emergency_contact_name'),
         ):
             resp = self._post(url, body)
             self.assertEqual(resp.status_code, 400, body)
@@ -498,3 +501,95 @@ class TestBxiApiSupportPeopleManagement(ApiSupportHttpCase):
         self.assertEqual(parent.rte_category, 'sc')
         # A student-only key used to 500 on parents.
         self.assertEqual(self._post(url, {'nationality': self.env.ref('base.in').id}).status_code, 200)
+
+    # -- Edit Teacher screen (2026-11-18) -------------------------------------------------
+
+    def test_teacher_code_assigned_editable_and_regenerated(self):
+        first = self._post('/api/v1/teachers', self._teacher_body()).json()['data']
+        second = self._post('/api/v1/teachers', self._teacher_body(first_name='Vik')).json()['data']
+        self.assertRegex(first['teacher_code'], r'^T-\d{4}$')
+        self.assertNotEqual(first['teacher_code'], second['teacher_code'])
+
+        url = f"/api/v1/teachers/{first['id']}/update"
+        renamed = self._post(url, {'teacher_code': 'T-9001'})
+        self.assertEqual(renamed.status_code, 200, renamed.text)
+        self.assertEqual(renamed.json()['data']['teacher_code'], 'T-9001')
+        taken = self._post(url, {'teacher_code': second['teacher_code']})
+        self.assertEqual((taken.status_code, taken.json()['error']['code']), (409, 'teacher_code_taken'))
+        self.assertEqual(self._post(url, {'teacher_code': ''}).json()['error']['code'], 'missing_teacher_code')
+
+        # A non-empty body: the test client sends json={} as a GET.
+        regenerated = self._post(f"/api/v1/teachers/{first['id']}/regenerate-code", {'confirm': True})
+        self.assertEqual(regenerated.status_code, 200, regenerated.text)
+        code = regenerated.json()['data']['teacher_code']
+        self.assertRegex(code, r'^T-\d{4}$')
+        self.assertNotIn(code, ('T-9001', second['teacher_code']))
+        found = self.url_open(f'/api/v1/teachers?q={code}', headers=self._office()).json()['data']['teachers']
+        self.assertEqual([t['id'] for t in found], [first['id']])
+        parent = self._headers('um_parent', 'ParentPass1!')
+        self.assertEqual(self.url_open(f"/api/v1/teachers/{first['id']}/regenerate-code", headers=parent,
+                                       json={'confirm': True}).status_code, 403)
+        self.assertEqual(self._post('/api/v1/teachers/999999/regenerate-code', {'confirm': True}).status_code, 404)
+
+    def test_teacher_single_name_box(self):
+        created = self._post('/api/v1/teachers', {'name': 'Piyush Kumar Mathur', 'gender': 'male',
+                                                  'birth_date': '1980-01-01'})
+        self.assertEqual(created.status_code, 201, created.text)
+        data = created.json()['data']
+        self.assertEqual((data['first_name'], data['middle_name'], data['last_name'], data['name']),
+                         ('Piyush', 'Kumar', 'Mathur', 'Piyush Kumar Mathur'))
+        url = f"/api/v1/teachers/{data['id']}/update"
+        updated = self._post(url, {'name': 'Piyush Sharma'}).json()['data']
+        self.assertEqual((updated['first_name'], updated['middle_name'], updated['last_name'], updated['name']),
+                         ('Piyush', None, 'Sharma', 'Piyush Sharma'))
+        # Changing one part also renames the record.
+        self.assertEqual(self._post(url, {'last_name': 'Verma'}).json()['data']['name'], 'Piyush Verma')
+        self.assertEqual(self._post(url, {'name': 'Piyush'}).json()['error']['code'], 'invalid_name')
+        self.assertEqual(self._post(url, {'name': ' '}).json()['error']['code'], 'missing_name')
+
+    def test_teacher_emergency_number_only(self):
+        faculty_id = self._post('/api/v1/teachers', self._teacher_body()).json()['data']['id']
+        url = f'/api/v1/teachers/{faculty_id}/update'
+        data = self._post(url, {'emergency_contact_phone': '+91 97110 78980'}).json()['data']
+        self.assertEqual(data['emergency_contact']['phone'], '+91 97110 78980')
+        self.assertEqual(data['emergency_contact']['name'], 'Emergency contact of Uma Mentor')
+        contact = self.env['op.faculty'].browse(faculty_id).emergency_contact
+        data = self._post(url, {'emergency_contact': {'phone': '1'}}).json()['data']
+        self.assertEqual(data['emergency_contact']['phone'], '1')
+        self.assertEqual(self.env['op.faculty'].browse(faculty_id).emergency_contact, contact, 'Same contact.')
+        self.assertEqual(self._post(url, {'emergency_contact_phone': ['x']}).json()['error']['code'],
+                         'invalid_emergency_contact_phone')
+
+    def test_teacher_status_photo_documents_and_workload(self):
+        faculty_id = self._post('/api/v1/teachers', self._teacher_body()).json()['data']['id']
+        url = f'/api/v1/teachers/{faculty_id}/update'
+        disabled = self._post(url, {'status': 'inactive'}).json()['data']
+        self.assertEqual(disabled['status'], 'inactive')
+        listed = self.url_open('/api/v1/teachers?status=inactive', headers=self._office()).json()['data']['teachers']
+        self.assertEqual([t['id'] for t in listed], [faculty_id])
+
+        pdf = base64.b64encode(b'%PDF-1.4\n%%EOF\n').decode()
+        photo = self._post(url, {'image': pdf})
+        self.assertEqual((photo.status_code, photo.json()['error']['code']), (400, 'invalid_image'))
+
+        docx = io.BytesIO()
+        with zipfile.ZipFile(docx, 'w') as archive:
+            archive.writestr('[Content_Types].xml', '<Types/>')
+            archive.writestr('word/document.xml', '<w:document/>')
+        word = base64.b64encode(docx.getvalue()).decode()
+        saved = self._post(url, {'documents': [{'doc_type': 'certificate', 'name': 'B.Ed', 'file': word,
+                                                'filename': 'bed.docx'}]})
+        self.assertEqual(saved.status_code, 200, saved.text)
+        self.assertEqual(saved.json()['data']['documents'][0]['mimetype'],
+                         'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+        # Word files are for teacher documents only, not ID verification.
+        rejected = self._post(url, {'id_verification': {'document': word}})
+        self.assertEqual(rejected.json()['error']['code'], 'invalid_file_type')
+
+        data = self._post(url, {'workload': {'max_weekly_periods': 24}}).json()['data']
+        self.assertEqual(data['workload']['usage_percent'], 0)
+        self.assertEqual(data['verification_status'], 'unverified')
+        faculty = self.env['op.faculty'].browse(faculty_id)
+        faculty.sudo().id_document_status = 'pending'
+        detail = self.url_open(f'/api/v1/teachers/{faculty_id}', headers=self._office()).json()['data']
+        self.assertEqual(detail['verification_status'], 'pending')

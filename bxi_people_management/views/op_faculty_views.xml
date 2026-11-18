@@ -8,6 +8,15 @@
             <field name="emergency_contact" position="after">
                 <field name="emergency_contact_relation" invisible="not emergency_contact"/>
             </field>
+            <field name="joining_date" position="before">
+                <label for="teacher_code"/>
+                <div class="o_row">
+                    <field name="teacher_code"/>
+                    <button name="action_regenerate_teacher_code" type="object" string="Regenerate"
+                            class="btn-link" icon="fa-refresh" groups="openeducat_core.group_op_back_office_admin"
+                            confirm="Give this teacher the next free Teacher ID?"/>
+                </div>
+            </field>
             <field name="joining_date" position="after">
                 <field name="designation_id" options="{'no_create': True}"/>
                 <field name="employment_status"/>
@@ -54,6 +63,31 @@
                     </field>
                 </page>
             </xpath>
+        </field>
+    </record>
+
+    <record id="view_op_faculty_list_teacher_code" model="ir.ui.view">
+        <field name="name">op.faculty.list.teacher.code</field>
+        <field name="model">op.faculty</field>
+        <field name="inherit_id" ref="openeducat_core.view_op_faculty_tree"/>
+        <field name="arch" type="xml">
+            <field name="name" position="before">
+                <field name="teacher_code"/>
+            </field>
+            <field name="name" position="after">
+                <field name="employment_status" optional="show"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="view_op_faculty_search_teacher_code" model="ir.ui.view">
+        <field name="name">op.faculty.search.teacher.code</field>
+        <field name="model">op.faculty</field>
+        <field name="inherit_id" ref="openeducat_core.view_op_faculty_search"/>
+        <field name="arch" type="xml">
+            <field name="name" position="after">
+                <field name="teacher_code"/>
+            </field>
         </field>
     </record>
 
