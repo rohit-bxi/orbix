@@ -8,12 +8,17 @@ EMPLOYMENT_STATUSES = [
     ('active', 'Active'),
     ('on_leave', 'On Leave'),
     ('resigned', 'Resigned'),
+    ('inactive', 'Inactive'),
 ]
+TEACHER_CODE_SEQUENCE = 'bxi.teacher.code'
 
 
 class OpFaculty(models.Model):
     _inherit = 'op.faculty'
 
+    teacher_code = fields.Char(
+        string='Teacher ID', copy=False, index=True, tracking=True,
+        help='School-wide teacher number (T-0001...). Given on creation; Regenerate assigns the next free one.')
     emergency_contact_relation = fields.Char(string='Emergency Contact Relation')
     certifications = fields.Text(string='Certifications', help='e.g. B.Ed, CTET, first-aid training.')
     staff_notes = fields.Text(string='Staff Notes')
@@ -54,8 +59,36 @@ class OpFaculty(models.Model):
         for faculty in self:
             faculty.document_count = len(faculty.document_ids)
 
+    _unique_teacher_code = models.Constraint('unique(teacher_code)', 'This Teacher ID is already used.')
+
+    @api.model
+    def _bxi_next_teacher_code(self):
+        """The next number of the Teacher ID sequence that no teacher
+        (archived ones included) holds yet."""
+        Sequence = self.env['ir.sequence'].sudo()
+        taken = self.sudo().with_context(active_test=False)
+        while True:
+            code = Sequence.next_by_code(TEACHER_CODE_SEQUENCE)
+            if not code or not taken.search_count([('teacher_code', '=', code)], limit=1):
+                return code
+
+    def _bxi_assign_missing_teacher_codes(self):
+        """Give every teacher without a Teacher ID the next free one, oldest
+        first (install/upgrade backfill)."""
+        for faculty in self.sudo().with_context(active_test=False).search(
+                [('teacher_code', '=', False)], order='id'):
+            faculty.teacher_code = self._bxi_next_teacher_code()
+
+    def action_regenerate_teacher_code(self):
+        for faculty in self:
+            faculty.teacher_code = self._bxi_next_teacher_code()
+        return True
+
     @api.model_create_multi
     def create(self, vals_list):
+        for vals in vals_list:
+            if not vals.get('teacher_code'):
+                vals['teacher_code'] = self._bxi_next_teacher_code()
         faculties = super().create(vals_list)
         faculties._sync_designation_to_employee()
         return faculties

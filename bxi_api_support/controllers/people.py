@@ -23,6 +23,8 @@ credentials are sent only once it is saved.
 import base64
 import binascii
 
+from odoo.tools.mimetypes import guess_mimetype
+
 from odoo import http
 from odoo.http import request
 
@@ -116,9 +118,13 @@ def _image_value(payload):
         value = value.split(';base64,', 1)[1]
     value = ''.join(value.split())
     try:
-        base64.b64decode(value, validate=True)
+        content = base64.b64decode(value, validate=True)
     except (binascii.Error, ValueError):
         return None, api_error('image must be a base64 string.', status=400, code='invalid_image')
+    mimetype = guess_mimetype(content)
+    if not mimetype.startswith('image/') or mimetype == 'image/svg+xml':
+        # The profile photo is shown as a picture: a PDF cannot be one.
+        return None, api_error('image must be a JPG or PNG picture.', status=400, code='invalid_image')
     return {'image_1920': value}, None
 
 
@@ -157,28 +163,35 @@ def _email_taken_error():
 
 def _emergency_contact(payload, record=None):
     """(vals, contact, error) for an optional "emergency_contact": {"name",
-    "phone", "relation" (teachers)}. null / {} removes it (vals); an object
-    is applied once the record is written (contact)."""
-    if 'emergency_contact' not in payload:
-        return {}, None, None
-    contact = payload['emergency_contact']
-    if not contact:
-        vals = {'emergency_contact': False}
-        if record is not None and 'emergency_contact_relation' in record._fields:
-            vals['emergency_contact_relation'] = False
-        return vals, None, None
-    if not isinstance(contact, dict):
-        return None, None, api_error('emergency_contact must be an object.', status=400,
-                                     code='invalid_emergency_contact')
-    if not (record and record.emergency_contact) and not str(contact.get('name') or '').strip():
-        return None, None, api_error('emergency_contact.name is required.', status=400,
-                                     code='missing_emergency_contact_name')
+    "phone", "relation" (teachers)} and/or "emergency_contact_phone" (the
+    screens' single "Emergency Contact Number" box). null / {} for
+    emergency_contact removes the contact (vals); otherwise the contact is
+    applied once the record is written."""
+    contact = None
+    if 'emergency_contact' in payload:
+        raw = payload['emergency_contact']
+        if not raw:
+            vals = {'emergency_contact': False}
+            if record is not None and 'emergency_contact_relation' in record._fields:
+                vals['emergency_contact_relation'] = False
+            return vals, None, None
+        if not isinstance(raw, dict):
+            return None, None, api_error('emergency_contact must be an object.', status=400,
+                                         code='invalid_emergency_contact')
+        contact = dict(raw)
+    if 'emergency_contact_phone' in payload:
+        phone = payload['emergency_contact_phone']
+        if phone is not None and (isinstance(phone, bool) or not isinstance(phone, (str, int))):
+            return None, None, api_error('emergency_contact_phone must be text.', status=400,
+                                         code='invalid_emergency_contact_phone')
+        contact = dict(contact or {}, phone=str(phone).strip() if phone is not None else False)
     return {}, contact, None
 
 
 def _apply_emergency_contact(record, contact):
     """Create or update the emergency-contact person of a teacher or
-    student. A blank name on an existing contact leaves the name as it is."""
+    student. A blank name on an existing contact leaves the name as it is;
+    a new contact sent without a name is named after the person."""
     if not contact:
         return
     partner_vals = {}
@@ -190,10 +203,50 @@ def _apply_emergency_contact(record, contact):
     if record.emergency_contact:
         if partner_vals:
             record.emergency_contact.write(partner_vals)
-    else:
+    elif name or partner_vals.get('phone'):
+        partner_vals.setdefault('name', 'Emergency contact of %s' % record.name)
         record.emergency_contact = request.env['res.partner'].sudo().create(partner_vals)
     if 'relation' in contact and 'emergency_contact_relation' in record._fields:
         record.emergency_contact_relation = contact['relation'] or False
+
+
+def _full_name_vals(record, vals):
+    """{'name': ...} when an update changes first/middle/last name: the core
+    records build the full name only on create."""
+    parts = ('first_name', 'middle_name', 'last_name')
+    if record is None or not any(part in vals for part in parts):
+        return {}
+    names = [vals[part] if part in vals else record[part] for part in parts]
+    return {'name': ' '.join(filter(None, names))}
+
+
+def _split_name(payload):
+    """(payload, error): a single "name" ("Piyush Kumar Mathur") as
+    first/middle/last name - keys sent explicitly win."""
+    if 'name' not in payload:
+        return payload, None
+    name = payload['name']
+    if _blank_text(name):
+        return None, api_error('name is required.', status=400, code='missing_name')
+    parts = str(name).split() if isinstance(name, str) else []
+    if len(parts) < 2:
+        return None, api_error('name must have a first and a last name.', status=400, code='invalid_name')
+    payload = dict(payload)
+    payload.setdefault('first_name', parts[0])
+    payload.setdefault('middle_name', ' '.join(parts[1:-1]) or None)
+    payload.setdefault('last_name', parts[-1])
+    return payload, None
+
+
+def _blank_text(value):
+    return value is None or (isinstance(value, str) and not value.strip())
+
+
+def _teacher_code_taken(code, faculty=None):
+    domain = [('teacher_code', '=ilike', code)]
+    if faculty:
+        domain.append(('id', '!=', faculty.id))
+    return bool(request.env['op.faculty'].sudo().with_context(active_test=False).search_count(domain, limit=1))
 
 
 # -- teachers -----------------------------------------------------------------------------
@@ -202,6 +255,7 @@ def _apply_emergency_contact(record, contact):
 def _teacher_dict(faculty):
     return {
         'id': faculty.id,
+        'teacher_code': faculty.teacher_code or None,
         'name': faculty.name,
         'email': faculty.email or None,
         'phone': faculty.phone or None,
@@ -234,6 +288,8 @@ def _teacher_detail(faculty):
             'max_weekly_periods': faculty.max_weekly_periods,
             'assigned_periods': faculty.weekly_period_count,
             'remaining_periods': faculty.remaining_weekly_periods,
+            'usage_percent': round(100 * faculty.weekly_period_count / faculty.max_weekly_periods)
+            if faculty.max_weekly_periods else 0,
             'workload_status': faculty.workload_status,
             'timetable_auto_assign': faculty.timetable_auto_assign,
             'available_days': [day for day in WEEKDAYS if faculty['available_%s' % day]],
@@ -334,6 +390,13 @@ def _teacher_vals(payload, faculty=None):
     """(vals, emergency_contact, error) for a teacher create (faculty=None)
     or update. emergency_contact is the payload's object, applied after the
     record is written; None when absent."""
+    if 'teacher_code' in payload:
+        code = payload['teacher_code']
+        if _blank_text(code) or not isinstance(code, str):
+            return None, None, api_error('teacher_code is required (use regenerate-code for a new one).',
+                                         status=400, code='missing_teacher_code')
+        if _teacher_code_taken(code.strip(), faculty):
+            return None, None, api_error('This Teacher ID is already used.', status=409, code='teacher_code_taken')
     vals, error = _profile_vals(
         request.env['op.faculty'], payload, TEACHER_SPEC, _image_builder, parse_address,
         parse_teacher_addresses, parse_health, lambda Model, body: _teacher_extra_vals(Model, body, faculty))
@@ -343,6 +406,7 @@ def _teacher_vals(payload, faculty=None):
     if error:
         return None, None, error
     vals.update(extra)
+    vals.update(_full_name_vals(faculty, vals))
     return vals, contact, None
 
 
@@ -383,6 +447,7 @@ def _student_vals(payload, student=None):
     if error:
         return None, None, None, error
     vals.update(extra)
+    vals.update(_full_name_vals(student, vals))
     documents, error = parse_document_sets('op.student', payload)
     if error:
         return None, None, None, error
@@ -722,7 +787,7 @@ class BxiApiSupportPeopleController(http.Controller):
         limit, offset, error = parse_pagination(kwargs)
         if error:
             return error
-        domain = [('name', 'ilike', q)] if q else []
+        domain = ['|', ('name', 'ilike', q), ('teacher_code', 'ilike', q)] if q else []
         if status:
             error = check_selection(request.env['op.faculty'], 'employment_status', status, key='status')
             if error:
@@ -767,7 +832,9 @@ class BxiApiSupportPeopleController(http.Controller):
         every update field."""
         if not is_manager(request.env.user):
             return api_error('Not authorized to add teachers.', status=403, code='forbidden')
-        payload = json_body() or {}
+        payload, error = _split_name(json_body() or {})
+        if error:
+            return error
         for required in REQUIRED['op.faculty']:
             if not payload.get(required):
                 return api_error(f'{required} is required.', status=400, code=f'missing_{required}')
@@ -794,7 +861,8 @@ class BxiApiSupportPeopleController(http.Controller):
     @http.route('/api/v1/teachers/<int:faculty_id>/update', type='http', auth='public', methods=['POST'], csrf=False)
     @require_auth
     def update_teacher(self, faculty_id, **kwargs):
-        """Any of the create fields (people_fields.TEACHER_SPEC, plus "image",
+        """Any of the create fields (people_fields.TEACHER_SPEC, plus "name"
+        (split into first/middle/last), "image", "emergency_contact_phone",
         "address", "official_address", "postal_address", "regional_address",
         "health", "emergency_contact", "subject_ids",
         "specialization_subject_id", "designation_id", "responsibility_ids",
@@ -807,7 +875,9 @@ class BxiApiSupportPeopleController(http.Controller):
         faculty = request.env['op.faculty'].sudo().with_context(active_test=False).browse(faculty_id)
         if not faculty.exists():
             return api_error('Teacher not found.', status=404, code='not_found')
-        payload = json_body() or {}
+        payload, error = _split_name(json_body() or {})
+        if error:
+            return error
         vals, contact, error = _teacher_vals(payload, faculty)
         if error:
             return error
@@ -827,6 +897,19 @@ class BxiApiSupportPeopleController(http.Controller):
         if error:
             return error
         return api_response(_with_credentials(_teacher_detail(faculty), faculty, delivery))
+
+    @http.route('/api/v1/teachers/<int:faculty_id>/regenerate-code', type='http', auth='public', methods=['POST'],
+                csrf=False)
+    @require_auth
+    def regenerate_teacher_code(self, faculty_id, **kwargs):
+        """Give the teacher the next free Teacher ID (T-0001...)."""
+        if not is_manager(request.env.user):
+            return api_error('Not authorized to edit teachers.', status=403, code='forbidden')
+        faculty = request.env['op.faculty'].sudo().with_context(active_test=False).browse(faculty_id)
+        if not faculty.exists():
+            return api_error('Teacher not found.', status=404, code='not_found')
+        faculty.action_regenerate_teacher_code()
+        return api_response(_teacher_detail(faculty))
 
     # -- parents ------------------------------------------------------------------
 

@@ -86,6 +86,7 @@ STUDENT_SPEC = _spec(
 
 TEACHER_SPEC = _spec(
     **_PERSON,
+    teacher_code=F('teacher_code'),
     joining_date=F('joining_date', DATE), highest_qualification=F('highest_qualification'),
     years_of_experience=F('years_of_experience'), previous_school=F('previous_school'),
     certifications=F('certifications'), cast=F('cast'),

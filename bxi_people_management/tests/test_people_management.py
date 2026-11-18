@@ -64,6 +64,25 @@ class TestPeopleManagement(TransactionCase):
         self.assertEqual(self.faculty.document_count, 1)
 
 
+    def test_teacher_code(self):
+        self.assertRegex(self.faculty.teacher_code, r'^T-\d{4}$', 'A new teacher gets a Teacher ID.')
+        other = self.env['op.faculty'].create({
+            'first_name': 'Kim', 'last_name': 'Coder', 'gender': 'female', 'birth_date': '1990-01-01',
+            'teacher_code': 'T-CUSTOM'})
+        self.assertEqual(other.teacher_code, 'T-CUSTOM', 'An ID given on creation is kept.')
+        with self.assertRaises(Exception), self.cr.savepoint():
+            other.teacher_code = self.faculty.teacher_code
+        old = self.faculty.teacher_code
+        self.faculty.action_regenerate_teacher_code()
+        self.assertNotEqual(self.faculty.teacher_code, old)
+        # The backfill numbers teachers that have none, skipping taken numbers.
+        self.env.cr.execute("UPDATE op_faculty SET teacher_code = NULL WHERE id = %s", [other.id])
+        other.invalidate_recordset(['teacher_code'])
+        self.env['op.faculty']._bxi_assign_missing_teacher_codes()
+        self.assertRegex(other.teacher_code, r'^T-\d{4}$')
+        self.assertNotEqual(other.teacher_code, self.faculty.teacher_code)
+
+
 @tagged('post_install', '-at_install')
 class TestStudentParentDerivedFields(TransactionCase):
 

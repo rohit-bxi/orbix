@@ -13985,10 +13985,47 @@
                 }
               ]
             },
-            "description": "Only the keys sent are changed; null or \"\" clears a value (first_name, last_name, gender and birth_date are required). Profile: first_name, middle_name, last_name, title_id, gender, birth_date, email, phone, blood_group, nationality, id_number, lang, religion, category_id, cast, visa_info, joining_date, highest_qualification, years_of_experience, previous_school, certifications, main_department_id, allowed_department_ids, active (archive), subject_ids, specialization_subject_id, designation_id, responsibility_ids, status (employment), notes. Objects: image, address, official_address, postal_address, regional_address (each {street, street2, city, zip, state_id, country_id}), emergency_contact {name, phone, relation}, health {...same keys as students}, assignments {course_ids, batch_ids}, permissions {lesson_plans, homework, evaluate_assignments, exam_marks, reports}, workload {max_weekly_periods, timetable_auto_assign, available_days: [monday..saturday]}, documents [{doc_type, name, file}], plus the Account & Security blocks.",
+            "description": "Only the keys sent are changed. Edit Teacher screen keys: teacher_code (Teacher ID, unique - 409 teacher_code_taken; POST /regenerate-code gives the next free one), name (one box, split into first/middle/last - needs two words), emergency_contact_phone (the Emergency Contact Number box; a new contact is named after the teacher), status active|on_leave|resigned|inactive (\"Disable\" = inactive; sign-in is account.active), image JPG/PNG only, documents accept images, PDF and Word. Responses add teacher_code, workload.usage_percent and verification_status (unverified|pending|verified|rejected). null or \"\" clears a value (first_name, last_name, gender and birth_date are required). Profile: first_name, middle_name, last_name, title_id, gender, birth_date, email, phone, blood_group, nationality, id_number, lang, religion, category_id, cast, visa_info, joining_date, highest_qualification, years_of_experience, previous_school, certifications, main_department_id, allowed_department_ids, active (archive), subject_ids, specialization_subject_id, designation_id, responsibility_ids, status (employment), notes. Objects: image, address, official_address, postal_address, regional_address (each {street, street2, city, zip, state_id, country_id}), emergency_contact {name, phone, relation}, health {...same keys as students}, assignments {course_ids, batch_ids}, permissions {lesson_plans, homework, evaluate_assignments, exam_marks, reports}, workload {max_weekly_periods, timetable_auto_assign, available_days: [monday..saturday]}, documents [{doc_type, name, file}], plus the Account & Security blocks.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title_id\": 1,\n  \"religion\": \"sikh\",\n  \"cast\": \"General\",\n  \"lang\": \"en_US\",\n  \"category_id\": 1,\n  \"visa_info\": \"Work visa\",\n  \"main_department_id\": 1,\n  \"allowed_department_ids\": [\n    1,\n    2\n  ],\n  \"joining_date\": \"2025-04-01\",\n  \"official_address\": {\n    \"street\": \"School Campus\",\n    \"city\": \"Pune\",\n    \"state_id\": 596,\n    \"country_id\": 104\n  },\n  \"postal_address\": {\n    \"city\": \"Mumbai\"\n  },\n  \"health\": {\n    \"is_allergy\": false,\n    \"medical_notes\": \"None\"\n  },\n  \"workload\": {\n    \"max_weekly_periods\": 28,\n    \"available_days\": [\n      \"monday\",\n      \"tuesday\",\n      \"wednesday\",\n      \"thursday\",\n      \"friday\"\n    ]\n  },\n  \"permissions\": {\n    \"exam_marks\": true\n  },\n  \"status\": \"active\"\n}"
+              "raw": "{\n  \"teacher_code\": \"T-1002\",\n  \"name\": \"Piyush Mathur\",\n  \"emergency_contact_phone\": \"+91 97110 78980\",\n  \"title_id\": 1,\n  \"religion\": \"sikh\",\n  \"cast\": \"General\",\n  \"lang\": \"en_US\",\n  \"category_id\": 1,\n  \"visa_info\": \"Work visa\",\n  \"main_department_id\": 1,\n  \"allowed_department_ids\": [\n    1,\n    2\n  ],\n  \"joining_date\": \"2025-04-01\",\n  \"official_address\": {\n    \"street\": \"School Campus\",\n    \"city\": \"Pune\",\n    \"state_id\": 596,\n    \"country_id\": 104\n  },\n  \"postal_address\": {\n    \"city\": \"Mumbai\"\n  },\n  \"health\": {\n    \"is_allergy\": false,\n    \"medical_notes\": \"None\"\n  },\n  \"workload\": {\n    \"max_weekly_periods\": 28,\n    \"available_days\": [\n      \"monday\",\n      \"tuesday\",\n      \"wednesday\",\n      \"thursday\",\n      \"friday\"\n    ]\n  },\n  \"permissions\": {\n    \"exam_marks\": true\n  },\n  \"status\": \"inactive\",\n  \"documents\": [\n    {\n      \"doc_type\": \"certificate\",\n      \"name\": \"B.Ed\",\n      \"file\": \"<base64 PDF or .docx>\",\n      \"filename\": \"bed.docx\"\n    }\n  ]\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Regenerate Teacher ID",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/teachers/:teacher_id/regenerate-code",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "teachers",
+                ":teacher_id",
+                "regenerate-code"
+              ],
+              "variable": [
+                {
+                  "key": "teacher_id",
+                  "value": "{{teacher_id}}"
+                }
+              ]
+            },
+            "description": "Office managers: give the teacher the next free Teacher ID (T-0001...). Returns the full teacher.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
             }
           },
           "response": []
