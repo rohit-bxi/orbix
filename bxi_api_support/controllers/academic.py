@@ -107,6 +107,9 @@ class BxiApiSupportAcademicController(http.Controller):
     @http.route('/api/v1/academic/subject-mappings', type='http', auth='public', methods=['GET'], csrf=False)
     @require_auth
     def list_subject_mappings(self, class_id=None, teacher_id=None, **kwargs):
+        # Staff directory data; families aren't shown it, as with other staff lists.
+        if not request.env.user.has_group('base.group_user'):
+            return api_error('Not authorized to view subject mappings.', status=403, code='forbidden')
         limit, offset, error = parse_pagination(kwargs)
         if error:
             return error

@@ -100,6 +100,10 @@ class OpCertificate(models.Model):
             rec.approved_by = self.env.user
 
     def action_reset_to_draft(self):
+        # Same rule as the form's button: an issued, revoked or expired
+        # certificate is a record of what was handed out, not a draft.
+        if any(rec.state != 'generated' for rec in self):
+            raise UserError(_('Only a generated certificate can be reset to draft.'))
         self.write({'state': 'draft', 'certificate_number': False})
 
     def action_print(self):
