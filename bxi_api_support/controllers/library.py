@@ -11,7 +11,7 @@ from odoo.http import request
 
 from odoo.addons.bxi_api.controllers.auth import api_error, api_response, call_action, parse_int, require_auth
 
-from .common import date_str, get_viewable_student, parse_pagination, ref, safe_create, school_context
+from .common import date_str, get_viewable_student, parse_pagination, ref, safe_create, school_context, json_body
 
 LIBRARY_STAFF_GROUPS = ('openeducat_library.group_op_library', 'openeducat_library.group_op_library_user')
 ACTIVE_LOAN_STATES = ('issue', 'reserve')
@@ -172,7 +172,7 @@ class BxiApiSupportLibraryController(http.Controller):
         patron = context['student'] or context['faculty']
         if not patron:
             return api_error('Only students and teachers can reserve books.', status=403, code='forbidden')
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         media_id, error = parse_int(payload.get('media_id'), 'media_id')
         if error:
             return error
@@ -219,7 +219,7 @@ class BxiApiSupportLibraryController(http.Controller):
         so the card's borrowing limit still applies."""
         if not _is_library_staff(request.env.user):
             return api_error('Only library staff can issue books.', status=403, code='forbidden')
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         Unit = request.env['op.media.unit'].sudo()
         if payload.get('barcode'):
             unit = Unit.search([('barcode', '=', payload['barcode'])], limit=1)
@@ -271,7 +271,7 @@ class BxiApiSupportLibraryController(http.Controller):
             return api_error('Loan not found.', status=404, code='not_found')
         if movement.state != 'issue':
             return api_error('This book is not currently issued.', status=400, code='invalid_transition')
-        payload = request.get_json_data() if request.httprequest.get_data() else {}
+        payload = json_body()
         return_date = (payload or {}).get('return_date') or fields.Date.context_today(movement)
         _, error = call_action(movement, 'return_media', return_date=fields.Date.to_date(return_date))
         if error:

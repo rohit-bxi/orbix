@@ -6,7 +6,7 @@ from odoo.http import request
 
 from odoo.addons.bxi_api.controllers.auth import api_error, api_response, call_action, require_auth
 
-from .common import get_own_faculty, parse_pagination, safe_create
+from .common import get_own_faculty, parse_pagination, safe_create, json_body
 
 INSTRUCTOR_GROUP = 'op_student_lab_management.group_lab_instructor'
 ADMIN_GROUP = 'op_student_lab_management.group_lab_admin'
@@ -85,7 +85,7 @@ class BxiApiSupportLabController(http.Controller):
     def create_session(self, **kwargs):
         if not _is_lab_staff(request.env.user):
             return api_error('Not authorized to schedule lab sessions.', status=403, code='forbidden')
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         for field in ('room_id', 'course_id', 'batch_id', 'start_time', 'end_time'):
             if payload.get(field) is None:
                 return api_error('%s is required.' % field, status=400, code='missing_%s' % field)
@@ -184,7 +184,7 @@ class BxiApiSupportLabController(http.Controller):
     @http.route('/api/v1/lab/equipment-issues', type='http', auth='public', methods=['POST'], csrf=False)
     @require_auth
     def create_issue(self, **kwargs):
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         if not payload.get('session_id'):
             return api_error('session_id is required.', status=400, code='missing_session_id')
         if not payload.get('equipment_id'):
@@ -205,10 +205,9 @@ class BxiApiSupportLabController(http.Controller):
         issue, error = self._authorized_issue(issue_id)
         if error:
             return error
-        payload = request.get_json_data() or {}
-        if payload.get('returned_qty') is not None:
-            issue.returned_qty = payload['returned_qty']
-        _, error = call_action(issue, 'action_return')
+        payload = json_body() or {}
+        _, error = call_action(issue, 'action_return', write_vals={
+            'returned_qty': payload['returned_qty']} if payload.get('returned_qty') is not None else None)
         if error:
             return error
         return api_response(_issue_dict(issue))

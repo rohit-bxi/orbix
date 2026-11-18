@@ -6,7 +6,7 @@ from odoo.http import request
 
 from odoo.addons.bxi_api.controllers.auth import api_error, api_response, call_action, require_auth
 
-from .common import get_authorized_student, get_own_student_ids, parse_pagination, safe_create
+from .common import get_authorized_student, get_own_student_ids, parse_pagination, safe_create, json_body
 
 SCHOLARSHIP_STAFF_GROUP = 'bxi_school_scholarship.group_scholarship_staff'
 
@@ -74,7 +74,7 @@ class BxiApiSupportScholarshipController(http.Controller):
     def create_scholarship(self, **kwargs):
         if not _is_scholarship_staff(request.env.user):
             return api_error('Not authorized to assign scholarships.', status=403, code='forbidden')
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         student, error = get_authorized_student(payload.get('student_id'))
         if error:
             return error

@@ -196,3 +196,58 @@ class TestBxiApiSupportCanteen(ApiSupportHttpCase):
         resp = self.url_open(
             f'/api/v1/canteen/wallets/{wallet.id}/transactions', headers=self._headers('canteen_api_other', 'OtherPass1!'))
         self.assertEqual(resp.status_code, 403)
+
+    def test_order_detail_access(self):
+        order_id = self.url_open('/api/v1/canteen/orders', headers=self._student_headers(), json={
+            'student_id': self.student.id, 'lines': [{'product_id': self.product.id, 'quantity': 3}],
+        }).json()['data']['id']
+        own = self.url_open(f'/api/v1/canteen/orders/{order_id}', headers=self._student_headers())
+        self.assertEqual(own.status_code, 200, own.text)
+        self.assertEqual(own.json()['data']['total_amount'], 30.0)
+        self.assertEqual([(l['product'], l['quantity']) for l in own.json()['data']['lines']],
+                         [(self.product.display_name, 3.0)])
+        self.assertEqual(self.url_open(f'/api/v1/canteen/orders/{order_id}',
+                                       headers=self._headers('canteen_api_staff', 'StaffPass1!')).status_code, 200)
+        self.assertEqual(self.url_open(f'/api/v1/canteen/orders/{order_id}',
+                                       headers=self._headers('canteen_api_other', 'OtherPass1!')).status_code, 403)
+        self.assertEqual(self.url_open('/api/v1/canteen/orders/999999', headers=self._student_headers()).status_code, 404)
+
+    def test_wallet_list_and_detail(self):
+        staff = self._headers('canteen_api_staff', 'StaffPass1!')
+        self.url_open('/api/v1/canteen/wallet/topup', headers=staff, json={
+            'student_id': self.student.id, 'amount': 75.0, 'post_to_accounting': False})
+        other_student = self._create_student('CANAPI-002')
+        self.url_open('/api/v1/canteen/wallet/topup', headers=staff, json={
+            'student_id': other_student.id, 'amount': 10.0, 'post_to_accounting': False})
+
+        everyone = self.url_open('/api/v1/canteen/wallets', headers=staff)
+        self.assertEqual(everyone.status_code, 200, everyone.text)
+        self.assertGreaterEqual(everyone.json()['meta']['total'], 2)
+
+        mine = self.url_open('/api/v1/canteen/wallets', headers=self._student_headers()).json()
+        self.assertEqual(mine['meta']['total'], 1)
+        wallet = mine['data']['wallets'][0]
+        self.assertEqual((wallet['balance'], wallet['patron_type']), (75.0, 'student'))
+        self.assertEqual(self.url_open('/api/v1/canteen/wallets',
+                                       headers=self._headers('canteen_api_other', 'OtherPass1!')).json()['data']['wallets'], [])
+
+        detail = self.url_open(f"/api/v1/canteen/wallets/{wallet['id']}", headers=self._student_headers())
+        self.assertEqual(detail.status_code, 200, detail.text)
+        self.assertEqual(detail.json()['data'], wallet)
+        self.assertEqual(self.url_open(f"/api/v1/canteen/wallets/{wallet['id']}",
+                                       headers=self._headers('canteen_api_other', 'OtherPass1!')).status_code, 403)
+        self.assertEqual(self.url_open('/api/v1/canteen/wallets/999999', headers=staff).status_code, 404)
+
+    def test_order_list_and_cancel(self):
+        order_id = self.url_open('/api/v1/canteen/orders', headers=self._student_headers(), json={
+            'student_id': self.student.id, 'lines': [{'product_id': self.product.id, 'quantity': 1}]}).json()['data']['id']
+        mine = self.url_open('/api/v1/canteen/orders', headers=self._student_headers())
+        self.assertEqual(mine.status_code, 200, mine.text)
+        self.assertEqual([o['id'] for o in mine.json()['data']['orders']], [order_id])
+        self.assertEqual(self.url_open('/api/v1/canteen/orders', headers=self._headers(
+            'canteen_api_other', 'OtherPass1!')).json()['data']['orders'], [])
+        cancelled = self.url_open(f'/api/v1/canteen/orders/{order_id}/cancel', headers=self._student_headers(),
+                                  json={'cancel_reason': 'Not hungry'})
+        self.assertEqual(cancelled.status_code, 200, cancelled.text)
+        self.assertEqual(cancelled.json()['data']['state'], 'cancelled')
+        self.assertEqual(self.env['bxi.canteen.order'].browse(order_id).cancel_reason, 'Not hungry')

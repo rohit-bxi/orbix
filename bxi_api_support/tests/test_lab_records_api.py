@@ -103,3 +103,24 @@ class TestBxiApiSupportLabRecords(ApiSupportHttpCase):
         rows = {'results': [{'student_id': self.students[0].id, 'marks_obtained': 5}]}
         self.assertEqual(self._post(path, rows).json()['error']['code'], 'missing_experiment_id')
         self.assertEqual(self._post(path, dict(rows, experiment_id=self.experiment.id)).status_code, 200)
+
+    def test_read_attendance_and_results(self):
+        path = f'/api/v1/lab/sessions/{self.session.id}'
+        before = self.url_open(f'{path}/attendance', headers=self._instructor()).json()['data']
+        self.assertEqual(before['summary']['unmarked'], 2)
+        self.session.action_confirm()
+        self._post(f'{path}/attendance', {'records': [{'student_id': self.students[0].id, 'status': 'late'}]})
+        attendance = self.url_open(f'{path}/attendance', headers=self._instructor())
+        self.assertEqual(attendance.status_code, 200, attendance.text)
+        statuses = {row['student']['id']: row['status'] for row in attendance.json()['data']['students']}
+        self.assertEqual(statuses, {self.students[0].id: 'late', self.students[1].id: 'present'})
+
+        self.session.action_start()
+        self._post(f'{path}/results', {'results': [{'student_id': self.students[1].id, 'marks_obtained': 15}]})
+        results = self.url_open(f'{path}/results', headers=self._instructor())
+        self.assertEqual(results.status_code, 200, results.text)
+        self.assertEqual([(r['student']['id'], r['marks_obtained']) for r in results.json()['data']['results']],
+                         [(self.students[1].id, 15)])
+        filtered = self.url_open(f'{path}/results?experiment_id={self.experiment.id}', headers=self._instructor())
+        self.assertEqual(len(filtered.json()['data']['results']), 1)
+        self.assertEqual(self.url_open(f'{path}/results', headers=self._headers('lrec_other', 'OtherPass1!')).status_code, 403)

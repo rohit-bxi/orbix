@@ -6,7 +6,7 @@ from odoo.http import request
 
 from odoo.addons.bxi_api.controllers.auth import api_error, api_response, call_action, require_auth
 
-from .common import parse_pagination
+from .common import parse_pagination, json_body
 
 ADMIN_GROUP = 'openeducat_core.group_op_back_office_admin'
 FACULTY_GROUP = 'openeducat_core.group_op_faculty'
@@ -78,7 +78,7 @@ class BxiApiSupportOnboardingController(http.Controller):
     def create_onboarding(self, **kwargs):
         if not _can_manage_onboarding(request.env.user):
             return api_error('Not authorized to start onboarding.', status=403, code='forbidden')
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         vals = {key: payload[key] for key in UPDATE_FIELDS if key in payload}
         record = request.env['bxi.student.onboarding'].sudo().create(vals)
         return api_response(_onboarding_dict(record), status=201)
@@ -89,7 +89,7 @@ class BxiApiSupportOnboardingController(http.Controller):
         record, error = self._authorized(onboarding_id)
         if error:
             return error
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         vals = {key: payload[key] for key in UPDATE_FIELDS if key in payload}
         record.write(vals)
         return api_response(_onboarding_dict(record))

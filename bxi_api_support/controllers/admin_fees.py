@@ -18,7 +18,7 @@ from odoo.addons.bxi_api.controllers.auth import api_error, api_response, parse_
 from ..models.res_users import PERMISSION_GROUPS
 from .common import (
     atomic, check_selection, date_str, is_true, parse_date, parse_pagination, parse_sort, ref, resolve_record,
-    running_enrollments,
+    running_enrollments, json_body,
 )
 from .dashboard import _allowed
 from .fee import _detail_dict
@@ -347,7 +347,7 @@ class BxiApiSupportAdminFeesController(http.Controller):
         service-products master)."""
         if not _allowed(request.env.user, GROUPS):
             return _forbidden()
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         for required in ('name', 'product_id'):
             if not payload.get(required):
                 return api_error(f'{required} is required.', status=400, code=f'missing_{required}')
@@ -368,7 +368,7 @@ class BxiApiSupportAdminFeesController(http.Controller):
         category, error = self._get_category(category_id)
         if error:
             return error
-        vals, error = self._category_vals(request.get_json_data() or {})
+        vals, error = self._category_vals(json_body() or {})
         if error:
             return error
         _, error = atomic(lambda: category.write(vals))

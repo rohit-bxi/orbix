@@ -89,3 +89,26 @@ class TestBxiApiSupportScholarship(ApiSupportHttpCase):
         resp = self.url_open(
             f'/api/v1/scholarships/{scholarship_id}', headers=self._headers('scholarship_api_other', 'OtherPass1!'))
         self.assertEqual(resp.status_code, 403)
+
+    def test_reject(self):
+        scholarship_id = self._create_scholarship().json()['data']['id']
+        staff_headers = self._headers('scholarship_api_staff', 'ScholarStaffPass1!')
+        self.url_open(f'/api/v1/scholarships/{scholarship_id}/submit', headers=staff_headers, method='POST')
+        url = f'/api/v1/scholarships/{scholarship_id}/reject'
+        self.assertEqual(self.url_open(url, headers=self._headers('scholarship_api_student', 'StudentPass1!'),
+                                       method='POST').status_code, 403)
+        rejected = self.url_open(url, headers=staff_headers, method='POST')
+        self.assertEqual(rejected.status_code, 200, rejected.text)
+        self.assertEqual(rejected.json()['data']['approval_status'], 'rejected')
+        self.assertEqual(self.url_open('/api/v1/scholarships/999999/reject', headers=staff_headers,
+                                       method='POST').status_code, 404)
+
+    def test_list_scoped_to_family(self):
+        scholarship_id = self._create_scholarship().json()['data']['id']
+        staff = self.url_open('/api/v1/scholarships', headers=self._headers('scholarship_api_staff', 'ScholarStaffPass1!'))
+        self.assertEqual(staff.status_code, 200, staff.text)
+        self.assertIn(scholarship_id, [s['id'] for s in staff.json()['data']['scholarships']])
+        mine = self.url_open('/api/v1/scholarships', headers=self._headers('scholarship_api_student', 'StudentPass1!'))
+        self.assertEqual([s['id'] for s in mine.json()['data']['scholarships']], [scholarship_id])
+        self.assertEqual(self.url_open('/api/v1/scholarships', headers=self._headers('scholarship_api_other', 'OtherPass1!'))
+                         .json()['data']['scholarships'], [])

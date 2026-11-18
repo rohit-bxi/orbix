@@ -13,7 +13,7 @@ from odoo.addons.bxi_api.controllers.auth import (
     api_error, api_response, call_action, parse_int, parse_request, require_auth,
 )
 
-from .common import date_str, parse_pagination, ref, safe_create
+from .common import date_str, parse_pagination, ref, safe_create, json_body
 
 GATE_GROUPS = ('visitor_management.group_visitor_officer', 'visitor_management.group_visitor_management')
 VISITOR_TYPES = ('buyer', 'guest', 'supplier', 'delivery')
@@ -117,7 +117,7 @@ class BxiApiSupportVisitorController(http.Controller):
         error = _gate_guard()
         if error:
             return error
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         visitor_id, error = parse_int(payload.get('visitor_id'), 'visitor_id')
         if error:
             return error

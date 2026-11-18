@@ -6,7 +6,7 @@ from odoo.http import request
 
 from odoo.addons.bxi_api.controllers.auth import api_error, api_response, call_action, require_auth
 
-from .common import parse_pagination, safe_create
+from .common import parse_pagination, safe_create, json_body
 
 COORDINATOR_GROUP = 'bxi_rte_admission.group_rte_school_coordinator'
 DISTRICT_OFFICER_GROUP = 'bxi_rte_admission.group_rte_district_officer'
@@ -124,10 +124,9 @@ class BxiApiSupportRteAdmissionController(http.Controller):
         admission = request.env['op.admission'].sudo().browse(admission_id)
         if not admission.exists():
             return api_error('Admission not found.', status=404, code='not_found')
-        payload = request.get_json_data() or {}
-        if payload.get('rejection_reason'):
-            admission.rejection_reason = payload['rejection_reason']
-        _, error = call_action(admission, 'action_reject_documents')
+        payload = json_body() or {}
+        _, error = call_action(admission, 'action_reject_documents', write_vals={
+            'rejection_reason': payload['rejection_reason']} if payload.get('rejection_reason') else None)
         if error:
             return error
         return api_response(_admission_dict(admission))
@@ -189,7 +188,7 @@ class BxiApiSupportRteAdmissionController(http.Controller):
         admission, error = self._authorized_admission(admission_id)
         if error:
             return error
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         if not payload.get('description'):
             return api_error('description is required.', status=400, code='missing_description')
         grievance, error = call_action(admission, 'action_file_grievance', description=payload['description'])
@@ -236,10 +235,9 @@ class BxiApiSupportRteAdmissionController(http.Controller):
         grievance = request.env['rte.grievance'].sudo().browse(grievance_id)
         if not grievance.exists():
             return api_error('Grievance not found.', status=404, code='not_found')
-        payload = request.get_json_data() or {}
-        if notes_field and payload.get(notes_field):
-            grievance.write({notes_field: payload[notes_field]})
-        _, error = call_action(grievance, method_name)
+        payload = json_body() or {}
+        write_vals = {notes_field: payload[notes_field]} if notes_field and payload.get(notes_field) else None
+        _, error = call_action(grievance, method_name, write_vals=write_vals)
         if error:
             return error
         return api_response(_grievance_dict(grievance))
@@ -275,7 +273,7 @@ class BxiApiSupportRteAdmissionController(http.Controller):
     def create_lottery_batch(self, **kwargs):
         if not _is_rte_district_or_admin(request.env.user):
             return api_error('Not authorized to create lottery batches.', status=403, code='forbidden')
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         if not payload.get('course_id'):
             return api_error('course_id is required.', status=400, code='missing_course_id')
         if not payload.get('academic_year_id'):
@@ -318,7 +316,7 @@ class BxiApiSupportRteAdmissionController(http.Controller):
     def create_and_run_lottery(self, **kwargs):
         if not _is_rte_district_or_admin(request.env.user):
             return api_error('Not authorized to run a lottery.', status=403, code='forbidden')
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         if not payload.get('course_id'):
             return api_error('course_id is required.', status=400, code='missing_course_id')
         if not payload.get('academic_year_id'):
@@ -367,7 +365,7 @@ class BxiApiSupportRteAdmissionController(http.Controller):
     def create_claim(self, **kwargs):
         if not _is_rte_staff(request.env.user):
             return api_error('Not authorized to create reimbursement claims.', status=403, code='forbidden')
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         for field in ('course_id', 'academic_year_id', 'amount'):
             if payload.get(field) is None:
                 return api_error('%s is required.' % field, status=400, code='missing_%s' % field)

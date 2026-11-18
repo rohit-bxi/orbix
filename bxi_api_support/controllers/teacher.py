@@ -13,7 +13,7 @@ from odoo.addons.bxi_api.controllers.auth import api_error, api_response, parse_
 
 from .common import (
     date_str, get_viewable_student, parse_pagination, ref, running_enrollment, safe_create, school_context,
-    session_students,
+    session_students, json_body,
 )
 
 ACTIVITY_MANAGER_GROUPS = ('openeducat_activity.group_activity_manager', 'openeducat_activity.group_activity_user')
@@ -181,7 +181,7 @@ class BxiApiSupportTeacherController(http.Controller):
         is_manager = any(request.env.user.has_group(g) for g in ACTIVITY_MANAGER_GROUPS)
         if not context['faculty'] and not is_manager:
             return api_error('Only teachers can log activities.', status=403, code='forbidden')
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         student, error = get_viewable_student(request.env, payload.get('student_id'))
         if error:
             return error

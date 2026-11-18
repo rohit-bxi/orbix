@@ -6,7 +6,7 @@ from odoo.http import request
 
 from odoo.addons.bxi_api.controllers.auth import api_error, api_response, call_action, require_auth
 
-from .common import get_authorized_student, get_own_student_ids, parse_ids, parse_pagination, safe_create
+from .common import get_authorized_student, get_own_student_ids, parse_ids, parse_pagination, safe_create, json_body
 
 REFUND_STAFF_GROUP = 'bxi_student_refund_management.group_refund_staff'
 
@@ -74,7 +74,7 @@ class BxiApiSupportRefundController(http.Controller):
     @http.route('/api/v1/refunds', type='http', auth='public', methods=['POST'], csrf=False)
     @require_auth
     def create_refund(self, **kwargs):
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         student, error = get_authorized_student(payload.get('student_id'), is_staff=_is_refund_staff)
         if error:
             return error
@@ -136,14 +136,9 @@ class BxiApiSupportRefundController(http.Controller):
         if not refund.exists():
             return api_error('Refund request not found.', status=404, code='not_found')
 
-        payload = request.get_json_data() or {}
-        refund_utr = payload.get('refund_utr')
-        if refund_utr:
-            refund.refund_utr = refund_utr
-        if payload.get('refund_confirmation_notes'):
-            refund.refund_confirmation_notes = payload['refund_confirmation_notes']
-
-        _, error = call_action(refund, 'action_complete')
+        payload = json_body() or {}
+        write_vals = {key: payload[key] for key in ('refund_utr', 'refund_confirmation_notes') if payload.get(key)}
+        _, error = call_action(refund, 'action_complete', write_vals=write_vals)
         if error:
             return error
         return api_response(_refund_dict(refund))
@@ -171,7 +166,7 @@ class BxiApiSupportRefundController(http.Controller):
         "fixed_refund_amount"?, "reason"?, "preferred_refund_mode"?}."""
         if not _is_refund_staff(request.env.user):
             return api_error('Not authorized to create refunds.', status=403, code='forbidden')
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         student_ids, error = parse_ids(payload.get('student_ids') or [], 'student_ids')
         if error:
             return error

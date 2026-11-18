@@ -11,7 +11,7 @@ from odoo.http import request
 from odoo.addons.bxi_api.controllers.auth import api_error, api_response, call_action, parse_int, require_auth
 
 from .common import (
-    audience_domain, date_str, get_viewable_student, parse_pagination, ref, safe_create, school_context,
+    audience_domain, date_str, get_viewable_student, parse_pagination, ref, safe_create, school_context, json_body,
 )
 
 COORDINATOR_GROUP = 'bxi_school_event_management.group_school_event_coordinator'
@@ -126,7 +126,7 @@ class BxiApiSupportEventController(http.Controller):
         """Register one of the caller's students. A paid or permission-slip
         event starts 'draft' and is confirmed via /confirm once paid and
         signed - the school module's own rule."""
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         context = school_context(request.env)
         student, error = get_viewable_student(
             request.env, payload.get('student_id'), allow=lambda env, s: s in context['students'])
@@ -175,7 +175,7 @@ class BxiApiSupportEventController(http.Controller):
             return api_error('Only a parent can sign the permission slip.', status=403, code='forbidden')
         if not reg.event_id.requires_permission_slip:
             return api_error('This event needs no permission slip.', status=400, code='not_required')
-        signed_by = (request.get_json_data() or {}).get('signed_by') or request.env.user.name
+        signed_by = (json_body() or {}).get('signed_by') or request.env.user.name
         _, error = call_action(reg, 'action_sign_permission_slip', signed_by=signed_by)
         if error:
             return error
@@ -227,7 +227,7 @@ class BxiApiSupportEventController(http.Controller):
             return api_error('This event offers no transport.', status=400, code='not_offered')
         if reg.transport_registration_id:
             return api_error('Transport is already booked.', status=400, code='already_booked')
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         route_id, error = parse_int(payload.get('route_id'), 'route_id')
         if error:
             return error

@@ -133,3 +133,45 @@ class TestBxiApiSupportFee(ApiSupportHttpCase):
             json={'amount': 5000.0, 'journal_id': self.cash_journal.id})
         self.assertEqual(resp.status_code, 400)
         self.assertEqual(resp.json()['error']['code'], 'invalid_transition')
+
+    def test_get_structure_detail(self):
+        url = f'/api/v1/fees/structures/{self.structure.id}'
+        resp = self.url_open(url, headers=self._headers('fee_api_staff', 'FeeStaffPass1!'))
+        self.assertEqual(resp.status_code, 200, resp.text)
+        self.assertEqual(resp.json()['data']['id'], self.structure.id)
+        self.assertEqual(resp.json()['data']['name'], 'API Fee Structure')
+        self.assertEqual(self.url_open(url, headers=self._headers('fee_api_student', 'StudentPass1!')).status_code, 403)
+        self.assertEqual(self.url_open('/api/v1/fees/structures/999999',
+                                       headers=self._headers('fee_api_staff', 'FeeStaffPass1!')).status_code, 404)
+
+    def test_fee_invoice_created_once(self):
+        url = f'/api/v1/fees/details/{self.detail.id}/invoice'
+        student = self._headers('fee_api_student', 'StudentPass1!')
+        self.assertEqual(self.url_open(url, headers=self._headers('fee_api_other', 'OtherPass1!')).status_code, 403)
+        first = self.url_open(url, headers=student)
+        self.assertEqual(first.status_code, 200, first.text)
+        self.assertEqual(first.json()['data']['amount_total'], 1000.0)
+        # Opening it again shows the same invoice instead of creating another one.
+        second = self.url_open(url, headers=self._headers('fee_api_staff', 'FeeStaffPass1!'))
+        self.assertEqual(second.json()['data']['id'], first.json()['data']['id'])
+        self.assertEqual(self.env['account.move'].search_count([
+            ('partner_id', '=', self.student.partner_id.id), ('move_type', '=', 'out_invoice')]), 1)
+        self.assertEqual(self.url_open('/api/v1/fees/details/999999/invoice', headers=student).status_code, 404)
+
+    def test_fee_detail_and_receipt(self):
+        student = self._headers('fee_api_student', 'StudentPass1!')
+        detail = self.url_open(f'/api/v1/fees/details/{self.detail.id}', headers=student)
+        self.assertEqual(detail.status_code, 200, detail.text)
+        self.assertEqual(detail.json()['data']['id'], self.detail.id)
+        self.assertEqual(self.url_open(f'/api/v1/fees/details/{self.detail.id}', headers=self._headers(
+            'fee_api_other', 'OtherPass1!')).status_code, 403)
+        receipt_url = f'/api/v1/fees/details/{self.detail.id}/receipt'
+        self.assertEqual(self.url_open(receipt_url, headers=student).json()['error']['code'], 'nothing_paid')
+        self.url_open(f'/api/v1/fees/details/{self.detail.id}/pay', headers=self._headers('fee_api_staff', 'FeeStaffPass1!'),
+                      json={'amount': 1000.0, 'journal_id': self.cash_journal.id, 'payment_mode': 'cash'})
+        receipt = self.url_open(receipt_url, headers=student)
+        if self.env['ir.module.module'].search_count([('name', '=', 'bxi_fee_dashboard'), ('state', '=', 'installed')]):
+            self.assertEqual(receipt.status_code, 200, receipt.text[:200])
+            self.assertEqual(receipt.content[:5], b'%PDF-')
+        else:
+            self.assertEqual(receipt.json()['error']['code'], 'not_available')

@@ -109,7 +109,8 @@ class Announcement(models.Model):
                 announcement._do_publish()
 
     def action_reset_to_draft(self):
-        self.write({'state': 'draft', 'published_date': False})
+        # Archiving also clears `active`; restore it or the draft stays hidden.
+        self.write({'state': 'draft', 'published_date': False, 'active': True})
 
     def action_archive_announcement(self):
         self.write({'state': 'archived', 'active': False})

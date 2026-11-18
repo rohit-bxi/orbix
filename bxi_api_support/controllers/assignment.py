@@ -15,7 +15,7 @@ from odoo.addons.bxi_api.controllers.auth import (
 from .common import (
     teacher_permission,
     date_str, get_viewable_student, parse_ids, parse_pagination, ref, running_enrollment, safe_create,
-    school_context,
+    school_context, json_body,
 )
 
 MANAGER_GROUPS = (
@@ -332,7 +332,7 @@ class BxiApiSupportAssignmentController(http.Controller):
             return api_error('Not authorized for this submission.', status=403, code='forbidden')
         if submission.state != 'submit':
             return api_error('Only a submitted homework can be reviewed.', status=400, code='invalid_transition')
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         vals = {}
         if payload.get('note') is not None:
             vals['note'] = payload['note']

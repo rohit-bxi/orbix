@@ -7,7 +7,7 @@ from odoo.http import request
 from odoo.addons.bxi_api.controllers.auth import api_error, api_response, call_action, parse_int, require_auth
 
 from .common import (
-    get_own_faculty, get_own_student_ids, parse_pagination, resolve_teacher_for_create, safe_create, teacher_permission,
+    get_own_faculty, get_own_student_ids, parse_pagination, resolve_teacher_for_create, safe_create, teacher_permission, json_body,
 )
 
 COORDINATOR_GROUP = 'bxi_academic_management.group_academic_coordinator'
@@ -105,7 +105,7 @@ class BxiApiSupportAssessmentController(http.Controller):
     @http.route('/api/v1/assessments/exams', type='http', auth='public', methods=['POST'], csrf=False)
     @require_auth
     def create_exam(self, **kwargs):
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         if not payload.get('name'):
             return api_error('name is required.', status=400, code='missing_name')
         if not payload.get('class_id'):
@@ -176,7 +176,7 @@ class BxiApiSupportAssessmentController(http.Controller):
     @http.route('/api/v1/assessments/sessions', type='http', auth='public', methods=['POST'], csrf=False)
     @require_auth
     def create_session(self, **kwargs):
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         if not payload.get('exam_id'):
             return api_error('exam_id is required.', status=400, code='missing_exam_id')
         if not payload.get('class_id'):
@@ -285,7 +285,7 @@ class BxiApiSupportAssessmentController(http.Controller):
         submission, error = self._authorized_submission(submission_id)
         if error:
             return error
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         answers = payload.get('answers') or []
         by_question = {a.question_id.id: a for a in submission.answer_ids}
         for entry in answers:

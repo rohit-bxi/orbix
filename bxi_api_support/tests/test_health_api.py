@@ -81,3 +81,73 @@ class TestBxiApiSupportHealth(ApiSupportHttpCase):
         resp = self.url_open('/api/v1/health/visits', headers=self._staff_headers(), json={'visit_type': 'illness'})
         self.assertEqual(resp.status_code, 400)
         self.assertEqual(resp.json()['error']['code'], 'missing_patient')
+
+    def _post(self, path, headers=None):
+        return self.url_open(path, headers=headers or self._staff_headers(), method='POST')
+
+    def test_visit_detail_refer_cancel_reset(self):
+        visit = self.env['op.health.visit'].create({
+            'student_id': self.student.id, 'visit_type': 'injury', 'symptoms': 'Sprained ankle'})
+        student_headers = self._headers('health_api_student', 'StudentPass1!')
+        detail = self.url_open(f'/api/v1/health/visits/{visit.id}', headers=self._staff_headers())
+        self.assertEqual(detail.status_code, 200, detail.text)
+        self.assertEqual(detail.json()['data']['symptoms'], 'Sprained ankle')
+        self.assertEqual(detail.json()['data']['patient_type'], 'student')
+        self.assertEqual(self.url_open(f'/api/v1/health/visits/{visit.id}', headers=student_headers).status_code, 403)
+        self.assertEqual(self.url_open('/api/v1/health/visits/999999', headers=self._staff_headers()).status_code, 404)
+
+        for action in ('refer', 'cancel', 'reset'):
+            self.assertEqual(self._post(f'/api/v1/health/visits/{visit.id}/{action}', student_headers).status_code, 403)
+        self.assertEqual(self._post(f'/api/v1/health/visits/{visit.id}/refer').json()['data']['state'], 'referred')
+        self.assertEqual(self._post(f'/api/v1/health/visits/{visit.id}/cancel').json()['data']['state'], 'cancelled')
+        self.assertEqual(self._post(f'/api/v1/health/visits/{visit.id}/reset').json()['data']['state'], 'draft')
+        self.assertEqual(self._post('/api/v1/health/visits/999999/cancel').status_code, 404)
+
+    def test_checkup_detail_cancel_reset(self):
+        checkup = self.env['op.health.checkup'].create({
+            'student_id': self.student.id, 'height_cm': 160.0, 'weight_kg': 64.0})
+        detail = self.url_open(f'/api/v1/health/checkups/{checkup.id}', headers=self._staff_headers())
+        self.assertEqual(detail.status_code, 200, detail.text)
+        self.assertAlmostEqual(detail.json()['data']['bmi'], 25.0, places=1)
+        self.assertEqual(self.url_open(f'/api/v1/health/checkups/{checkup.id}',
+                                       headers=self._headers('health_api_student', 'StudentPass1!')).status_code, 403)
+        self.assertEqual(self.url_open('/api/v1/health/checkups/999999', headers=self._staff_headers()).status_code, 404)
+
+        cancelled = self._post(f'/api/v1/health/checkups/{checkup.id}/cancel')
+        self.assertEqual(cancelled.status_code, 200, cancelled.text)
+        self.assertEqual(cancelled.json()['data']['state'], 'cancelled')
+        self.assertEqual(self._post(f'/api/v1/health/checkups/{checkup.id}/reset').json()['data']['state'], 'scheduled')
+        self.assertEqual(self._post(f'/api/v1/health/checkups/{checkup.id}/reset',
+                                    self._headers('health_api_student', 'StudentPass1!')).status_code, 403)
+
+    def test_vaccination_detail_miss_cancel_reset(self):
+        vaccine = self.env['op.health.vaccine.type'].create({'name': 'API Detail Vaccine'})
+        vaccination = self.env['op.health.vaccination'].create({
+            'student_id': self.student.id, 'vaccine_id': vaccine.id, 'dose_number': 2})
+        detail = self.url_open(f'/api/v1/health/vaccinations/{vaccination.id}', headers=self._staff_headers())
+        self.assertEqual(detail.status_code, 200, detail.text)
+        self.assertEqual(detail.json()['data']['vaccine'], 'API Detail Vaccine')
+        self.assertEqual(detail.json()['data']['dose_number'], 2)
+        self.assertEqual(self.url_open(f'/api/v1/health/vaccinations/{vaccination.id}',
+                                       headers=self._headers('health_api_student', 'StudentPass1!')).status_code, 403)
+        self.assertEqual(self.url_open('/api/v1/health/vaccinations/999999', headers=self._staff_headers()).status_code, 404)
+
+        base = f'/api/v1/health/vaccinations/{vaccination.id}'
+        self.assertEqual(self._post(f'{base}/miss', self._headers('health_api_student', 'StudentPass1!')).status_code, 403)
+        self.assertEqual(self._post(f'{base}/miss').json()['data']['state'], 'missed')
+        self.assertEqual(self._post(f'{base}/reset').json()['data']['state'], 'scheduled')
+        self.assertEqual(self._post(f'{base}/cancel').json()['data']['state'], 'cancelled')
+        self.assertEqual(self._post('/api/v1/health/vaccinations/999999/miss').status_code, 404)
+
+    def test_lists(self):
+        visit = self.env['op.health.visit'].create({'student_id': self.student.id, 'visit_type': 'illness'})
+        checkup = self.env['op.health.checkup'].create({'student_id': self.student.id, 'height_cm': 140, 'weight_kg': 35})
+        vaccine = self.env['op.health.vaccine.type'].create({'name': 'API List Vaccine'})
+        vaccination = self.env['op.health.vaccination'].create({'student_id': self.student.id, 'vaccine_id': vaccine.id})
+        for path, key, record in (('visits', 'visits', visit), ('checkups', 'checkups', checkup),
+                                  ('vaccinations', 'vaccinations', vaccination)):
+            resp = self.url_open(f'/api/v1/health/{path}', headers=self._staff_headers())
+            self.assertEqual(resp.status_code, 200, resp.text)
+            self.assertIn(record.id, [r['id'] for r in resp.json()['data'][key]], path)
+            self.assertEqual(self.url_open(f'/api/v1/health/{path}', headers=self._headers(
+                'health_api_student', 'StudentPass1!')).status_code, 403, path)

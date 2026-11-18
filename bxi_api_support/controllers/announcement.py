@@ -7,7 +7,7 @@ from odoo.http import request
 
 from odoo.addons.bxi_api.controllers.auth import api_error, api_response, call_action, require_auth
 
-from .common import audience_domain, parse_pagination, safe_create
+from .common import audience_domain, parse_pagination, safe_create, json_body
 
 MANAGER_GROUP = 'bxi_school_announcement.group_announcement_manager'
 
@@ -85,7 +85,7 @@ class BxiApiSupportAnnouncementController(http.Controller):
     def create_announcement(self, **kwargs):
         if not _is_announcement_manager(request.env.user):
             return api_error('Not authorized to create announcements.', status=403, code='forbidden')
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         if not payload.get('title'):
             return api_error('title is required.', status=400, code='missing_title')
         if not payload.get('body'):

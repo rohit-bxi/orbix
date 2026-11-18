@@ -19,7 +19,7 @@ from odoo.addons.bxi_api.controllers.auth import api_error, api_response, call_a
 from ..models.res_users import PERMISSION_GROUPS
 from .common import (
     atomic, check_selection, parse_date, parse_datetime, parse_ids, parse_pagination, parse_sort, ref,
-    resolve_record, resolve_records, running_enrollments, school_context,
+    resolve_record, resolve_records, running_enrollments, school_context, json_body,
 )
 from .dashboard import _allowed
 from .event import _event_dict, _registration_dict
@@ -288,7 +288,7 @@ class BxiApiSupportAdminEventsController(http.Controller):
         env = request.env
         if not _allowed(env.user, GROUPS):
             return _forbidden()
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         for required in ('name', 'date_begin', 'date_end'):
             if not payload.get(required):
                 return api_error(f'{required} is required.', status=400, code=f'missing_{required}')
@@ -310,7 +310,7 @@ class BxiApiSupportAdminEventsController(http.Controller):
         event, error = self._get_event(event_id)
         if error:
             return error
-        vals, error = _event_vals(env, request.get_json_data() or {})
+        vals, error = _event_vals(env, json_body() or {})
         if error:
             return error
         _, error = atomic(lambda: event.write(vals))
@@ -352,7 +352,7 @@ class BxiApiSupportAdminEventsController(http.Controller):
             return error
         if not (_allowed(env.user, GROUPS) or school_context(env)['faculty'] in event.coordinator_ids):
             return _forbidden()
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         ids, error = parse_ids(payload.get('registration_ids') or [], 'registration_ids')
         if error:
             return error

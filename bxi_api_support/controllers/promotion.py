@@ -15,7 +15,7 @@ from odoo.http import request
 from odoo.addons.bxi_api.controllers.auth import api_error, api_response, require_auth
 
 from ..models.people_service import MANAGER_GROUPS
-from .common import atomic, ref, resolve_record, resolve_records, running_enrollments
+from .common import atomic, ref, resolve_record, resolve_records, running_enrollments, json_body
 
 MODES = ('promote', 'graduate')
 ROLL_MODES = ('keep', 'renumber')
@@ -175,7 +175,7 @@ class BxiApiSupportPromotionController(http.Controller):
         without changing anything."""
         if not self._allowed():
             return _forbidden()
-        plan, error = _plan(request.env, request.get_json_data() or {})
+        plan, error = _plan(request.env, json_body() or {})
         if error:
             return error
         return api_response({'summary': _summary(plan), 'students': [_row_dict(r) for r in plan['rows']]})
@@ -189,7 +189,7 @@ class BxiApiSupportPromotionController(http.Controller):
         env = request.env
         if not self._allowed():
             return _forbidden()
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         plan, error = _plan(env, payload)
         if error:
             return error

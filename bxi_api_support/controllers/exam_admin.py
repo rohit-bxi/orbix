@@ -13,7 +13,7 @@ from odoo.addons.bxi_api.controllers.auth import api_error, api_response, parse_
 
 from .common import (
     atomic, check_selection, date_str, parse_date, parse_datetime, parse_pagination, ref, resolve_record,
-    resolve_records, running_enrollment, school_context,
+    resolve_records, running_enrollment, school_context, json_body,
 )
 from .exam import _exam_dict, _is_exam_staff, _session_dict
 
@@ -260,7 +260,7 @@ class BxiApiSupportExamAdminController(http.Controller):
         env = request.env
         if not _is_exam_staff(env.user):
             return _forbidden()
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         error = _required(payload, ('name', 'exam_code', 'class_id', 'section_id', 'exam_type_id',
                                     'start_date', 'end_date'))
         if error:
@@ -324,7 +324,7 @@ class BxiApiSupportExamAdminController(http.Controller):
             return error
         if session.state != 'draft':
             return api_error('Only a draft exam session can be edited.', status=400, code='invalid_state')
-        vals, error = _session_vals(env, request.get_json_data() or {}, session)
+        vals, error = _session_vals(env, json_body() or {}, session)
         if error:
             return error
         _, error = atomic(lambda: session.write(vals))
@@ -346,7 +346,7 @@ class BxiApiSupportExamAdminController(http.Controller):
         if session.state not in SEATING_STATES:
             return api_error('Papers can only be added to a draft or scheduled session.', status=400,
                              code='invalid_state')
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         error = _required(payload, ('subject_id', 'start_time', 'end_time', 'total_marks', 'passing_marks'))
         if error:
             return error
@@ -369,7 +369,7 @@ class BxiApiSupportExamAdminController(http.Controller):
             return error
         if exam.state != 'draft':
             return api_error('Only a draft exam can be edited.', status=400, code='invalid_state')
-        vals, error = _exam_vals(env, request.get_json_data() or {}, exam.session_id, exam)
+        vals, error = _exam_vals(env, json_body() or {}, exam.session_id, exam)
         if error:
             return error
         _, error = atomic(lambda: exam.write(vals))
@@ -393,7 +393,7 @@ class BxiApiSupportExamAdminController(http.Controller):
             return error
         if exam.state not in SEATING_STATES:
             return api_error('Seating can only change before the exam is held.', status=400, code='invalid_state')
-        payload = request.get_json_data() if request.httprequest.get_data() else {}
+        payload = json_body()
         payload = payload or {}
         if payload.get('student_ids'):
             students, error = resolve_records(env, 'op.student', payload['student_ids'], 'student_ids')
@@ -467,7 +467,7 @@ class BxiApiSupportExamAdminController(http.Controller):
         env = request.env
         if not _is_exam_staff(env.user):
             return _forbidden()
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         error = _required(payload, ('exam_session_id',))
         if error:
             return error

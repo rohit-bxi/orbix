@@ -6,7 +6,7 @@ from odoo.http import request
 
 from odoo.addons.bxi_api.controllers.auth import api_error, api_response, parse_int, require_auth
 
-from .common import get_viewable_student, safe_create, session_students
+from .common import get_viewable_student, safe_create, session_students, json_body
 
 # Same three groups bxi_student_attendance's own ir.rule domains already use
 # to widen visibility on hr.attendance for student rows.
@@ -48,7 +48,7 @@ class BxiApiSupportAttendanceController(http.Controller):
     def checkin(self, **kwargs):
         if not _is_attendance_staff(request.env.user):
             return api_error('Not authorized to mark attendance.', status=403, code='forbidden')
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         student_id = payload.get('student_id')
         if not student_id:
             return api_error('student_id is required.', status=400, code='missing_student_id')
@@ -85,7 +85,7 @@ class BxiApiSupportAttendanceController(http.Controller):
         if attendance.check_out:
             return api_error('This attendance record already has a check-out time.', status=400, code='already_checked_out')
 
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         check_out = payload.get('check_out') or fields.Datetime.to_string(fields.Datetime.now())
         attendance.check_out = check_out
         return api_response(_attendance_dict(attendance))
@@ -100,7 +100,7 @@ class BxiApiSupportAttendanceController(http.Controller):
         """
         if not _is_attendance_staff(request.env.user):
             return api_error('Not authorized to mark attendance.', status=403, code='forbidden')
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         status = payload.get('status')
         if status not in ('present', 'absent', 'late', 'excused'):
             return api_error(
@@ -187,7 +187,7 @@ class BxiApiSupportAttendanceController(http.Controller):
             return api_error('Session not found.', status=404, code='not_found')
         if not _session_owned_by(request.env.user, session):
             return api_error('Not authorized for this session.', status=403, code='forbidden')
-        entries = (request.get_json_data() or {}).get('marks') or []
+        entries = (json_body() or {}).get('marks') or []
         if not entries:
             return api_error('marks is required.', status=400, code='missing_marks')
 

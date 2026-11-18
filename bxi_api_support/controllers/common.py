@@ -35,6 +35,16 @@ from odoo.http import request
 from odoo.addons.bxi_api.controllers.auth import api_error, model_error, parse_int
 
 
+def json_body():
+    """The request's JSON body, or {} when it has none.
+
+    ``request.get_json_data()`` raises on an empty body, so a plain POST
+    to an action route (``/escalate``, ``/reject``...) became a 500."""
+    if not request.httprequest.get_data():
+        return {}
+    return request.get_json_data()
+
+
 def school_context(env):
     """The caller's student/parent/teacher records and classes - see
     res.users._bxi_school_context."""

@@ -6,7 +6,7 @@ from odoo.http import request
 
 from odoo.addons.bxi_api.controllers.auth import api_error, api_response, call_action, require_auth
 
-from .common import get_authorized_student, get_own_student_ids, get_viewable_student, parse_pagination, safe_create
+from .common import get_authorized_student, get_own_student_ids, get_viewable_student, parse_pagination, safe_create, json_body
 
 STAFF_GROUP = 'bxi_school_transport_bus_management.group_transport_staff'
 MANAGER_GROUP = 'bxi_school_transport_bus_management.group_transport_manager'
@@ -125,7 +125,7 @@ class BxiApiSupportTransportController(http.Controller):
     @http.route('/api/v1/transport/registrations', type='http', auth='public', methods=['POST'], csrf=False)
     @require_auth
     def create_registration(self, **kwargs):
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         student, error = get_authorized_student(payload.get('student_id'), is_staff=_is_transport_staff)
         if error:
             return error
@@ -191,7 +191,7 @@ class BxiApiSupportTransportController(http.Controller):
     def bulk_register(self, **kwargs):
         if not _is_transport_staff(request.env.user):
             return api_error('Not authorized to bulk-register students.', status=403, code='forbidden')
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         for field in ('batch_id', 'route_id', 'stop_id'):
             if not payload.get(field):
                 return api_error('%s is required.' % field, status=400, code='missing_%s' % field)
@@ -246,7 +246,7 @@ class BxiApiSupportTransportController(http.Controller):
         route = request.env['bxi.transport.route'].sudo().browse(route_id)
         if not route.exists():
             return api_error('Route not found.', status=404, code='not_found')
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         if not payload.get('name'):
             return api_error('name is required.', status=400, code='missing_name')
         _stop, error = safe_create(request.env['bxi.transport.route.stop'].sudo(), dict(
@@ -270,7 +270,7 @@ class BxiApiSupportTransportController(http.Controller):
                 return api_error('Students are registered at this stop.', status=400, code='stop_in_use')
             stop.unlink()
         else:
-            payload = request.get_json_data() or {}
+            payload = json_body() or {}
             _, error = call_action(stop, 'write', vals={k: payload[k] for k in self.STOP_FIELDS if k in payload})
             if error:
                 return error

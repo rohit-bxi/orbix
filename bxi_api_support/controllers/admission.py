@@ -14,7 +14,7 @@ from odoo.addons.bxi_api.controllers.auth import (
     api_error, api_response, call_action, parse_int, parse_request, rate_limit, require_auth,
 )
 
-from .common import date_str, parse_pagination, ref, safe_create
+from .common import date_str, parse_pagination, ref, safe_create, json_body
 
 ADMISSION_STAFF_GROUPS = ('openeducat_admission.group_op_admission_user', 'openeducat_admission.group_op_admission_admin')
 APPLY_FIELDS = (
@@ -98,7 +98,7 @@ class BxiApiSupportAdmissionController(http.Controller):
     def apply(self, **kwargs):
         """Public online application to an open intake. Returns the
         application number the family later uses with /admissions/status."""
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         register_id, error = parse_int(payload.get('register_id'), 'register_id')
         if error:
             return error
@@ -133,7 +133,7 @@ class BxiApiSupportAdmissionController(http.Controller):
     def status(self, **kwargs):
         """{application_number, birth_date}: the applicant's current state.
         Both must match, so an application number alone reveals nothing."""
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         if not payload.get('application_number') or not payload.get('birth_date'):
             return api_error('application_number and birth_date are required.', status=400, code='missing_fields')
         try:
@@ -211,7 +211,7 @@ class BxiApiSupportAdmissionController(http.Controller):
     def rte_apply(self, **kwargs):
         """The app version of /my/rte/apply: the same fields, with the ranked
         school choices as `course_ids` (1-5 RTE-active classes)."""
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         Admission = request.env['op.admission']
         errors = Admission._rte_application_errors(payload)
         choice_ids = []

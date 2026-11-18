@@ -98,3 +98,109 @@ class TestBxiApiSupportTransport(ApiSupportHttpCase):
                 'batch_id': batch.id, 'route_id': self.route.id, 'stop_id': self.stop.id,
             })
         self.assertEqual(resp.status_code, 403)
+
+    def test_route_detail_archive_and_set_draft(self):
+        student_headers = self._headers('transport_api_student', 'StudentPass1!')
+        # A draft route is staff-only.
+        self.assertEqual(self.url_open(f'/api/v1/transport/routes/{self.route.id}', headers=student_headers).status_code, 403)
+        detail = self.url_open(f'/api/v1/transport/routes/{self.route.id}', headers=self._staff_headers())
+        self.assertEqual(detail.status_code, 200, detail.text)
+        self.assertEqual(detail.json()['data']['code'], 'API-RT1')
+        self.assertEqual([s['id'] for s in detail.json()['data']['stops']], [self.stop.id])
+        self.route.action_activate()
+        self.assertEqual(self.url_open(f'/api/v1/transport/routes/{self.route.id}', headers=student_headers).status_code, 200)
+
+        self.assertEqual(self.url_open(f'/api/v1/transport/routes/{self.route.id}/archive',
+                                       headers=student_headers, method='POST').status_code, 403)
+        archived = self.url_open(f'/api/v1/transport/routes/{self.route.id}/archive',
+                                 headers=self._staff_headers(), method='POST')
+        self.assertEqual(archived.status_code, 200, archived.text)
+        self.assertEqual(archived.json()['data']['state'], 'archived')
+        self.assertFalse(self.route.active)
+        self.assertEqual(self.url_open(f'/api/v1/transport/routes/{self.route.id}', headers=student_headers).status_code, 403)
+        self.assertNotIn(self.route.id, [r['id'] for r in self.url_open(
+            '/api/v1/transport/routes', headers=student_headers).json()['data']['routes']])
+
+        draft = self.url_open(f'/api/v1/transport/routes/{self.route.id}/set-draft',
+                              headers=self._staff_headers(), method='POST')
+        self.assertEqual(draft.json()['data']['state'], 'draft')
+        self.assertTrue(self.route.active)
+        self.assertEqual(self.url_open('/api/v1/transport/routes/999999', headers=self._staff_headers()).status_code, 404)
+
+    def _confirmed_registration(self):
+        self.route.action_activate()
+        registration = self.env['bxi.transport.registration'].create({
+            'student_id': self.student.id, 'route_id': self.route.id, 'stop_id': self.stop.id})
+        registration.action_confirm()
+        return registration
+
+    def test_registration_detail_access(self):
+        registration = self._confirmed_registration()
+        url = f'/api/v1/transport/registrations/{registration.id}'
+        own = self.url_open(url, headers=self._headers('transport_api_student', 'StudentPass1!'))
+        self.assertEqual(own.status_code, 200, own.text)
+        self.assertEqual(own.json()['data']['state'], 'confirmed')
+        self.assertEqual(own.json()['data']['stop_id'], self.stop.id)
+        self.assertEqual(self.url_open(url, headers=self._staff_headers()).status_code, 200)
+        mail_new_test_user(self.env, login='transport_api_other2', groups='base.group_user', password='OtherPass1!')
+        self.assertEqual(self.url_open(url, headers=self._headers('transport_api_other2', 'OtherPass1!')).status_code, 403)
+        self.assertEqual(self.url_open('/api/v1/transport/registrations/999999',
+                                       headers=self._staff_headers()).status_code, 404)
+
+    def test_activate_needs_paid_invoice(self):
+        registration = self._confirmed_registration()
+        url = f'/api/v1/transport/registrations/{registration.id}/activate'
+        # Families can't activate; staff can't until the fee is paid.
+        self.assertEqual(self.url_open(url, headers=self._headers('transport_api_student', 'StudentPass1!'),
+                                       method='POST').status_code, 403)
+        unpaid = self.url_open(url, headers=self._staff_headers(), method='POST')
+        self.assertEqual(unpaid.status_code, 400)
+        self.assertEqual(registration.state, 'confirmed')
+
+        invoice = registration.invoice_id
+        invoice.action_post()
+        self.env['account.payment.register'].with_context(active_model='account.move', active_ids=invoice.ids).create(
+            {'journal_id': self.cash_journal.id}).action_create_payments()
+        paid = self.url_open(url, headers=self._staff_headers(), method='POST')
+        self.assertEqual(paid.status_code, 200, paid.text)
+        self.assertEqual(paid.json()['data']['state'], 'active')
+
+    def test_family_cancels_then_staff_sets_draft(self):
+        registration = self._confirmed_registration()
+        invoice = registration.invoice_id
+        self.assertEqual(invoice.state, 'draft')
+        student_headers = self._headers('transport_api_student', 'StudentPass1!')
+        cancel = self.url_open(f'/api/v1/transport/registrations/{registration.id}/cancel',
+                               headers=student_headers, method='POST')
+        self.assertEqual(cancel.status_code, 200, cancel.text)
+        self.assertEqual(cancel.json()['data']['state'], 'cancelled')
+        self.assertEqual(invoice.state, 'cancel')
+        # The seat is free again.
+        self.assertEqual(self.route.seats_available, self.route.capacity)
+
+        url = f'/api/v1/transport/registrations/{registration.id}/set-draft'
+        self.assertEqual(self.url_open(url, headers=student_headers, method='POST').status_code, 403)
+        draft = self.url_open(url, headers=self._staff_headers(), method='POST')
+        self.assertEqual(draft.status_code, 200, draft.text)
+        self.assertEqual(draft.json()['data']['state'], 'draft')
+
+    def test_registration_list_and_bulk_register(self):
+        course = self.env['op.course'].create({'name': 'Transport Bulk Course', 'code': 'TRAN-C2'})
+        batch = self.env['op.batch'].create({'name': 'Transport Bulk Batch', 'code': 'TRAN-B2', 'course_id': course.id,
+                                             'start_date': '2026-06-01', 'end_date': '2027-03-31'})
+        classmate = self._create_student('TRANAPI-002')
+        self._enroll(classmate, course, batch)
+        self.route.action_activate()
+        bulk = self.url_open('/api/v1/transport/bulk-register', headers=self._staff_headers(), json={
+            'batch_id': batch.id, 'route_id': self.route.id, 'stop_id': self.stop.id})
+        self.assertEqual(bulk.status_code, 201, bulk.text)
+        self.assertEqual([r['student_id'] for r in bulk.json()['data']['registrations']], [classmate.id])
+
+        own_id = self.env['bxi.transport.registration'].create({
+            'student_id': self.student.id, 'route_id': self.route.id, 'stop_id': self.stop.id}).id
+        staff = self.url_open('/api/v1/transport/registrations', headers=self._staff_headers())
+        self.assertEqual(staff.status_code, 200, staff.text)
+        self.assertTrue({own_id} | {r['id'] for r in bulk.json()['data']['registrations']}
+                        <= {r['id'] for r in staff.json()['data']['registrations']})
+        mine = self.url_open('/api/v1/transport/registrations', headers=self._headers('transport_api_student', 'StudentPass1!'))
+        self.assertEqual([r['id'] for r in mine.json()['data']['registrations']], [own_id])

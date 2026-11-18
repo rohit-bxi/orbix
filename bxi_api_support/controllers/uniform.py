@@ -6,7 +6,7 @@ from odoo.http import request
 
 from odoo.addons.bxi_api.controllers.auth import api_error, api_response, call_action, require_auth
 
-from .common import get_own_student_ids, parse_amount, parse_pagination, safe_create
+from .common import get_own_student_ids, parse_amount, parse_pagination, safe_create, json_body
 
 STAFF_GROUP = 'bxi_uniform_management.group_uniform_staff'
 MANAGER_GROUP = 'bxi_uniform_management.group_uniform_manager'
@@ -87,7 +87,7 @@ class BxiApiSupportUniformController(http.Controller):
     @http.route('/api/v1/uniform/orders', type='http', auth='public', methods=['POST'], csrf=False)
     @require_auth
     def create_order(self, **kwargs):
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         student_id = payload.get('student_id')
         faculty_id = payload.get('faculty_id')
         if not student_id and not faculty_id:
@@ -153,10 +153,9 @@ class BxiApiSupportUniformController(http.Controller):
             return api_error('Order not found.', status=404, code='not_found')
         if not _can_access_patron(request.env, order):
             return api_error('Not authorized for this order.', status=403, code='forbidden')
-        payload = request.get_json_data() or {}
-        if payload.get('cancel_reason'):
-            order.cancel_reason = payload['cancel_reason']
-        _, error = call_action(order, 'action_cancel')
+        payload = json_body() or {}
+        _, error = call_action(order, 'action_cancel', write_vals={
+            'cancel_reason': payload['cancel_reason']} if payload.get('cancel_reason') else None)
         if error:
             return error
         return api_response(_order_dict(order))
@@ -182,7 +181,7 @@ class BxiApiSupportUniformController(http.Controller):
         order = request.env['bxi.uniform.order'].sudo().browse(order_id)
         if not order.exists():
             return api_error('Order not found.', status=404, code='not_found')
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         if not payload.get('order_line_id'):
             return api_error('order_line_id is required.', status=400, code='missing_order_line_id')
         if not payload.get('new_product_id'):
@@ -225,7 +224,7 @@ class BxiApiSupportUniformController(http.Controller):
         stock = request.env['bxi.uniform.stock'].sudo().browse(stock_id)
         if not stock.exists():
             return api_error('Stock item not found.', status=404, code='not_found')
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         quantity, error = parse_amount(payload.get('quantity'), 'quantity')
         if error:
             return error

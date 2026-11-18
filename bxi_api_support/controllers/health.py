@@ -14,7 +14,7 @@ from odoo.http import request
 
 from odoo.addons.bxi_api.controllers.auth import api_error, api_response, call_action, require_auth
 
-from .common import parse_pagination, safe_create
+from .common import parse_pagination, safe_create, json_body
 
 STAFF_GROUP = 'op_health_center.group_health_staff'
 MANAGER_GROUP = 'op_health_center.group_health_manager'
@@ -91,7 +91,7 @@ class BxiApiSupportHealthController(http.Controller):
     def create_visit(self, **kwargs):
         if not _is_health_staff(request.env.user):
             return api_error('Not authorized to record health visits.', status=403, code='forbidden')
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         student_id, faculty_id = payload.get('student_id'), payload.get('faculty_id')
         if not student_id and not faculty_id:
             return api_error('student_id or faculty_id is required.', status=400, code='missing_patient')
@@ -176,7 +176,7 @@ class BxiApiSupportHealthController(http.Controller):
     def create_checkup(self, **kwargs):
         if not _is_health_staff(request.env.user):
             return api_error('Not authorized to record health checkups.', status=403, code='forbidden')
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         student_id, faculty_id = payload.get('student_id'), payload.get('faculty_id')
         if not student_id and not faculty_id:
             return api_error('student_id or faculty_id is required.', status=400, code='missing_patient')
@@ -247,7 +247,7 @@ class BxiApiSupportHealthController(http.Controller):
     def create_vaccination(self, **kwargs):
         if not _is_health_staff(request.env.user):
             return api_error('Not authorized to record vaccinations.', status=403, code='forbidden')
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         student_id, faculty_id = payload.get('student_id'), payload.get('faculty_id')
         if not student_id and not faculty_id:
             return api_error('student_id or faculty_id is required.', status=400, code='missing_patient')
