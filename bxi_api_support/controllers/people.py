@@ -29,7 +29,7 @@ from ..models.people_service import PeopleError
 from ..models.res_users import TEACHER_PERMISSION_FIELDS
 from .common import (
     STUDENT_STAFF_GROUPS, check_selection, date_str, parse_ids, parse_pagination, ref, resolve_record,
-    resolve_records, running_enrollment, school_context,
+    resolve_records, running_enrollment, school_context, json_body,
 )
 from .people_account import (
     account_dict, apply_aadhaar, apply_account, apply_documents, apply_face, apply_id_verification, deliver,
@@ -561,7 +561,7 @@ class BxiApiSupportPeopleController(http.Controller):
         password are required."""
         if not is_manager(request.env.user):
             return api_error('Not authorized to add students.', status=403, code='forbidden')
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         for required in ('first_name', 'last_name', 'gender', 'email'):
             if not payload.get(required):
                 return api_error(f'{required} is required.', status=400, code=f'missing_{required}')
@@ -603,7 +603,7 @@ class BxiApiSupportPeopleController(http.Controller):
         student = request.env['op.student'].sudo().with_context(active_test=False).browse(student_id)
         if not student.exists():
             return api_error('Student not found.', status=404, code='not_found')
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         vals, error = _student_vals(payload)
         if error:
             return error
@@ -695,7 +695,7 @@ class BxiApiSupportPeopleController(http.Controller):
         "designation_id"?, "responsibility_ids"?, "status"?, "notes"?}"""
         if not is_manager(request.env.user):
             return api_error('Not authorized to add teachers.', status=403, code='forbidden')
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         for required in ('first_name', 'last_name', 'gender', 'birth_date'):
             if not payload.get(required):
                 return api_error(f'{required} is required.', status=400, code=f'missing_{required}')
@@ -728,7 +728,7 @@ class BxiApiSupportPeopleController(http.Controller):
         faculty = request.env['op.faculty'].sudo().with_context(active_test=False).browse(faculty_id)
         if not faculty.exists():
             return api_error('Teacher not found.', status=404, code='not_found')
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         vals, contact, error = _teacher_vals(payload, faculty)
         if error:
             return error
@@ -802,7 +802,7 @@ class BxiApiSupportPeopleController(http.Controller):
         children, with the portal login they use for the app."""
         if not is_manager(request.env.user):
             return api_error('Not authorized to add parents.', status=403, code='forbidden')
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         for required in ('name', 'mobile', 'relationship_id', 'student_ids'):
             if not payload.get(required):
                 return api_error(f'{required} is required.', status=400, code=f'missing_{required}')
@@ -848,7 +848,7 @@ class BxiApiSupportPeopleController(http.Controller):
         parent = request.env['op.parent'].sudo().with_context(active_test=False).browse(parent_id)
         if not parent.exists():
             return api_error('Parent not found.', status=404, code='not_found')
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         vals, error = _vals(payload, PARENT_FIELDS)
         if error:
             return error

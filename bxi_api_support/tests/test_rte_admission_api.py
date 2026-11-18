@@ -165,3 +165,159 @@ class TestBxiApiSupportRteAdmission(ApiSupportHttpCase):
             f'/api/v1/admissions/rte/reimbursement-claims/{claim_id}/mark-paid', headers=headers, method='POST')
         self.assertEqual(paid.status_code, 200)
         self.assertEqual(paid.json()['data']['state'], 'paid')
+
+    def _parent_headers(self):
+        return self._headers('rte_api_parent', 'ParentPass1!')
+
+    def _grievance(self):
+        self.rte_admission.action_reject_documents()
+        return self.rte_admission.action_file_grievance('The documents were complete.')
+
+    def test_grievance_detail_access(self):
+        grievance = self._grievance()
+        url = f'/api/v1/admissions/rte/grievances/{grievance.id}'
+        own = self.url_open(url, headers=self._parent_headers())
+        self.assertEqual(own.status_code, 200, own.text)
+        self.assertEqual(own.json()['data']['admission_id'], self.rte_admission.id)
+        self.assertEqual(own.json()['data']['state'], 'submitted')
+        self.assertEqual(self.url_open(url, headers=self._coord_headers()).status_code, 200)
+        self.assertEqual(self.url_open(url, headers=self._headers('rte_api_other', 'OtherPass1!')).status_code, 403)
+        self.assertEqual(self.url_open('/api/v1/admissions/rte/grievances/999999',
+                                       headers=self._coord_headers()).status_code, 404)
+
+    def test_grievance_escalate_and_jd_resolve(self):
+        grievance = self._grievance()
+        base = f'/api/v1/admissions/rte/grievances/{grievance.id}'
+        self.assertEqual(self.url_open(f'{base}/escalate', headers=self._parent_headers(), method='POST').status_code, 403)
+        # JD resolution only applies once escalated.
+        early = self.url_open(f'{base}/jd-resolve', headers=self._district_headers(),
+                              json={'jd_resolution_notes': 'Too early.'})
+        self.assertEqual(early.status_code, 400)
+        self.assertFalse(grievance.jd_resolution_notes)  # a refused call doesn't keep its notes
+
+        escalated = self.url_open(f'{base}/escalate', headers=self._coord_headers(), method='POST')
+        self.assertEqual(escalated.status_code, 200, escalated.text)
+        self.assertEqual(escalated.json()['data']['state'], 'escalated_jd')
+        self.assertEqual(self.url_open(f'{base}/escalate', headers=self._coord_headers(), method='POST').status_code, 400)
+
+        # A school coordinator can't resolve at Joint Director level.
+        self.assertEqual(self.url_open(f'{base}/jd-resolve', headers=self._coord_headers(),
+                                       json={'jd_resolution_notes': 'x'}).status_code, 403)
+        # Also a body-less POST: this used to crash with a 500.
+        no_notes = self.url_open(f'{base}/jd-resolve', headers=self._district_headers(), method='POST')
+        self.assertEqual(no_notes.status_code, 400)
+        resolved = self.url_open(f'{base}/jd-resolve', headers=self._district_headers(),
+                                 json={'jd_resolution_notes': 'Documents re-checked; accepted.'})
+        self.assertEqual(resolved.status_code, 200, resolved.text)
+        self.assertEqual(resolved.json()['data']['state'], 'resolved')
+        self.assertEqual(resolved.json()['data']['jd_resolution_notes'], 'Documents re-checked; accepted.')
+
+    def test_grievance_reject(self):
+        grievance = self._grievance()
+        url = f'/api/v1/admissions/rte/grievances/{grievance.id}/reject'
+        self.assertEqual(self.url_open(url, headers=self._parent_headers(), method='POST').status_code, 403)
+        rejected = self.url_open(url, headers=self._coord_headers(), method='POST')
+        self.assertEqual(rejected.status_code, 200, rejected.text)
+        self.assertEqual(rejected.json()['data']['state'], 'rejected')
+        self.assertEqual(self.url_open(url, headers=self._coord_headers(), method='POST').status_code, 400)
+
+    def test_lottery_create_and_run_and_detail(self):
+        self.rte_admission.action_verify_documents()
+        payload = {'course_id': self.course.id, 'academic_year_id': self.academic_year.id}
+        url = '/api/v1/admissions/rte/lottery-batches/create-and-run'
+        self.assertEqual(self.url_open(url, headers=self._coord_headers(), json=payload).status_code, 403)
+        self.assertEqual(self.url_open(url, headers=self._district_headers(), json={'course_id': self.course.id})
+                         .json()['error']['code'], 'missing_academic_year_id')
+        resp = self.url_open(url, headers=self._district_headers(), json=payload)
+        self.assertEqual(resp.status_code, 201, resp.text)
+        batch = resp.json()['data']
+        self.assertEqual(batch['state'], 'run')
+        self.assertEqual([(r['admission_id'], r['result_type']) for r in batch['results']],
+                         [(self.rte_admission.id, 'selected')])
+
+        detail = self.url_open(f"/api/v1/admissions/rte/lottery-batches/{batch['id']}", headers=self._district_headers())
+        self.assertEqual(detail.status_code, 200, detail.text)
+        self.assertEqual(detail.json()['data']['results'], batch['results'])
+        self.assertEqual(self.url_open(f"/api/v1/admissions/rte/lottery-batches/{batch['id']}",
+                                       headers=self._coord_headers()).status_code, 403)
+        self.assertEqual(self.url_open('/api/v1/admissions/rte/lottery-batches/999999',
+                                       headers=self._district_headers()).status_code, 404)
+
+    def test_confirm_then_mark_admitted(self):
+        base = f'/api/v1/admissions/rte/{self.rte_admission.id}'
+        # Nothing to confirm or admit while still a draft application.
+        self.assertEqual(self.url_open(f'{base}/confirm', headers=self._parent_headers(), method='POST').status_code, 400)
+        self.assertEqual(self.url_open(f'{base}/mark-admitted', headers=self._coord_headers(), method='POST').status_code, 400)
+
+        self.rte_admission.rte_state = 'allotted'
+        self.assertEqual(self.url_open(f'{base}/confirm', headers=self._headers('rte_api_other', 'OtherPass1!'),
+                                       method='POST').status_code, 403)
+        confirmed = self.url_open(f'{base}/confirm', headers=self._parent_headers(), method='POST')
+        self.assertEqual(confirmed.status_code, 200, confirmed.text)
+        self.assertEqual(confirmed.json()['data']['rte_state'], 'confirmed')
+
+        self.assertEqual(self.url_open(f'{base}/mark-admitted', headers=self._parent_headers(), method='POST').status_code, 403)
+        admitted = self.url_open(f'{base}/mark-admitted', headers=self._coord_headers(), method='POST')
+        self.assertEqual(admitted.status_code, 200, admitted.text)
+        self.assertEqual(admitted.json()['data']['rte_state'], 'admitted')
+        # An admitted child can no longer lapse.
+        self.assertEqual(self.url_open(f'{base}/mark-lapsed', headers=self._coord_headers(), method='POST').status_code, 400)
+
+    def test_mark_lapsed(self):
+        base = f'/api/v1/admissions/rte/{self.rte_admission.id}'
+        self.assertEqual(self.url_open(f'{base}/mark-lapsed', headers=self._coord_headers(), method='POST').status_code, 400)
+        self.rte_admission.rte_state = 'allotted'
+        self.assertEqual(self.url_open(f'{base}/mark-lapsed', headers=self._parent_headers(), method='POST').status_code, 403)
+        lapsed = self.url_open(f'{base}/mark-lapsed', headers=self._coord_headers(), method='POST')
+        self.assertEqual(lapsed.status_code, 200, lapsed.text)
+        self.assertEqual(lapsed.json()['data']['rte_state'], 'lapsed')
+        self.assertEqual(self.url_open('/api/v1/admissions/rte/999999/mark-lapsed',
+                                       headers=self._coord_headers(), method='POST').status_code, 404)
+
+    def test_claim_detail_and_reject(self):
+        headers = self._coord_headers()
+        claim_id = self.url_open('/api/v1/admissions/rte/reimbursement-claims', headers=headers, json={
+            'course_id': self.course.id, 'academic_year_id': self.academic_year.id,
+            'admission_id': self.rte_admission.id, 'installment': 'first', 'amount': 5000.0,
+        }).json()['data']['id']
+        base = f'/api/v1/admissions/rte/reimbursement-claims/{claim_id}'
+        detail = self.url_open(base, headers=headers)
+        self.assertEqual(detail.status_code, 200, detail.text)
+        self.assertEqual(detail.json()['data']['amount'], 5000.0)
+        self.assertEqual(detail.json()['data']['state'], 'draft')
+        self.assertEqual(self.url_open(base, headers=self._parent_headers()).status_code, 403)
+        self.assertEqual(self.url_open('/api/v1/admissions/rte/reimbursement-claims/999999', headers=headers).status_code, 404)
+
+        # A draft claim can't be rejected; a submitted one can, once.
+        self.assertEqual(self.url_open(f'{base}/reject', headers=headers, method='POST').status_code, 400)
+        self.url_open(f'{base}/submit', headers=headers, method='POST')
+        self.assertEqual(self.url_open(f'{base}/reject', headers=self._parent_headers(), method='POST').status_code, 403)
+        rejected = self.url_open(f'{base}/reject', headers=headers, method='POST')
+        self.assertEqual(rejected.status_code, 200, rejected.text)
+        self.assertEqual(rejected.json()['data']['state'], 'rejected')
+        self.assertEqual(self.url_open(f'{base}/mark-paid', headers=headers, method='POST').status_code, 400)
+
+    def test_lists(self):
+        coord = self._coord_headers()
+        admissions = self.url_open('/api/v1/admissions/rte', headers=coord)
+        self.assertEqual(admissions.status_code, 200, admissions.text)
+        self.assertIn(self.rte_admission.id, [a['id'] for a in admissions.json()['data']['admissions']])
+        own = self.url_open('/api/v1/admissions/rte', headers=self._parent_headers()).json()['data']['admissions']
+        self.assertEqual([a['id'] for a in own], [self.rte_admission.id])
+
+        grievance = self._grievance()
+        grievances = self.url_open(f'/api/v1/admissions/rte/{self.rte_admission.id}/grievances', headers=self._parent_headers())
+        self.assertEqual(grievances.status_code, 200, grievances.text)
+        self.assertEqual([g['id'] for g in grievances.json()['data']['grievances']], [grievance.id])
+
+        claim_id = self.url_open('/api/v1/admissions/rte/reimbursement-claims', headers=coord, json={
+            'course_id': self.course.id, 'academic_year_id': self.academic_year.id, 'amount': 100.0}).json()['data']['id']
+        claims = self.url_open('/api/v1/admissions/rte/reimbursement-claims', headers=coord)
+        self.assertIn(claim_id, [c['id'] for c in claims.json()['data']['claims']])
+        self.assertEqual(self.url_open('/api/v1/admissions/rte/reimbursement-claims',
+                                       headers=self._parent_headers()).status_code, 403)
+
+        batch = self.env['rte.lottery.batch'].create({'course_id': self.course.id, 'academic_year_id': self.academic_year.id})
+        batches = self.url_open('/api/v1/admissions/rte/lottery-batches', headers=self._district_headers())
+        self.assertEqual(batches.status_code, 200, batches.text)
+        self.assertIn(batch.id, [b['id'] for b in batches.json()['data']['batches']])

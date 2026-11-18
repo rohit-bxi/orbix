@@ -250,3 +250,21 @@ class TestBxiApiSupportPeopleManagement(ApiSupportHttpCase):
         self.assertEqual(self.url_open('/api/v1/masters/designations', headers=parent).status_code, 403)
         self.assertEqual(self.url_open('/api/v1/teachers', headers=parent, json=self._teacher_body()).status_code, 403)
         self.assertEqual(self.url_open('/api/v1/teachers/999999/photo', headers=self._office()).status_code, 404)
+
+    def test_parent_detail(self):
+        student = self._create_student('UM-P2')
+        self._enroll(student, self.course, self.batch)
+        parent_id = self._post('/api/v1/parents', {
+            'name': 'Dev Parent', 'mobile': '9800099922', 'relationship_id': self.relationship.id,
+            'student_ids': [student.id], 'account': {'username': 'dev.parent', 'password': 'DevParent99'},
+        }).json()['data']['id']
+        resp = self.url_open(f'/api/v1/parents/{parent_id}', headers=self._office())
+        self.assertEqual(resp.status_code, 200, resp.text)
+        data = resp.json()['data']
+        self.assertEqual((data['id'], data['name'], data['mobile']), (parent_id, 'Dev Parent', '9800099922'))
+        self.assertEqual(data['classes'][0]['section']['id'], self.batch.id)
+        self.assertIn('account', data)
+        # Parents can't read other people's records through the staff directory.
+        self.assertEqual(self.url_open(f'/api/v1/parents/{parent_id}',
+                                       headers=self._headers('um_parent', 'ParentPass1!')).status_code, 403)
+        self.assertEqual(self.url_open('/api/v1/parents/999999', headers=self._office()).status_code, 404)

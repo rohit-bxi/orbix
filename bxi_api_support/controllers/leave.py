@@ -10,7 +10,7 @@ from odoo.http import request
 
 from odoo.addons.bxi_api.controllers.auth import api_error, api_response, call_action, parse_int, require_auth
 
-from .common import date_str, parse_pagination, ref, safe_create, school_context
+from .common import date_str, parse_pagination, ref, safe_create, school_context, json_body
 
 OPEN_STATES = ('confirm', 'validate1')
 
@@ -82,7 +82,7 @@ class BxiApiSupportLeaveController(http.Controller):
         employee, error = _own_employee(request.env)
         if error:
             return error
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         for required in ('type_id', 'date_from', 'date_to'):
             if not payload.get(required):
                 return api_error(f'{required} is required.', status=400, code=f'missing_{required}')
@@ -109,7 +109,7 @@ class BxiApiSupportLeaveController(http.Controller):
         leave = request.env['hr.leave'].sudo().browse(leave_id)
         if not leave.exists() or leave.employee_id != employee:
             return api_error('Time off not found.', status=404, code='not_found')
-        reason = (request.get_json_data() or {}).get('reason') if request.httprequest.get_data() else None
+        reason = (json_body() or {}).get('reason') or None
         _, error = call_action(leave, '_action_user_cancel', reason=reason or 'Cancelled from the Orbix app')
         if error:
             return error

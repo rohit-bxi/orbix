@@ -12,7 +12,7 @@ from odoo.addons.bxi_api.controllers.auth import (
 )
 
 from .common import (
-    date_str, get_viewable_student, parse_pagination, ref, running_enrollment, school_context, teacher_permission,
+    date_str, get_viewable_student, parse_pagination, ref, running_enrollment, school_context, teacher_permission, json_body,
 )
 
 EXAM_STAFF_GROUPS = (
@@ -238,7 +238,7 @@ class BxiApiSupportExamController(http.Controller):
             return api_error('Not authorized for this exam.', status=403, code='forbidden')
         if exam.state not in ('held', 'result_updated'):
             return api_error('Marks can be entered once the exam is held.', status=400, code='invalid_transition')
-        entries = (request.get_json_data() or {}).get('marks') or []
+        entries = (json_body() or {}).get('marks') or []
         if not entries:
             return api_error('marks is required.', status=400, code='missing_marks')
         attendee_by_student = {a.student_id.id: a for a in exam.attendees_line}

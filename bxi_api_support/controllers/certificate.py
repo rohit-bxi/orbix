@@ -8,7 +8,7 @@ from odoo.addons.bxi_api.controllers.auth import (
     api_error, api_file_response, api_response, call_action, rate_limit, require_auth,
 )
 
-from .common import get_own_student_ids, parse_pagination, safe_create, user_can_access_student
+from .common import get_own_student_ids, parse_pagination, safe_create, user_can_access_student, json_body
 
 STAFF_GROUP = 'bxi_certificate_management.group_certificate_user'
 MANAGER_GROUP = 'bxi_certificate_management.group_certificate_manager'
@@ -112,7 +112,7 @@ class BxiApiSupportCertificateController(http.Controller):
     def create_certificate(self, **kwargs):
         if not _is_certificate_staff(request.env.user):
             return api_error('Not authorized to create certificates.', status=403, code='forbidden')
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         if not payload.get('student_id'):
             return api_error('student_id is required.', status=400, code='missing_student_id')
         if not payload.get('certificate_type_id'):
@@ -153,7 +153,7 @@ class BxiApiSupportCertificateController(http.Controller):
         cert = request.env['op.certificate'].sudo().browse(certificate_id)
         if not cert.exists():
             return api_error('Certificate not found.', status=404, code='not_found')
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         if not payload.get('reason'):
             return api_error('reason is required.', status=400, code='missing_reason')
         _, error = call_action(cert, 'action_revoke', reason=payload['reason'])
@@ -180,7 +180,7 @@ class BxiApiSupportCertificateController(http.Controller):
     def bulk_create_certificates(self, **kwargs):
         if not _is_certificate_staff(request.env.user):
             return api_error('Not authorized to create certificates.', status=403, code='forbidden')
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         if not payload.get('certificate_type_id'):
             return api_error('certificate_type_id is required.', status=400, code='missing_certificate_type_id')
         if not payload.get('student_ids'):

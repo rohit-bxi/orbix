@@ -6,7 +6,7 @@ from odoo.http import request
 
 from odoo.addons.bxi_api.controllers.auth import api_error, api_response, call_action, require_auth
 
-from .common import get_authorized_student, get_own_student_ids, parse_pagination, safe_create
+from .common import get_authorized_student, get_own_student_ids, parse_pagination, safe_create, json_body
 
 EXEMPTION_STAFF_GROUP = 'bxi_fee_exemption_management.group_exemption_staff'
 
@@ -119,7 +119,7 @@ class BxiApiSupportFeeExemptionController(http.Controller):
     @http.route('/api/v1/fee-exemptions/requests', type='http', auth='public', methods=['POST'], csrf=False)
     @require_auth
     def create_request(self, **kwargs):
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         student, error = get_authorized_student(payload.get('student_id'), is_staff=_is_exemption_staff)
         if error:
             return error
@@ -177,7 +177,7 @@ class BxiApiSupportFeeExemptionController(http.Controller):
         if error:
             return error
 
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         if payload.get('approved_amount') is None:
             return api_error('approved_amount is required.', status=400, code='missing_approved_amount')
         if not payload.get('valid_until'):
@@ -205,7 +205,7 @@ class BxiApiSupportFeeExemptionController(http.Controller):
         if error:
             return error
 
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         if not payload.get('rejection_reason_category'):
             return api_error('rejection_reason_category is required.', status=400, code='missing_rejection_reason_category')
         if not payload.get('detailed_rejection_reason'):

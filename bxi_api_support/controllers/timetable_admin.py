@@ -6,7 +6,7 @@ from odoo.http import request
 
 from odoo.addons.bxi_api.controllers.auth import api_error, api_response, call_action, require_auth
 
-from .common import parse_pagination, safe_create
+from .common import parse_pagination, safe_create, json_body
 
 COORDINATOR_GROUP = 'bxi_class_timetable_inhencement.group_class_timetable_coordinator'
 MANAGER_GROUP = 'bxi_class_timetable_inhencement.group_class_timetable_manager'
@@ -122,7 +122,7 @@ class BxiApiSupportTimetableAdminController(http.Controller):
     def _run_wizard(self, model_name, method_name, required_fields):
         if not _is_timetable_staff(request.env.user):
             return api_error('Not authorized to manage timetables.', status=403, code='forbidden')
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         missing = [f for f in required_fields if not payload.get(f)]
         if missing:
             return api_error('Missing required field(s): %s' % ', '.join(missing), status=400, code='missing_fields')

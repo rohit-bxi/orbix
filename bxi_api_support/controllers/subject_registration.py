@@ -10,7 +10,7 @@ from odoo.http import request
 
 from odoo.addons.bxi_api.controllers.auth import api_error, api_response, call_action, require_auth
 
-from .common import get_viewable_student, parse_ids, ref, running_enrollment, safe_create, school_context
+from .common import get_viewable_student, parse_ids, ref, running_enrollment, safe_create, school_context, json_body
 
 REVIEWER_GROUPS = (
     'bxi_academic_management.group_academic_coordinator',
@@ -63,7 +63,7 @@ class BxiApiSupportSubjectRegistrationController(http.Controller):
     def create_registration(self, **kwargs):
         """{student_id, elective_subject_ids}: a draft for the student's
         current class, with its compulsory subjects filled in."""
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         context = school_context(request.env)
         student, error = get_viewable_student(
             request.env, payload.get('student_id'), allow=lambda env, s: s in context['students'])

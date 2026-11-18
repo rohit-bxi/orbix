@@ -42,7 +42,7 @@ from odoo.addons.bxi_api.controllers.auth import (
 from odoo.addons.bxi_identity_verification.models.aadhaar import mask_aadhaar, normalize_aadhaar
 
 from ..models.people_service import CREDENTIAL_CHANNELS, MANAGER_GROUPS, PeopleError, is_manager  # noqa: F401
-from .common import atomic, check_selection, ref
+from .common import atomic, check_selection, ref, json_body
 
 KIND_MODELS = {'teachers': 'op.faculty', 'students': 'op.student', 'parents': 'op.parent'}
 KINDS = 'any("teachers", "students", "parents")'
@@ -393,7 +393,7 @@ class BxiApiSupportPeopleAccountController(http.Controller):
         record, error = self._record(kind, record_id)
         if error:
             return error
-        account, error = parse_account({'account': request.get_json_data() or {}})
+        account, error = parse_account({'account': json_body() or {}})
         if error:
             return error
         delivery, error = transaction(lambda: apply_account(record, account))
@@ -410,7 +410,7 @@ class BxiApiSupportPeopleAccountController(http.Controller):
         record, error = self._record(kind, record_id)
         if error:
             return error
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         if not isinstance(payload.get('active'), bool):
             return api_error('active must be true or false.', status=400, code='invalid_active')
         if not record.user_id:
@@ -434,7 +434,7 @@ class BxiApiSupportPeopleAccountController(http.Controller):
         record, error = self._record(kind, record_id)
         if error:
             return error
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         account, error = parse_account({'account': dict(
             password=payload.get('password'), send_credentials=payload.get('send_credentials'),
             channel=payload.get('channel'), create_login=False)})
@@ -465,7 +465,7 @@ class BxiApiSupportPeopleAccountController(http.Controller):
         record, error = self._record(kind, record_id)
         if error:
             return error
-        channel, error = parse_channel((request.get_json_data() or {}).get('channel'))
+        channel, error = parse_channel((json_body() or {}).get('channel'))
         if error:
             return error
         if not record.user_id:
@@ -492,7 +492,7 @@ class BxiApiSupportPeopleAccountController(http.Controller):
         record, error = self._record(kind, record_id)
         if error:
             return error
-        face, error = parse_face({'face': request.get_json_data()})
+        face, error = parse_face({'face': json_body()})
         if error:
             return error
         _, error = transaction(lambda: apply_face(record, face))
@@ -535,7 +535,7 @@ class BxiApiSupportPeopleAccountController(http.Controller):
         record, error = self._record(kind, record_id, reviewer=True)
         if error:
             return error
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         decision = payload.get('decision')
         if decision not in ('verify', 'reject'):
             return api_error('decision must be verify or reject.', status=400, code='invalid_decision')

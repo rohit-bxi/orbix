@@ -97,3 +97,60 @@ class TestBxiApiSupportLab(ApiSupportHttpCase):
         })
         self.assertEqual(resp.status_code, 400)
         self.assertEqual(resp.json()['error']['code'], 'validation_error')
+
+    def test_session_start_done_cancel_reset(self):
+        session_id = self._create_session().json()['data']['id']
+        headers = self._instructor_headers()
+        other = self._headers('lab_api_other_instructor', 'OtherInstructorPass1!')
+        for action in ('start', 'done', 'cancel', 'reset'):
+            self.assertEqual(self.url_open(f'/api/v1/lab/sessions/{session_id}/{action}', headers=other,
+                                           method='POST').status_code, 403, action)
+        self.url_open(f'/api/v1/lab/sessions/{session_id}/confirm', headers=headers, method='POST')
+        started = self.url_open(f'/api/v1/lab/sessions/{session_id}/start', headers=headers, method='POST')
+        self.assertEqual(started.status_code, 200, started.text)
+        self.assertEqual(started.json()['data']['state'], 'in_progress')
+        done = self.url_open(f'/api/v1/lab/sessions/{session_id}/done', headers=headers, method='POST')
+        self.assertEqual(done.json()['data']['state'], 'done')
+        # The lab admin can manage any instructor's session.
+        admin = self._headers('lab_api_admin', 'AdminPass1!')
+        reset = self.url_open(f'/api/v1/lab/sessions/{session_id}/reset', headers=admin, method='POST')
+        self.assertEqual(reset.status_code, 200, reset.text)
+        self.assertEqual(reset.json()['data']['state'], 'draft')
+        cancelled = self.url_open(f'/api/v1/lab/sessions/{session_id}/cancel', headers=headers, method='POST')
+        self.assertEqual(cancelled.json()['data']['state'], 'cancelled')
+        self.assertEqual(self.url_open('/api/v1/lab/sessions/999999/start', headers=admin, method='POST').status_code, 404)
+
+    def test_equipment_issue_detail_and_mark_damaged(self):
+        session_id = self._create_session().json()['data']['id']
+        headers = self._instructor_headers()
+        issue_id = self.url_open('/api/v1/lab/equipment-issues', headers=headers, json={
+            'session_id': session_id, 'equipment_id': self.equipment.id, 'issued_qty': 1,
+        }).json()['data']['id']
+        detail = self.url_open(f'/api/v1/lab/equipment-issues/{issue_id}', headers=headers)
+        self.assertEqual(detail.status_code, 200, detail.text)
+        self.assertEqual((detail.json()['data']['equipment'], detail.json()['data']['issued_qty']), ('API Microscope', 1))
+        self.assertEqual(detail.json()['data']['session_id'], session_id)
+        other = self._headers('lab_api_other_instructor', 'OtherInstructorPass1!')
+        self.assertEqual(self.url_open(f'/api/v1/lab/equipment-issues/{issue_id}', headers=other).status_code, 403)
+        self.assertEqual(self.url_open('/api/v1/lab/equipment-issues/999999', headers=headers).status_code, 404)
+
+        url = f'/api/v1/lab/equipment-issues/{issue_id}/mark-damaged'
+        self.assertEqual(self.url_open(url, headers=other, method='POST').status_code, 403)
+        damaged = self.url_open(url, headers=headers, method='POST')
+        self.assertEqual(damaged.status_code, 200, damaged.text)
+        self.assertEqual(damaged.json()['data']['state'], 'damaged')
+
+    def test_session_detail_and_issue_list(self):
+        session_id = self._create_session().json()['data']['id']
+        headers = self._instructor_headers()
+        detail = self.url_open(f'/api/v1/lab/sessions/{session_id}', headers=headers)
+        self.assertEqual(detail.status_code, 200, detail.text)
+        self.assertEqual((detail.json()['data']['room'], detail.json()['data']['state']), ('API Lab Room', 'draft'))
+        issue_id = self.url_open('/api/v1/lab/equipment-issues', headers=headers, json={
+            'session_id': session_id, 'equipment_id': self.equipment.id, 'issued_qty': 1}).json()['data']['id']
+        own = self.url_open(f'/api/v1/lab/equipment-issues?session_id={session_id}', headers=headers)
+        self.assertEqual(own.status_code, 200, own.text)
+        self.assertEqual([i['id'] for i in own.json()['data']['issues']], [issue_id])
+        other = self.url_open('/api/v1/lab/equipment-issues', headers=self._headers(
+            'lab_api_other_instructor', 'OtherInstructorPass1!'))
+        self.assertEqual(other.json()['data']['issues'], [])

@@ -9,7 +9,7 @@ from odoo.http import request
 
 from odoo.addons.bxi_api.controllers.auth import api_error, api_response, parse_int, require_auth
 
-from .common import atomic, date_str, get_viewable_student, parse_pagination, ref
+from .common import atomic, date_str, get_viewable_student, parse_pagination, ref, json_body
 from .lab import _is_lab_admin
 
 ATTENDANCE_STATES = ('confirmed', 'in_progress', 'done')
@@ -119,7 +119,7 @@ class BxiApiSupportLabRecordsController(http.Controller):
         if session.state not in ATTENDANCE_STATES:
             return api_error('Attendance can be marked once the session is confirmed.', status=400,
                              code='invalid_state')
-        rows, error = _parse_rows(request.get_json_data() or {}, 'records', _roster(session))
+        rows, error = _parse_rows(json_body() or {}, 'records', _roster(session))
         if error:
             return error
         for row in rows:
@@ -189,7 +189,7 @@ class BxiApiSupportLabRecordsController(http.Controller):
         if session.state not in RESULT_STATES:
             return api_error('Results can be entered once the session has started.', status=400,
                              code='invalid_state')
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         experiment, error = self._experiment(session, payload.get('experiment_id'))
         if error:
             return error

@@ -107,3 +107,30 @@ class TestBxiApiSupportOnboarding(ApiSupportHttpCase):
         listing = self.url_open(
             '/api/v1/onboarding', headers=self._headers('onboard_api_admin', 'AdminPass1!')).json()['data']['onboarding']
         self.assertGreaterEqual(len(listing), 1)
+
+    def test_back_step(self):
+        headers = self._faculty_headers()
+        onboarding_id = self.url_open('/api/v1/onboarding', headers=headers, json={}, method='POST').json()['data']['id']
+        self.url_open(f'/api/v1/onboarding/{onboarding_id}/update', headers=headers, json={
+            'full_name': 'Riya Back Step', 'gender': 'f', 'birth_date': '2016-02-02', 'email': 'riya.back@example.com'})
+        self.assertEqual(self.url_open(f'/api/v1/onboarding/{onboarding_id}/next', headers=headers,
+                                       method='POST').json()['data']['state'], 'academic_info')
+        url = f'/api/v1/onboarding/{onboarding_id}/back'
+        self.assertEqual(self.url_open(url, headers=self._headers('onboard_api_other_faculty', 'OtherFacultyPass1!'),
+                                       method='POST').status_code, 403)
+        back = self.url_open(url, headers=headers, method='POST')
+        self.assertEqual(back.status_code, 200, back.text)
+        self.assertEqual(back.json()['data']['state'], 'basic_info')
+        # Already on the first step: going back again stays put.
+        self.assertEqual(self.url_open(url, headers=headers, method='POST').json()['data']['state'], 'basic_info')
+        self.assertEqual(self.url_open('/api/v1/onboarding/999999/back', headers=headers, method='POST').status_code, 404)
+
+    def test_detail(self):
+        headers = self._faculty_headers()
+        onboarding_id = self.url_open('/api/v1/onboarding', headers=headers, json={'full_name': 'Ana Detail'},
+                                      method='POST').json()['data']['id']
+        own = self.url_open(f'/api/v1/onboarding/{onboarding_id}', headers=headers)
+        self.assertEqual(own.status_code, 200, own.text)
+        self.assertEqual((own.json()['data']['id'], own.json()['data']['state']), (onboarding_id, 'basic_info'))
+        self.assertEqual(self.url_open(f'/api/v1/onboarding/{onboarding_id}', headers=self._headers(
+            'onboard_api_admin', 'AdminPass1!')).status_code, 200)

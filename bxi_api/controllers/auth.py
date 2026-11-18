@@ -144,7 +144,7 @@ def parse_int(value, field_name):
             '%s must be a number.' % field_name, status=400, code='invalid_%s' % field_name)
 
 
-def call_action(record, method_name, **kwargs):
+def call_action(record, method_name, write_vals=None, **kwargs):
     """Call an `action_*` transition method on `record`, translating the
     exceptions those methods already raise for an illegal transition or a
     permission problem into the standard API error envelope, instead of
@@ -153,9 +153,16 @@ def call_action(record, method_name, **kwargs):
     Returns (result, None) on success or (None, api_error(...)) on failure -
     callers should `return error` immediately when the second item isn't
     None, the same way `parse_int` is used.
+
+    `write_vals` (e.g. resolution notes the transition checks for) are
+    written first; they and anything the method wrote are rolled back when
+    the transition is refused, so a failed call leaves the record as it was.
     """
     try:
-        return getattr(record, method_name)(**kwargs), None
+        with record.env.cr.savepoint():
+            if write_vals:
+                record.write(write_vals)
+            return getattr(record, method_name)(**kwargs), None
     except AccessError as exc:
         # AccessError subclasses UserError in this Odoo version, so this
         # branch must come first - otherwise every AccessError would match

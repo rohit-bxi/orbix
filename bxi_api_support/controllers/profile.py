@@ -14,7 +14,7 @@ from odoo.addons.bxi_api.controllers.auth import (
     api_error, api_file_response, api_response, parse_request, require_auth,
 )
 
-from .common import can_view_student, date_str, ref, running_enrollment, school_context
+from .common import can_view_student, date_str, ref, running_enrollment, school_context, json_body
 
 PARTNER_UPDATE_FIELDS = ('email', 'phone', 'street', 'street2', 'city', 'zip', 'state_id', 'country_id')
 USER_UPDATE_FIELDS = ('lang', 'tz')
@@ -115,7 +115,7 @@ class BxiApiSupportProfileController(http.Controller):
     def update_my_profile(self, **kwargs):
         """Contact details only - names, class and other school records are
         managed by the school office, not self-service."""
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         unknown = set(payload) - set(PARTNER_UPDATE_FIELDS) - set(USER_UPDATE_FIELDS)
         if unknown:
             return api_error(

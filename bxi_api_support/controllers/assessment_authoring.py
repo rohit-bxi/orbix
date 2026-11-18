@@ -14,7 +14,7 @@ from odoo.addons.bxi_api.controllers.auth import (
 )
 
 from .assessment import _exam_dict, _is_coordinator_or_manager, _submission_dict
-from .common import get_own_faculty, safe_create, teacher_permission
+from .common import get_own_faculty, safe_create, teacher_permission, json_body
 
 QUESTION_FIELDS = ('question_type', 'question_text', 'marks', 'sample_answer_keywords', 'sequence')
 QUESTION_TYPES = ('mcq', 'short_answer', 'long_answer')
@@ -83,7 +83,7 @@ class BxiApiSupportAssessmentAuthoringController(http.Controller):
             return error
         if exam.state != 'draft':
             return api_error('Questions can only be changed while the exam is a draft.', status=400, code='exam_published')
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         if not payload.get('question_text'):
             return api_error('question_text is required.', status=400, code='missing_question_text')
         vals, error = _question_vals(payload)
@@ -109,7 +109,7 @@ class BxiApiSupportAssessmentAuthoringController(http.Controller):
         if action == 'delete':
             question.unlink()
             return api_response({'deleted': True, 'id': question_id})
-        vals, error = _question_vals(request.get_json_data() or {})
+        vals, error = _question_vals(json_body() or {})
         if error:
             return error
         _, error = call_action(question, 'write', vals=vals)
@@ -150,7 +150,7 @@ class BxiApiSupportAssessmentAuthoringController(http.Controller):
         """{class_id, subject_id, topic, difficulty?, question_count?,
         exam_id?}: generate questions with the configured AI provider into a
         new draft exam, or replace the questions of `exam_id`."""
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         faculty = get_own_faculty(request.env)
         if not faculty and not _is_coordinator_or_manager(request.env.user):
             return api_error('Only teachers can generate assessments.', status=403, code='forbidden')
@@ -192,7 +192,7 @@ class BxiApiSupportAssessmentAuthoringController(http.Controller):
             return api_error('Submission not found.', status=404, code='not_found')
         if not _can_author(request.env, submission.exam_id):
             return api_error('Not authorized for this submission.', status=403, code='forbidden')
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         if not payload.get('reason'):
             return api_error('reason is required.', status=400, code='missing_reason')
         wizard, error = safe_create(request.env['bxi.assessment.reevaluation.wizard'].sudo(), {

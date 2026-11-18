@@ -7,7 +7,7 @@ from odoo.http import request
 
 from odoo.addons.bxi_api.controllers.auth import api_error, api_response, require_auth
 
-from .common import audience_domain, parse_pagination, safe_create
+from .common import audience_domain, parse_pagination, safe_create, json_body
 
 MANAGER_GROUP = 'bxi_school_notice.group_notice_manager'
 
@@ -83,7 +83,7 @@ class BxiApiSupportNoticeController(http.Controller):
     def create_notice(self, **kwargs):
         if not _is_notice_manager(request.env.user):
             return api_error('Not authorized to post notices.', status=403, code='forbidden')
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         if not payload.get('title'):
             return api_error('title is required.', status=400, code='missing_title')
         if not payload.get('body'):
@@ -106,7 +106,7 @@ class BxiApiSupportNoticeController(http.Controller):
         notice = request.env['bxi.notice'].sudo().browse(notice_id)
         if not notice.exists():
             return api_error('Notice not found.', status=404, code='not_found')
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         vals = {key: payload[key] for key in CREATE_FIELDS if key in payload}
         if payload.get('course_ids'):
             vals['course_ids'] = [(6, 0, payload['course_ids'])]

@@ -165,6 +165,20 @@ class TestBxiApiSupportOperations(ApiSupportHttpCase):
         out = self.url_open(f"/api/v1/visits/{visit.json()['data']['id']}/checkout", headers=gate, method='POST')
         self.assertEqual(out.json()['data']['state'], 'checkout')
 
+    def test_visitor_and_visit_lists(self):
+        gate = self._headers('ops_gate', 'GatePass1!')
+        visitor_id = self.url_open('/api/v1/visitors', headers=gate, json={
+            'name': 'Lia Lister', 'company': 'Lister Ltd', 'phone': '9800044466', 'type': 'supplier'}).json()['data']['id']
+        host = self.env['hr.employee'].create({'name': 'List Host'})
+        visit_id = self.url_open('/api/v1/visits', headers=gate, json={
+            'visitor_id': visitor_id, 'host_employee_id': host.id, 'purpose': 'Meeting'}).json()['data']['id']
+        visitors = self.url_open('/api/v1/visitors', headers=gate)
+        self.assertEqual(visitors.status_code, 200, visitors.text)
+        self.assertIn(visitor_id, [v['id'] for v in visitors.json()['data']['visitors']])
+        visits = self.url_open('/api/v1/visits', headers=gate)
+        self.assertEqual(visits.status_code, 200, visits.text)
+        self.assertIn(visit_id, [v['id'] for v in visits.json()['data']['visits']])
+
     # -- dashboards ----------------------------------------------------------------
 
     def test_dashboards_are_permission_scoped(self):

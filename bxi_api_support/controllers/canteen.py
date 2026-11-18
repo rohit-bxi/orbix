@@ -7,7 +7,7 @@ from odoo.http import request
 
 from odoo.addons.bxi_api.controllers.auth import api_error, api_response, call_action, parse_int, require_auth
 
-from .common import date_str, get_own_student_ids, parse_amount, parse_pagination, safe_create
+from .common import date_str, get_own_student_ids, parse_amount, parse_pagination, safe_create, json_body
 
 STAFF_GROUP = 'bxi_school_canteen_management.group_canteen_staff'
 MANAGER_GROUP = 'bxi_school_canteen_management.group_canteen_manager'
@@ -87,7 +87,7 @@ class BxiApiSupportCanteenController(http.Controller):
     @http.route('/api/v1/canteen/orders', type='http', auth='public', methods=['POST'], csrf=False)
     @require_auth
     def create_order(self, **kwargs):
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         lines = payload.get('lines') or []
         if not lines:
             return api_error('lines is required.', status=400, code='missing_lines')
@@ -153,10 +153,9 @@ class BxiApiSupportCanteenController(http.Controller):
             return api_error('Order not found.', status=404, code='not_found')
         if not _can_access_patron(request.env, order):
             return api_error('Not authorized for this order.', status=403, code='forbidden')
-        payload = request.get_json_data() or {}
-        if payload.get('cancel_reason'):
-            order.cancel_reason = payload['cancel_reason']
-        _, error = call_action(order, 'action_cancel')
+        payload = json_body() or {}
+        _, error = call_action(order, 'action_cancel', write_vals={
+            'cancel_reason': payload['cancel_reason']} if payload.get('cancel_reason') else None)
         if error:
             return error
         return api_response(_order_dict(order))
@@ -241,7 +240,7 @@ class BxiApiSupportCanteenController(http.Controller):
             return api_error(
                 'Only canteen staff can record a top-up. Use /canteen/wallet/topup-order to pay online.',
                 status=403, code='forbidden')
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         if payload.get('amount') is None:
             return api_error('amount is required.', status=400, code='missing_amount')
         student, faculty, error = self._resolve_patron(payload)
@@ -274,7 +273,7 @@ class BxiApiSupportCanteenController(http.Controller):
         """Start an online top-up: returns a Razorpay order the app opens
         checkout for. The wallet is credited once /payments/verify (or the
         Razorpay webhook) confirms the payment."""
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         amount, error = parse_amount(payload.get('amount'))
         if error:
             return error

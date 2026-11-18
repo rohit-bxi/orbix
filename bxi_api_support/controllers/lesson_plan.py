@@ -6,7 +6,7 @@ from odoo.http import request
 
 from odoo.addons.bxi_api.controllers.auth import api_error, api_response, call_action, require_auth
 
-from .common import get_own_faculty, parse_pagination, resolve_teacher_for_create, safe_create, teacher_permission
+from .common import get_own_faculty, parse_pagination, resolve_teacher_for_create, safe_create, teacher_permission, json_body
 
 COORDINATOR_GROUP = 'bxi_academic_management.group_academic_coordinator'
 MANAGER_GROUP = 'bxi_academic_management.group_academic_manager'
@@ -72,7 +72,7 @@ class BxiApiSupportLessonPlanController(http.Controller):
     @require_auth
     @teacher_permission('lesson_plans')
     def create_plan(self, **kwargs):
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         missing = [f for f in CREATE_FIELDS if not payload.get(f)]
         if missing:
             return api_error('Missing required field(s): %s' % ', '.join(missing), status=400, code='missing_fields')
@@ -109,7 +109,7 @@ class BxiApiSupportLessonPlanController(http.Controller):
         if not plan.exists():
             return api_error('Lesson plan not found.', status=404, code='not_found')
 
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         decision = payload.get('decision')
         if decision not in ('approved', 'rejected'):
             return api_error('decision must be "approved" or "rejected".', status=400, code='invalid_decision')

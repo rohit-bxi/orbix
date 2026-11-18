@@ -12,7 +12,7 @@ from odoo.http import request
 from odoo.addons.bxi_api.controllers.auth import api_error, api_response, parse_int, require_auth
 
 from .common import (
-    atomic, check_selection, date_str, parse_pagination, ref, resolve_record, resolve_records, school_context,
+    atomic, check_selection, date_str, parse_pagination, ref, resolve_record, resolve_records, school_context, json_body,
 )
 from .library import _is_library_staff, _loan_dict, _media_dict
 
@@ -196,7 +196,7 @@ class BxiApiSupportLibraryAdminController(http.Controller):
         env = request.env
         if not _is_library_staff(env.user):
             return _forbidden()
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         if not payload.get('title'):
             return api_error('title is required.', status=400, code='missing_title')
         if not payload.get('genre_id'):
@@ -224,7 +224,7 @@ class BxiApiSupportLibraryAdminController(http.Controller):
         media, error = self._media(media_id)
         if error:
             return error
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         vals, error = _media_vals(env, payload, media)
         if error:
             return error
@@ -260,7 +260,7 @@ class BxiApiSupportLibraryAdminController(http.Controller):
         media, error = self._media(media_id)
         if error:
             return error
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         barcodes = payload.get('barcodes') or []
         if not isinstance(barcodes, list):
             return api_error('barcodes must be a list.', status=400, code='invalid_barcodes')
@@ -329,7 +329,7 @@ class BxiApiSupportLibraryAdminController(http.Controller):
         env = request.env
         if not _is_library_staff(env.user):
             return _forbidden()
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         if bool(payload.get('student_id')) == bool(payload.get('teacher_id')):
             return api_error('Send either student_id or teacher_id.', status=400, code='missing_borrower')
         if payload.get('student_id'):
@@ -449,7 +449,7 @@ class BxiApiSupportLibraryAdminController(http.Controller):
             return error
         if movement.state != 'return':
             return api_error('This loan has no unsettled fine.', status=400, code='no_fine')
-        payload = request.get_json_data() if request.httprequest.get_data() else {}
+        payload = json_body()
         payload = payload or {}
         invoice = movement.invoice_id
         waive = bool(payload.get('waive'))
@@ -505,7 +505,7 @@ class BxiApiSupportLibraryAdminController(http.Controller):
         env = request.env
         if not _is_library_staff(env.user) and not school_context(env)['faculty']:
             return _forbidden('Only teachers and library staff can request book purchases.')
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         for key in ('title', 'author', 'class_id', 'subject_id'):
             if not payload.get(key):
                 return api_error(f'{key} is required.', status=400, code=f'missing_{key}')

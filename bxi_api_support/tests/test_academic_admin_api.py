@@ -106,3 +106,13 @@ class TestBxiApiSupportAcademicAdmin(ApiSupportHttpCase):
                                         .json()['data']['notices']])
         restored = self._post(f"/api/v1/notices/{notice['id']}/restore", {}, notice_headers)
         self.assertTrue(restored.json()['data']['active'])
+
+    def test_ptm_list_and_detail(self):
+        meeting_id = self._ptm().json()['data']['id']
+        listing = self.url_open('/api/v1/academic/ptm-meetings', headers=self._coord())
+        self.assertEqual(listing.status_code, 200, listing.text)
+        self.assertIn(meeting_id, [m['id'] for m in listing.json()['data']['meetings']])
+        detail = self.url_open(f'/api/v1/academic/ptm-meetings/{meeting_id}', headers=self._coord())
+        self.assertEqual(detail.status_code, 200, detail.text)
+        self.assertEqual(detail.json()['data']['id'], meeting_id)
+        self.assertEqual(self.url_open('/api/v1/academic/ptm-meetings/999999', headers=self._coord()).status_code, 404)

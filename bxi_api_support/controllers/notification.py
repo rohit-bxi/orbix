@@ -6,7 +6,7 @@ from odoo.http import request
 
 from odoo.addons.bxi_api.controllers.auth import api_error, api_response, require_auth
 
-from .common import date_str, parse_pagination
+from .common import date_str, parse_pagination, json_body
 
 PLATFORMS = ('android', 'ios', 'web')
 
@@ -31,7 +31,7 @@ class BxiApiSupportNotificationController(http.Controller):
     @require_auth
     def register_device(self, **kwargs):
         """Call after every login (and whenever FCM rotates the token)."""
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         fcm_token = (payload.get('fcm_token') or '').strip()
         platform = payload.get('platform') or 'android'
         if not fcm_token:
@@ -47,7 +47,7 @@ class BxiApiSupportNotificationController(http.Controller):
     @require_auth
     def unregister_device(self, **kwargs):
         """Call on logout so the phone stops receiving this user's pushes."""
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         fcm_token = (payload.get('fcm_token') or '').strip()
         if not fcm_token:
             return api_error('fcm_token is required.', status=400, code='missing_fcm_token')

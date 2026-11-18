@@ -6,7 +6,7 @@ from odoo.http import request
 
 from odoo.addons.bxi_api.controllers.auth import api_error, api_file_response, api_response, call_action, parse_int, require_auth
 
-from .common import get_authorized_student, parse_ids, parse_pagination, safe_create, user_can_access_student
+from .common import get_authorized_student, parse_ids, parse_pagination, safe_create, user_can_access_student, json_body
 
 FEE_STAFF_GROUP = 'openeducat_fees.group_openeducat_fees_user'
 
@@ -93,7 +93,7 @@ class BxiApiSupportFeeController(http.Controller):
         if not structure.exists():
             return api_error('Fee structure not found.', status=404, code='not_found')
 
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         if not (payload.get('ack_impact') and payload.get('ack_reviewed')):
             return api_error(
                 'Both ack_impact and ack_reviewed must be true to deactivate a fee structure.',
@@ -155,7 +155,12 @@ class BxiApiSupportFeeController(http.Controller):
             return api_error('Fee line not found.', status=404, code='not_found')
         if not user_can_access_student(request.env, detail.student_id, is_staff=_is_fee_staff):
             return api_error('Not authorized for this fee line.', status=403, code='forbidden')
-        detail.get_invoice()
+        # get_invoice() makes a new invoice on every call and re-points the
+        # line at it, so only call it when the line has none yet.
+        if not detail.invoice_id:
+            _, error = call_action(detail, 'get_invoice')
+            if error:
+                return error
         invoice = detail.invoice_id
         if not invoice:
             return api_error('No invoice could be generated for this fee line.', status=400, code='no_invoice')
@@ -177,7 +182,7 @@ class BxiApiSupportFeeController(http.Controller):
         if not detail.exists():
             return api_error('Fee line not found.', status=404, code='not_found')
 
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         amount = payload.get('amount')
         journal_id = payload.get('journal_id')
         if amount is None:
@@ -319,7 +324,7 @@ class BxiApiSupportFeeController(http.Controller):
     def create_structure(self, **kwargs):
         if not _is_fee_staff(request.env.user):
             return api_error('Not authorized to create fee structures.', status=403, code='forbidden')
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         for required in ('name', 'code'):
             if not payload.get(required):
                 return api_error(f'{required} is required.', status=400, code=f'missing_{required}')
@@ -341,7 +346,7 @@ class BxiApiSupportFeeController(http.Controller):
             return api_error('Fee structure not found.', status=404, code='not_found')
         if structure.state != 'draft':
             return api_error('Only a draft fee structure can be edited.', status=400, code='invalid_transition')
-        vals, error = self._structure_vals(request.get_json_data() or {})
+        vals, error = self._structure_vals(json_body() or {})
         if error:
             return error
         _, error = call_action(structure, 'write', vals=vals)

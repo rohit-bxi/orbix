@@ -69,3 +69,32 @@ class TestBxiApiSupportAnnouncement(ApiSupportHttpCase):
         resp = self.url_open('/api/v1/announcements', headers=self._manager_headers(), json={'title': 'No body'})
         self.assertEqual(resp.status_code, 400)
         self.assertEqual(resp.json()['error']['code'], 'missing_body')
+
+    def test_reset_to_draft(self):
+        headers = self._manager_headers()
+        ann_id = self.url_open('/api/v1/announcements', headers=headers, json={
+            'title': 'Reset Me', 'body': 'Typo in the date.', 'target_audience': 'everyone'}).json()['data']['id']
+        self.url_open(f'/api/v1/announcements/{ann_id}/publish', headers=headers, method='POST')
+        url = f'/api/v1/announcements/{ann_id}/reset-to-draft'
+        self.assertEqual(self.url_open(url, headers=self._headers('ann_api_other', 'OtherPass1!'),
+                                       method='POST').status_code, 403)
+        reset = self.url_open(url, headers=headers, method='POST')
+        self.assertEqual(reset.status_code, 200, reset.text)
+        self.assertEqual(reset.json()['data']['state'], 'draft')
+        # Back in draft, readers no longer see it.
+        listing = self.url_open('/api/v1/announcements', headers=self._headers('ann_api_other', 'OtherPass1!')).json()
+        self.assertNotIn(ann_id, [a['id'] for a in listing['data']['announcements']])
+        self.assertEqual(self.url_open('/api/v1/announcements/999999/reset-to-draft', headers=headers,
+                                       method='POST').status_code, 404)
+
+    def test_reset_archived_announcement_is_visible_again(self):
+        headers = self._manager_headers()
+        ann_id = self.url_open('/api/v1/announcements', headers=headers, json={
+            'title': 'Archived Then Reused', 'body': 'Body.'}).json()['data']['id']
+        self.url_open(f'/api/v1/announcements/{ann_id}/archive', headers=headers, method='POST')
+        self.url_open(f'/api/v1/announcements/{ann_id}/reset-to-draft', headers=headers, method='POST')
+        announcement = self.env['bxi.announcement'].browse(ann_id)
+        self.assertEqual(announcement.state, 'draft')
+        self.assertTrue(announcement.active)
+        listing = self.url_open('/api/v1/announcements', headers=headers).json()['data']['announcements']
+        self.assertIn(ann_id, [a['id'] for a in listing])

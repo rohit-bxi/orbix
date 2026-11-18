@@ -10,7 +10,7 @@ from odoo.http import request
 
 from odoo.addons.bxi_api.controllers.auth import api_error, api_response, require_auth
 
-from .common import atomic, check_selection, date_str, parse_date, resolve_record
+from .common import atomic, check_selection, date_str, parse_date, resolve_record, json_body
 from .transport import _is_transport_staff, _route_dict
 
 STOP_FIELDS = ('name', 'sequence', 'pickup_time', 'drop_time', 'fee_amount')
@@ -141,7 +141,7 @@ class BxiApiSupportTransportAdminController(http.Controller):
         env = request.env
         if not _is_transport_staff(env.user):
             return _forbidden()
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         for key in ('name', 'vehicle_id'):
             if not payload.get(key):
                 return api_error(f'{key} is required.', status=400, code=f'missing_{key}')
@@ -173,7 +173,7 @@ class BxiApiSupportTransportAdminController(http.Controller):
             return error
         if route.state == 'archived':
             return api_error('An archived route cannot be edited.', status=400, code='invalid_state')
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         vals, error = _route_vals(env, payload, route)
         if error:
             return error
@@ -250,7 +250,7 @@ class BxiApiSupportTransportAdminController(http.Controller):
         env = request.env
         if not _is_transport_staff(env.user):
             return _forbidden()
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         for key in ('model_id', 'license_plate', 'seats'):
             if not payload.get(key):
                 return api_error(f'{key} is required.', status=400, code=f'missing_{key}')
@@ -280,7 +280,7 @@ class BxiApiSupportTransportAdminController(http.Controller):
             return error
         if not vehicle.is_school_bus:
             return api_error('Vehicle not found.', status=404, code='not_found')
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
 
         def update():
             vals, problem = self._vehicle_vals(env, payload, vehicle)
@@ -343,7 +343,7 @@ class BxiApiSupportTransportAdminController(http.Controller):
         env = request.env
         if not _is_transport_staff(env.user):
             return _forbidden()
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         for key in ('name', 'license_number', 'license_type', 'license_expiry'):
             if not payload.get(key):
                 return api_error(f'{key} is required.', status=400, code=f'missing_{key}')
@@ -370,7 +370,7 @@ class BxiApiSupportTransportAdminController(http.Controller):
         driver, error = self._get('bxi.transport.driver', driver_id, 'Driver')
         if error:
             return error
-        result, error = self._driver_vals(env, request.get_json_data() or {}, driver)
+        result, error = self._driver_vals(env, json_body() or {}, driver)
         if error:
             return error
         vals, contact = result

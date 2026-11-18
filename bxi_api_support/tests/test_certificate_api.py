@@ -145,3 +145,63 @@ class TestBxiApiSupportCertificate(ApiSupportHttpCase):
             'student_id': self.student.id, 'certificate_type_id': self.cert_type.id,
         })
         self.assertEqual(resp.status_code, 403)
+
+    def _generated(self, cert_type=None):
+        headers = self._staff_headers()
+        cert_id = self.url_open('/api/v1/certificates', headers=headers, json={
+            'student_id': self.student.id, 'certificate_type_id': (cert_type or self.cert_type).id,
+        }).json()['data']['id']
+        self.url_open(f'/api/v1/certificates/{cert_id}/generate', headers=headers, method='POST')
+        return cert_id
+
+    def test_reset_to_draft(self):
+        cert_id = self._generated()
+        url = f'/api/v1/certificates/{cert_id}/reset'
+        self.assertEqual(self.url_open(url, headers=self._headers('cert_api_student', 'StudentPass1!'),
+                                       method='POST').status_code, 403)
+        reset = self.url_open(url, headers=self._staff_headers(), method='POST')
+        self.assertEqual(reset.status_code, 200, reset.text)
+        self.assertEqual(reset.json()['data']['state'], 'draft')
+        self.assertFalse(reset.json()['data']['certificate_number'])
+        self.assertEqual(self.url_open('/api/v1/certificates/999999/reset', headers=self._staff_headers(),
+                                       method='POST').status_code, 404)
+
+    def test_pdf_download(self):
+        cert_id = self._generated()
+        student = self._headers('cert_api_student', 'StudentPass1!')
+        url = f'/api/v1/certificates/{cert_id}/pdf'
+        # Families only see it once issued; staff get no_pdf until then.
+        self.assertEqual(self.url_open(url, headers=student).status_code, 403)
+        self.assertEqual(self.url_open(url, headers=self._staff_headers()).json()['error']['code'], 'no_pdf')
+        self.url_open(f'/api/v1/certificates/{cert_id}/issue', headers=self._staff_headers(), method='POST')
+        resp = self.url_open(url, headers=student)
+        self.assertEqual(resp.status_code, 200, resp.text[:300])
+        self.assertTrue(resp.content)
+        self.assertIn('attachment', resp.headers.get('Content-Disposition', ''))
+        self.assertEqual(self.url_open(url, headers=self._headers('cert_api_other', 'OtherPass1!')).status_code, 403)
+
+    def test_bulk_create(self):
+        second = self._create_student('CERTAPI-002')
+        payload = {'certificate_type_id': self.cert_type.id, 'student_ids': [self.student.id, second.id]}
+        self.assertEqual(self.url_open('/api/v1/certificates/bulk-create', json=payload,
+                                       headers=self._headers('cert_api_other', 'OtherPass1!')).status_code, 403)
+        self.assertEqual(self.url_open('/api/v1/certificates/bulk-create', headers=self._staff_headers(), json={
+            'certificate_type_id': self.cert_type.id}).json()['error']['code'], 'missing_student_ids')
+        resp = self.url_open('/api/v1/certificates/bulk-create', headers=self._staff_headers(), json=payload)
+        self.assertEqual(resp.status_code, 201, resp.text)
+        certs = resp.json()['data']['certificates']
+        self.assertEqual(sorted(c['student_id'] for c in certs), sorted([self.student.id, second.id]))
+        self.assertEqual({c['state'] for c in certs}, {'draft'})
+        self.assertEqual({c['certificate_type'] for c in certs}, {'API Bonafide'})
+
+    def test_certificate_detail(self):
+        cert_id = self._generated()
+        staff = self.url_open(f'/api/v1/certificates/{cert_id}', headers=self._staff_headers())
+        self.assertEqual(staff.status_code, 200, staff.text)
+        self.assertEqual((staff.json()['data']['state'], staff.json()['data']['student_id']), ('generated', self.student.id))
+        student = self._headers('cert_api_student', 'StudentPass1!')
+        self.assertEqual(self.url_open(f'/api/v1/certificates/{cert_id}', headers=student).status_code, 403)
+        self.url_open(f'/api/v1/certificates/{cert_id}/issue', headers=self._staff_headers(), method='POST')
+        issued = self.url_open(f'/api/v1/certificates/{cert_id}', headers=student)
+        self.assertEqual(issued.status_code, 200, issued.text)
+        self.assertEqual(issued.json()['data']['state'], 'issued')

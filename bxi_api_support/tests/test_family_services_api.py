@@ -204,3 +204,109 @@ class TestBxiApiSupportFamilyServices(ApiSupportHttpCase):
         card = self.url_open(f'/api/v1/transport/my?student_id={self.student.id}', headers=self._parent()).json()
         self.assertEqual(card['data']['registrations'][0]['stop']['pickup_time'], 7.5)
         self.assertEqual(card['data']['registrations'][0]['vehicle']['license_plate'], 'FAM-1')
+
+    # -- event detail, my registrations, cancel and transport --------------------
+
+    def _registered(self, event):
+        resp = self.url_open(f'/api/v1/events/{event.id}/register', headers=self._parent(),
+                             json={'student_id': self.student.id})
+        self.assertEqual(resp.status_code, 201, resp.text)
+        return resp.json()['data']
+
+    def test_event_detail_and_my_registrations(self):
+        own = self._event(name='Fam Science Fair')
+        other = self._event(name='Other class fair', course_ids=[(6, 0, self.other_course.ids)])
+        reg = self._registered(own)
+        detail = self.url_open(f'/api/v1/events/{own.id}', headers=self._parent())
+        self.assertEqual(detail.status_code, 200, detail.text)
+        self.assertEqual(detail.json()['data']['name'], 'Fam Science Fair')
+        self.assertEqual(self.url_open(f'/api/v1/events/{other.id}', headers=self._parent()).status_code, 404)
+        self.assertEqual(self.url_open('/api/v1/events/999999', headers=self._parent()).status_code, 404)
+
+        mine = self.url_open('/api/v1/me/event-registrations', headers=self._parent())
+        self.assertEqual(mine.status_code, 200, mine.text)
+        rows = mine.json()['data']['registrations']
+        self.assertEqual([(r['id'], r['event']['id']) for r in rows], [(reg['id'], own.id)])
+        # The student sees the same registration; another family sees none.
+        student_rows = self.url_open('/api/v1/me/event-registrations',
+                                     headers=self._headers('fam_student', 'StudentPass1!')).json()['data']['registrations']
+        self.assertEqual([r['id'] for r in student_rows], [reg['id']])
+        self.assertEqual(self.url_open('/api/v1/me/event-registrations', headers=self._headers(
+            'fam_other_parent', 'OtherPass1!')).json()['data']['registrations'], [])
+
+    def test_cancel_event_registration(self):
+        reg = self._registered(self._event())
+        url = f"/api/v1/event-registrations/{reg['id']}/cancel"
+        self.assertEqual(self.url_open(url, headers=self._headers('fam_other_parent', 'OtherPass1!'),
+                                       method='POST').status_code, 404)
+        cancelled = self.url_open(url, headers=self._parent(), method='POST')
+        self.assertEqual(cancelled.status_code, 200, cancelled.text)
+        self.assertEqual(cancelled.json()['data']['state'], 'cancel')
+        self.assertEqual(self.url_open(url, headers=self._parent(), method='POST').json()['error']['code'],
+                         'invalid_transition')
+
+    def test_event_add_transport(self):
+        brand = self.env['fleet.vehicle.model.brand'].create({'name': 'Fam Trip Brand'})
+        vehicle = self.env['fleet.vehicle'].create({
+            'model_id': self.env['fleet.vehicle.model'].create({'name': 'Fam Trip Bus', 'brand_id': brand.id}).id,
+            'is_school_bus': True, 'seats': 20})
+        fee = self.env['product.product'].create({'name': 'Fam Trip Fee', 'type': 'service',
+                                                  'property_account_income_id': self.income_account.id})
+        route = self.env['bxi.transport.route'].create({
+            'name': 'Fam Trip Route', 'vehicle_id': vehicle.id, 'fee_product_id': fee.id, 'fee_amount': 50.0})
+        stop = self.env['bxi.transport.route.stop'].create({'route_id': route.id, 'name': 'Fam Trip Stop'})
+
+        no_bus = self._registered(self._event(name='No bus day'))
+        self.assertEqual(self.url_open(f"/api/v1/event-registrations/{no_bus['id']}/add-transport", headers=self._parent(),
+                                       json={'route_id': route.id, 'stop_id': stop.id}).json()['error']['code'], 'not_offered')
+        self.url_open(f"/api/v1/event-registrations/{no_bus['id']}/cancel", headers=self._parent(), method='POST')
+
+        event = self._event(name='Fam Zoo Trip', requires_transport=True)
+        reg = self._registered(event)
+        url = f"/api/v1/event-registrations/{reg['id']}/add-transport"
+        payload = {'route_id': route.id, 'stop_id': stop.id}
+        # The route is still a draft.
+        self.assertEqual(self.url_open(url, headers=self._parent(), json=payload).status_code, 404)
+        route.action_activate()
+        self.assertEqual(self.url_open(url, headers=self._headers('fam_other_parent', 'OtherPass1!'),
+                                       json=payload).status_code, 404)
+        booked = self.url_open(url, headers=self._parent(), json=payload)
+        self.assertEqual(booked.status_code, 201, booked.text)
+        transport = self.env['bxi.transport.registration'].browse(booked.json()['data']['transport']['id'])
+        self.assertEqual((transport.student_id, transport.stop_id, transport.state), (self.student, stop, 'draft'))
+        self.assertEqual(transport.date_start, fields.Datetime.to_datetime(event.date_begin).date())
+        self.assertEqual(self.url_open(url, headers=self._parent(), json=payload).json()['error']['code'], 'already_booked')
+
+    # -- catalogue item, own profile, student photo ------------------------------
+
+    def test_catalog_item(self):
+        media, _unit = self._book()
+        resp = self.url_open(f'/api/v1/library/catalog/{media.id}', headers=self._parent())
+        self.assertEqual(resp.status_code, 200, resp.text)
+        data = resp.json()['data']
+        self.assertEqual((data['title'], data['isbn'], data['authors']), ('The Fam Book', '978-FAM', ['Fam Author']))
+        self.assertEqual(data['publishers'], ['Fam Press'])
+        self.assertEqual(data['total_copies'], 1)
+        self.assertEqual(self.url_open('/api/v1/library/catalog/999999', headers=self._parent()).status_code, 404)
+
+    def test_my_profile(self):
+        parent = self.url_open('/api/v1/me/profile', headers=self._parent())
+        self.assertEqual(parent.status_code, 200, parent.text)
+        data = parent.json()['data']
+        self.assertEqual(data['parent']['id'], self.parent.id)
+        self.assertIsNone(data['student'])
+        self.assertIsNone(data['teacher'])
+        student = self.url_open('/api/v1/me/profile', headers=self._headers('fam_student', 'StudentPass1!')).json()['data']
+        self.assertEqual(student['student']['id'], self.student.id)
+        self.assertIsNone(student['parent'])
+
+    def test_student_photo(self):
+        pixel = ('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==')
+        self.student.image_1920 = pixel
+        url = f'/api/v1/students/{self.student.id}/photo'
+        resp = self.url_open(url, headers=self._parent())
+        self.assertEqual(resp.status_code, 200, resp.text[:200])
+        self.assertTrue(resp.headers['Content-Type'].startswith('image/'))
+        self.assertEqual(resp.content[:4], b'\x89PNG')
+        self.assertEqual(self.url_open(url, headers=self._headers('fam_other_parent', 'OtherPass1!')).status_code, 403)
+        self.assertEqual(self.url_open('/api/v1/students/999999/photo', headers=self._parent()).status_code, 404)

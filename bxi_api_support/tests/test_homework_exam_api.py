@@ -203,3 +203,38 @@ class TestBxiApiSupportHomeworkExam(ApiSupportHttpCase):
         line = self.env['op.marksheet.line'].search([('marksheet_reg_id', '=', register_id)])
         card = self.url_open(f'/api/v1/exams/report-card/{line.id}', headers=self._headers('hw_parent', 'ParentPass1!'))
         self.assertEqual(card.status_code, 200)
+
+    def test_my_submission(self):
+        assignment_id = self._create_homework().json()['data']['id']
+        url = f'/api/v1/assignments/{assignment_id}/my-submission'
+        parent = self._headers('hw_parent', 'ParentPass1!')
+        self.assertEqual(self.url_open(url, headers=parent).json()['error']['code'], 'missing_student_id')
+        # Hidden from the family until published.
+        self.assertEqual(self.url_open(f'{url}?student_id={self.student.id}', headers=parent).status_code, 404)
+        self.url_open(f'/api/v1/assignments/{assignment_id}/publish', headers=self._teacher(), method='POST')
+        before = self.url_open(f'{url}?student_id={self.student.id}', headers=parent)
+        self.assertEqual(before.status_code, 200, before.text)
+        self.assertIsNone(before.json()['data']['submission'])
+
+        self.url_open(f'/api/v1/assignments/{assignment_id}/submit', headers=self._headers('hw_student', 'StudentPass1!'),
+                      json={'description': 'My answers'})
+        after = self.url_open(f'{url}?student_id={self.student.id}', headers=parent).json()['data']['submission']
+        self.assertEqual(after['description'], 'My answers')
+        # Another family can't look.
+        self.assertEqual(self.url_open(f'{url}?student_id={self.student.id}',
+                                       headers=self._headers('hw_other_parent', 'OtherPass1!')).status_code, 403)
+        self.assertEqual(self.url_open(f'/api/v1/assignments/999999/my-submission?student_id={self.student.id}',
+                                       headers=parent).status_code, 404)
+
+    def test_exam_attendees(self):
+        _session, exam = self._exam_session()
+        url = f'/api/v1/exams/{exam.id}/attendees'
+        self.assertEqual(self.url_open(url, headers=self._headers('hw_parent', 'ParentPass1!')).status_code, 403)
+        resp = self.url_open(url, headers=self._headers('hw_exam_staff', 'ExamPass1!'))
+        self.assertEqual(resp.status_code, 200, resp.text)
+        data = resp.json()['data']
+        self.assertEqual(data['exam']['id'], exam.id)
+        self.assertEqual([a['student']['id'] for a in data['attendees']], [self.student.id])
+        self.assertEqual(data['attendees'][0]['status'], 'present')
+        self.assertEqual(self.url_open('/api/v1/exams/999999/attendees',
+                                       headers=self._headers('hw_exam_staff', 'ExamPass1!')).status_code, 404)

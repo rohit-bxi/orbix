@@ -13,7 +13,7 @@ from odoo.addons.bxi_api.controllers.auth import api_error, api_response, parse_
 from ..models.res_users import COORDINATOR_GROUPS
 from .common import (
     atomic, check_selection, date_str, parse_date, parse_pagination, parse_sort, ref, resolve_record,
-    resolve_records,
+    resolve_records, json_body,
 )
 from .dashboard import _allowed
 from .people_account import MANAGER_GROUPS
@@ -324,7 +324,7 @@ class BxiApiSupportAdminClassesController(http.Controller):
         env = request.env
         if not _allowed(env.user, EDIT_GROUPS):
             return _forbidden()
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         for required in ('name', 'code'):
             if not payload.get(required):
                 return api_error(f'{required} is required.', status=400, code=f'missing_{required}')
@@ -363,7 +363,7 @@ class BxiApiSupportAdminClassesController(http.Controller):
         course, error = self._get('op.course', course_id, 'Class')
         if error:
             return error
-        vals, error = _class_vals(env, request.get_json_data() or {}, course)
+        vals, error = _class_vals(env, json_body() or {}, course)
         if error:
             return error
         _, error = atomic(lambda: course.write(vals))
@@ -379,7 +379,7 @@ class BxiApiSupportAdminClassesController(http.Controller):
         env = request.env
         if not _allowed(env.user, EDIT_GROUPS):
             return _forbidden()
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         if not payload.get('class_id'):
             return api_error('class_id is required.', status=400, code='missing_class_id')
         if not payload.get('name'):
@@ -406,7 +406,7 @@ class BxiApiSupportAdminClassesController(http.Controller):
         batch, error = self._get('op.batch', batch_id, 'Section')
         if error:
             return error
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         if 'class_id' in payload and str(payload['class_id']) != str(batch.course_id.id):
             return api_error('A section cannot be moved to another class.', status=400, code='invalid_class_id')
         vals, error = _section_vals(env, payload, batch)

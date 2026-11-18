@@ -15,7 +15,7 @@ from odoo.http import request
 from odoo.addons.bxi_api.controllers.auth import api_error, api_response, require_auth
 
 from .academic import _is_coordinator_or_manager, _ptm_dict
-from .common import atomic, date_str, parse_datetime, resolve_records
+from .common import atomic, date_str, parse_datetime, resolve_records, json_body
 
 
 def _forbidden():
@@ -114,7 +114,7 @@ class BxiApiSupportAcademicAdminController(http.Controller):
         env = request.env
         if not _allowed(env.user):
             return _forbidden()
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         for key in ('name', 'start_datetime', 'end_datetime', 'venue', 'class_ids'):
             if not payload.get(key):
                 return api_error(f'{key} is required.', status=400, code=f'missing_{key}')
@@ -137,7 +137,7 @@ class BxiApiSupportAcademicAdminController(http.Controller):
         meeting, error = self._meeting(meeting_id)
         if error:
             return error
-        vals, error = _ptm_vals(env, request.get_json_data() or {})
+        vals, error = _ptm_vals(env, json_body() or {})
         if error:
             return error
         _, error = atomic(lambda: meeting.write(vals))
@@ -194,7 +194,7 @@ class BxiApiSupportAcademicAdminController(http.Controller):
         env = request.env
         if not _allowed(env.user):
             return _forbidden()
-        payload = request.get_json_data() or {}
+        payload = json_body() or {}
         for key in ('name', 'date_from', 'date_to'):
             if not payload.get(key):
                 return api_error(f'{key} is required.', status=400, code=f'missing_{key}')
@@ -216,7 +216,7 @@ class BxiApiSupportAcademicAdminController(http.Controller):
         leave, error = self._holiday(leave_id)
         if error:
             return error
-        vals, error = self._holiday_vals(env, request.get_json_data() or {}, leave)
+        vals, error = self._holiday_vals(env, json_body() or {}, leave)
         if error:
             return error
         _, error = atomic(lambda: leave.write(vals))

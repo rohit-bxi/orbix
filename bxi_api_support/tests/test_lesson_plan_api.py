@@ -131,3 +131,15 @@ class TestBxiApiSupportLessonPlan(ApiSupportHttpCase):
             headers=self._headers('lp_api_coordinator', 'CoordPass1!'), json={'decision': 'maybe'})
         self.assertEqual(resp.status_code, 400)
         self.assertEqual(resp.json()['error']['code'], 'invalid_decision')
+
+    def test_plan_list_and_detail(self):
+        plan_id = self._create_plan().json()['data']['id']
+        teacher = self._headers('lp_api_teacher', 'TeacherPass1!')
+        listing = self.url_open('/api/v1/lesson-plans', headers=teacher)
+        self.assertEqual(listing.status_code, 200, listing.text)
+        self.assertEqual([p['id'] for p in listing.json()['data']['plans']], [plan_id])
+        self.assertEqual(self.url_open('/api/v1/lesson-plans', headers=self._headers(
+            'lp_api_other_teacher', 'OtherTeacherPass1!')).json()['data']['plans'], [])
+        detail = self.url_open(f'/api/v1/lesson-plans/{plan_id}', headers=self._headers('lp_api_coordinator', 'CoordPass1!'))
+        self.assertEqual(detail.status_code, 200, detail.text)
+        self.assertEqual(detail.json()['data']['teacher'], self.faculty.display_name)

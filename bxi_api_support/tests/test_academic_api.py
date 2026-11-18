@@ -55,3 +55,46 @@ class TestBxiApiSupportAcademic(ApiSupportHttpCase):
         resp = self.url_open(
             '/api/v1/academic/curricula/999999', headers=self._headers('academic_api_coordinator', 'CoordPass1!'))
         self.assertEqual(resp.status_code, 404)
+
+    def test_reset_curriculum_to_draft(self):
+        headers = self._headers('academic_api_coordinator', 'CoordPass1!')
+        self.url_open(f'/api/v1/academic/curricula/{self.curriculum.id}/approve', headers=headers, method='POST')
+        url = f'/api/v1/academic/curricula/{self.curriculum.id}/reset'
+        self.assertEqual(self.url_open(url, headers=self._headers('academic_api_other', 'OtherPass1!'),
+                                       method='POST').status_code, 403)
+        reset = self.url_open(url, headers=headers, method='POST')
+        self.assertEqual(reset.status_code, 200, reset.text)
+        self.assertEqual(reset.json()['data']['approval_status'], 'draft')
+        self.assertEqual(self.url_open('/api/v1/academic/curricula/999999/reset', headers=headers,
+                                       method='POST').status_code, 404)
+
+    def test_subject_mappings_filters(self):
+        course_a = self.env['op.course'].create({'name': 'Map Class A', 'code': 'MAP-A'})
+        course_b = self.env['op.course'].create({'name': 'Map Class B', 'code': 'MAP-B'})
+        subject = self.env['op.subject'].create({'name': 'Map Science', 'code': 'MAP-S'})
+        teacher_a = self.env['op.faculty'].create({
+            'first_name': 'Map', 'last_name': 'Alpha', 'gender': 'female', 'birth_date': '1985-01-01'})
+        teacher_b = self.env['op.faculty'].create({
+            'first_name': 'Map', 'last_name': 'Beta', 'gender': 'male', 'birth_date': '1985-01-01'})
+        Mapping = self.env['bxi.subject.mapping']
+        first = Mapping.create({'subject_id': subject.id, 'class_id': course_a.id, 'teacher_id': teacher_a.id,
+                                'curriculum_id': self.curriculum.id})
+        second = Mapping.create({'subject_id': subject.id, 'class_id': course_b.id, 'teacher_id': teacher_b.id,
+                                 'curriculum_id': self.curriculum.id})
+        headers = self._headers('academic_api_coordinator', 'CoordPass1!')
+        by_class = self.url_open(f'/api/v1/academic/subject-mappings?class_id={course_a.id}', headers=headers)
+        self.assertEqual(by_class.status_code, 200, by_class.text)
+        self.assertEqual([m['id'] for m in by_class.json()['data']['mappings']], [first.id])
+        self.assertEqual(by_class.json()['data']['mappings'][0]['teacher'], teacher_a.display_name)
+        by_teacher = self.url_open(f'/api/v1/academic/subject-mappings?teacher_id={teacher_b.id}', headers=headers).json()
+        self.assertEqual([m['id'] for m in by_teacher['data']['mappings']], [second.id])
+        self.assertEqual(by_teacher['meta']['total'], 1)
+
+    def test_curricula_list_and_detail(self):
+        headers = self._headers('academic_api_coordinator', 'CoordPass1!')
+        listing = self.url_open('/api/v1/academic/curricula', headers=headers)
+        self.assertEqual(listing.status_code, 200, listing.text)
+        self.assertIn(self.curriculum.id, [c['id'] for c in listing.json()['data']['curricula']])
+        detail = self.url_open(f'/api/v1/academic/curricula/{self.curriculum.id}', headers=headers)
+        self.assertEqual(detail.status_code, 200, detail.text)
+        self.assertEqual(detail.json()['data']['name'], 'API Curriculum')
