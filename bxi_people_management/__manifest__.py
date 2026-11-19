@@ -2,7 +2,7 @@
 
 {
     'name': 'Orbix People Management',
-    'version': '19.0.1.5.0',
+    'version': '19.0.1.6.0',
     'category': 'Education',
     'summary': 'Teacher profile, assignment and workload details for the user-management screens',
     'description': """
@@ -24,6 +24,9 @@
           students saved with the app's "Save Draft".
         - Parent: status, department / class from the children, Aadhaar
           Card / PAN Card / ID Proof documents and the Draft flag.
+        - Parent - student relationship per linked student (Father of one,
+          Guardian of another), and the relationships the app offers
+          (Mother, Father, Guardian, Grandparents, Other).
 
         The REST endpoints that use these fields live in bxi_api_support.
     """,

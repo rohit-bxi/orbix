@@ -5,5 +5,7 @@ from . import models
 
 
 def post_init_hook(env):
-    """Teachers that exist before the module is installed get a Teacher ID."""
+    """Teachers that exist before the module is installed get a Teacher ID;
+    the Link Student screen's relationships are created."""
     env['op.faculty']._bxi_assign_missing_teacher_codes()
+    env['op.parent.relationship']._bxi_ensure_defaults()

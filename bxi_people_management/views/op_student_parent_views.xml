@@ -63,6 +63,15 @@
             <field name="relationship_id" position="attributes">
                 <attribute name="required">not bxi_is_draft</attribute>
             </field>
+            <field name="student_ids" position="after">
+                <separator string="Relationship per Student" invisible="not bxi_student_link_ids"/>
+                <field name="bxi_student_link_ids" invisible="not bxi_student_link_ids" readonly="1">
+                    <list>
+                        <field name="student_id"/>
+                        <field name="relationship_id"/>
+                    </list>
+                </field>
+            </field>
             <xpath expr="//field[@name='active']/following-sibling::widget[@name='web_ribbon'][1]" position="attributes">
                 <attribute name="invisible">active or bxi_is_draft</attribute>
             </xpath>

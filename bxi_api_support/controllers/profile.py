@@ -60,7 +60,7 @@ def _student_detail(student):
         'parents': [{
             'id': parent.id,
             'name': parent.name.name,
-            'relationship': ref(parent.relationship_id),
+            'relationship': ref(parent._bxi_relationship_for(student)),
             'mobile': parent.mobile or None,
             'email': parent.email or parent.name.email or None,
         } for parent in parents],

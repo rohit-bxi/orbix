@@ -43,3 +43,4 @@ from . import test_transport_admin_api
 from . import test_academic_admin_api
 from . import test_student_screen_api
 from . import test_parent_screen_api
+from . import test_parent_link_api
