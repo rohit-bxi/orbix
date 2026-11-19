@@ -13550,11 +13550,33 @@
                 "holidays"
               ]
             },
-            "description": "School-wide closure. Whole days as YYYY-MM-DD (school time zone) or UTC date-times.",
+            "description": "Add Holiday screen. Required: name, start_date and end_date (DD/MM/YYYY or YYYY-MM-DD; whole days in the school time zone). Optional description. date_from / date_to and UTC date-times still work. Response: id, name, description, start_date, end_date (the school's days, for the Edit screen) plus the stored UTC date_from / date_to. 400 missing_*, invalid_start_date / invalid_end_date, invalid_dates; 409 holiday_exists (same name) or holiday_overlaps (another holiday on those dates - Odoo allows one per day), each with existing_holiday_id. Academic coordinators and managers.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Winter Break\",\n  \"date_from\": \"2026-12-24\",\n  \"date_to\": \"2027-01-01\",\n  \"description\": \"\"\n}"
+              "raw": "{\n  \"name\": \"Independence Day\",\n  \"start_date\": \"15/08/2026\",\n  \"end_date\": \"15/08/2026\",\n  \"description\": \"National Holiday\"\n}"
             }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Holiday",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/calendar/holidays/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "calendar",
+                "holidays",
+                "1"
+              ]
+            },
+            "description": "Edit Holiday screen pre-fill: id, name, description, start_date, end_date (school days). Anyone signed in, like the list."
           },
           "response": []
         },
@@ -13582,10 +13604,10 @@
                 "update"
               ]
             },
-            "description": "Any create field.",
+            "description": "Edit Holiday screen: any create key; only the keys sent change. Same checks as create.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"date_to\": \"2027-01-02\"\n}"
+              "raw": "{\n  \"name\": \"Independence Day\",\n  \"start_date\": \"15/08/2026\",\n  \"end_date\": \"15/08/2026\",\n  \"description\": \"National Holiday\"\n}"
             }
           },
           "response": []

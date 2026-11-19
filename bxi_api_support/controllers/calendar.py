@@ -12,6 +12,7 @@ from odoo.http import request
 
 from odoo.addons.bxi_api.controllers.auth import api_error, api_response, require_auth
 
+from .academic_admin import _holiday_dict
 from .common import date_str, get_viewable_student, running_enrollment
 from .event import _visible_domain as visible_events_domain
 
@@ -47,13 +48,9 @@ class BxiApiSupportCalendarController(http.Controller):
             start, end = _parse_range(date_from, date_to)
         except ValueError:
             return api_error('date_from/date_to must be YYYY-MM-DD.', status=400, code='invalid_date')
-        return api_response({'holidays': [{
-            'id': leave.id,
-            'name': leave.name,
-            'description': leave.description or None,
-            'date_from': date_str(leave.date_from),
-            'date_to': date_str(leave.date_to),
-        } for leave in _holidays(start, end)]})
+        # start_date / end_date are the school's days (the Edit Holiday
+        # screen's dates); date_from / date_to stay the stored UTC bounds.
+        return api_response({'holidays': [_holiday_dict(leave) for leave in _holidays(start, end)]})
 
     @http.route('/api/v1/calendar', type='http', auth='public', methods=['GET'], csrf=False)
     @require_auth

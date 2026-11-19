@@ -159,23 +159,28 @@ def _school_tz(env):
 
 
 def _holiday_bound(env, value, key, end=False):
-    """A holiday edge from 'YYYY-MM-DD' (the whole day in the school's
-    time zone) or a UTC date-time. Returns (naive UTC datetime, None) or
-    (None, api_error(...))."""
-    if value in (None, ''):
+    """A holiday edge from a day - DD/MM/YYYY as on the screen, or
+    YYYY-MM-DD: the whole day in the school's time zone - or a UTC
+    date-time. Returns (naive UTC datetime, None) or (None, api_error(...))."""
+    if value in (None, '') or (isinstance(value, str) and not value.strip()):
         return None, api_error(f'{key} is required.', status=400, code=f'missing_{key}')
     text = str(value).strip()
     if len(text) == 10:
         try:
-            day = fields.Date.to_date(text)
+            day = datetime.strptime(text, '%d/%m/%Y').date() if '/' in text else fields.Date.to_date(text)
         except ValueError:
-            return None, api_error(f'{key} must be YYYY-MM-DD or a UTC date-time.', status=400, code=f'invalid_{key}')
+            return None, api_error(f'{key} must be DD/MM/YYYY, YYYY-MM-DD or a UTC date-time.', status=400,
+                                   code=f'invalid_{key}')
         local = _school_tz(env).localize(datetime.combine(day, time.max.replace(microsecond=0) if end else time.min))
         return local.astimezone(pytz.utc).replace(tzinfo=None), None
     return parse_datetime(text, key)
 
 
 def _holiday_dict(leave):
+    """One shape for the list, get, create and update: start_date /
+    end_date are the holiday's days in the school's time zone (what the
+    Add / Edit Holiday screens show); date_from / date_to are the stored
+    UTC bounds."""
     tz = _school_tz(leave.env)
     start = pytz.utc.localize(leave.date_from).astimezone(tz).date() if leave.date_from else None
     end = pytz.utc.localize(leave.date_to).astimezone(tz).date() if leave.date_to else None
@@ -183,11 +188,30 @@ def _holiday_dict(leave):
         'id': leave.id,
         'name': leave.name,
         'description': leave.description or None,
+        'start_date': date_str(start),
+        'end_date': date_str(end),
         'date_from': date_str(leave.date_from),
         'date_to': date_str(leave.date_to),
         'first_day': date_str(start),
         'last_day': date_str(end),
     }
+
+
+# Screen key -> stored bound, with the older key each one stands for.
+HOLIDAY_BOUNDS = (('start_date', 'date_from', False), ('end_date', 'date_to', True))
+
+# A public holiday makes hr_holidays recount the time off it overlaps and
+# put each request back in its state. For a double-approved request that
+# re-checks the *current user's* time-off rights, even under sudo(), so a
+# coordinator who is not a time-off officer could not add a holiday over
+# one (403). leave_fast_create is the flag Odoo itself sets for such
+# system-driven writes: it skips only the approval checks, followers and
+# activities; allocations are still re-checked.
+HOLIDAY_CONTEXT = {'leave_fast_create': True}
+
+
+def _holiday_model(env):
+    return env['resource.calendar.leaves'].sudo().with_context(**HOLIDAY_CONTEXT)
 
 
 class BxiApiSupportAcademicAdminController(http.Controller):
@@ -270,42 +294,80 @@ class BxiApiSupportAcademicAdminController(http.Controller):
         return leave, None
 
     def _holiday_vals(self, env, payload, leave=None):
+        """(vals, error) for the Add / Edit Holiday screens: "name",
+        "start_date" / "end_date" (or "date_from" / "date_to"),
+        "description"."""
         vals = {}
         if 'name' in payload:
-            if not payload['name']:
+            name = payload['name']
+            if not isinstance(name, str) or not name.strip():
                 return None, api_error('name cannot be empty.', status=400, code='missing_name')
-            vals['name'] = payload['name']
+            vals['name'] = name.strip()
         if 'description' in payload:
-            vals['description'] = payload['description'] or False
-        for key, end in (('date_from', False), ('date_to', True)):
-            if key in payload:
-                vals[key], error = _holiday_bound(env, payload[key], key, end=end)
+            description = payload['description']
+            vals['description'] = description.strip() if isinstance(description, str) and description.strip() \
+                else False
+        for key, field, end in HOLIDAY_BOUNDS:
+            sent = key if key in payload else (field if field in payload else None)
+            if sent:
+                vals[field], error = _holiday_bound(env, payload[sent], sent, end=end)
                 if error:
                     return None, error
         start = vals.get('date_from') or (leave.date_from if leave else None)
         finish = vals.get('date_to') or (leave.date_to if leave else None)
         if start and finish and finish <= start:
-            return None, api_error('date_to must be after date_from.', status=400, code='invalid_dates')
+            return None, api_error('end_date cannot be before start_date.', status=400, code='invalid_dates')
+        name = vals.get('name') or (leave.name if leave else None)
+        if start and finish:
+            # hr_holidays allows no two public holidays on the same dates
+            # (a 400 with its own wording otherwise): say which one is there.
+            domain = [('resource_id', '=', False), ('company_id', '=', env.company.id),
+                      ('date_from', '<=', finish), ('date_to', '>=', start)]
+            if leave:
+                domain.append(('id', '!=', leave.id))
+            existing = env['resource.calendar.leaves'].sudo().search(domain, limit=1)
+            if existing:
+                same = bool(name) and existing.name.strip().lower() == name.strip().lower()
+                message = f'{existing.name} is already a holiday on these dates.' if same else \
+                    f'These dates overlap {existing.name}: two holidays cannot share a day.'
+                return None, request.make_json_response({'success': False, 'error': {
+                    'message': message, 'code': 'holiday_exists' if same else 'holiday_overlaps',
+                    'existing_holiday_id': existing.id}}, status=409)
         return vals, None
+
+    @http.route('/api/v1/calendar/holidays/<int:leave_id>', type='http', auth='public', methods=['GET'], csrf=False)
+    @require_auth
+    def get_holiday(self, leave_id, **kwargs):
+        """The Edit Holiday screen's pre-fill. Holidays are school-wide, so
+        anyone signed in may read one, as with the list."""
+        leave, error = self._holiday(leave_id)
+        if error:
+            return error
+        return api_response(_holiday_dict(leave))
 
     @http.route('/api/v1/calendar/holidays', type='http', auth='public', methods=['POST'], csrf=False)
     @require_auth
     def create_holiday(self, **kwargs):
-        """{"name", "date_from", "date_to", "description"?} - whole days as
-        YYYY-MM-DD (school time zone), or UTC date-times. A school-wide
-        closure: it shows on every family's and teacher's calendar."""
+        """The Add Holiday screen: {"name", "start_date", "end_date",
+        "description"?} - days as DD/MM/YYYY or YYYY-MM-DD, whole days in
+        the school's time zone ("date_from" / "date_to", and UTC
+        date-times, still work). A school-wide closure: it shows on every
+        family's and teacher's calendar. 409 holiday_exists (same name) or
+        holiday_overlaps (another holiday) on overlapping dates."""
         env = request.env
         if not _allowed(env.user):
             return _forbidden()
         payload = json_body() or {}
-        for key in ('name', 'date_from', 'date_to'):
-            if not payload.get(key):
+        if 'name' not in payload:
+            return api_error('name is required.', status=400, code='missing_name')
+        for key, field, _end in HOLIDAY_BOUNDS:
+            if key not in payload and field not in payload:
                 return api_error(f'{key} is required.', status=400, code=f'missing_{key}')
         vals, error = self._holiday_vals(env, payload)
         if error:
             return error
         vals.update(resource_id=False, calendar_id=False, company_id=env.company.id)
-        leave, error = atomic(lambda: env['resource.calendar.leaves'].sudo().create(vals))
+        leave, error = atomic(lambda: _holiday_model(env).create(vals))
         if error:
             return error
         return api_response(_holiday_dict(leave), status=201)
@@ -322,7 +384,7 @@ class BxiApiSupportAcademicAdminController(http.Controller):
         vals, error = self._holiday_vals(env, json_body() or {}, leave)
         if error:
             return error
-        _, error = atomic(lambda: leave.write(vals))
+        _, error = atomic(lambda: leave.with_context(**HOLIDAY_CONTEXT).write(vals))
         if error:
             return error
         return api_response(_holiday_dict(leave))
@@ -335,5 +397,7 @@ class BxiApiSupportAcademicAdminController(http.Controller):
         leave, error = self._holiday(leave_id)
         if error:
             return error
-        leave.unlink()
+        _, error = atomic(leave.with_context(**HOLIDAY_CONTEXT).unlink)
+        if error:
+            return error
         return api_response({'id': leave_id, 'deleted': True})
