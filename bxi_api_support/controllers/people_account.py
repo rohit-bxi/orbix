@@ -31,6 +31,7 @@ per-person routes below:
 """
 import base64
 import binascii
+import re
 
 from odoo import fields, http
 from odoo.http import request
@@ -44,6 +45,9 @@ from odoo.addons.bxi_identity_verification.models.aadhaar import mask_aadhaar, n
 
 from ..models.people_service import CREDENTIAL_CHANNELS, MANAGER_GROUPS, PeopleError, is_manager  # noqa: F401
 from .common import atomic, check_selection, ref, json_body
+
+# A masked number as shown by the API (XXXX XXXX 9012, or with * or -).
+MASKED_AADHAAR = re.compile(r'[Xx*]{4}[\s-]?[Xx*]{4}[\s-]?\d{4}')
 
 KIND_MODELS = {'teachers': 'op.faculty', 'students': 'op.student', 'parents': 'op.parent'}
 KINDS = 'any("teachers", "students", "parents")'
@@ -207,6 +211,9 @@ def parse_aadhaar(payload):
     raw = payload['aadhaar_number']
     if raw in (None, ''):
         return {'digits': False}, None
+    if isinstance(raw, str) and MASKED_AADHAAR.fullmatch(raw.strip()):
+        # The masked number an edit screen was shown and sent back: unchanged.
+        return None, None
     digits = normalize_aadhaar(raw) if isinstance(raw, str) else None
     if not digits:
         return None, api_error(
@@ -368,9 +375,18 @@ def verification_status(record):
     return 'unverified'
 
 
+def aadhaar_number(record):
+    """The Aadhaar number for the create/edit screens' "Aadhar Card Number"
+    box: always masked (XXXX XXXX 9012) - the full number is stored, but
+    never sent back (UIDAI's masking rule). Sending the masked value back
+    leaves the number unchanged; a new full number replaces it."""
+    return mask_aadhaar(record.sudo().bxi_aadhaar_last4)
+
+
 def security_dict(record):
     user = record.user_id.sudo()
     return {
+        'aadhaar_number': aadhaar_number(record),
         'verification_status': verification_status(record),
         'account': account_dict(record),
         'face': request.env['bxi.people.service']._face_status(user) if user else None,
