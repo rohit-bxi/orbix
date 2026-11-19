@@ -16,6 +16,7 @@ Shared shapes:
                     "dietary_restrictions", "primary_physician", "physician_contact",
                     "insurance_provider", "insurance_policy_no", "medical_notes"}
   "documents"      (students, parents) {"<set>": [<file> | <attachment id>, ...]}
+                   (parent sets: additional, aadhaar_card, pan_card, id_proof)
   "academic_documents" (teachers) [<file> | <attachment id>, ...] - the
                    Teacher Documents attachments of the Academic Details tab
                    A file is "<base64>" or {"data", "filename"} (image or PDF).
@@ -113,6 +114,8 @@ PARENT_SPEC = _spec(
     # The parent's own email/mobile: also copied to their contact, which
     # login credentials are sent to (see _sync_parent_contact).
     mobile=F('mobile', out=False), email=F('email', out=False),
+    # The Add / Edit Parent screen's "Phone Number" is the mobile.
+    phone=F('mobile', out='phone'),
     gender=F('gender', SELECTION), birth_date=F('birth_date', DATE),
     relationship_id=F('relationship_id', M2O, 'op.parent.relationship'),
     **_TOP_LEVEL_ADDRESS,
@@ -122,16 +125,19 @@ REQUIRED = {
     # One-word names are allowed for students: last_name is optional.
     'op.student': ('first_name', 'gender', 'email'),
     'op.faculty': ('first_name', 'last_name', 'gender', 'birth_date'),
-    'op.parent': ('mobile', 'gender', 'relationship_id'),
+    'op.parent': ('mobile', 'phone', 'gender', 'relationship_id'),
 }
 
 # Also required when a student is created (or a draft completed) - the
 # Add New Student screen's starred fields. Address, class/section and
 # parent are checked by the controller.
 STUDENT_CREATE_REQUIRED = ('birth_date', 'phone', 'admission_number', 'admission_date')
+# The same for a parent (name, mobile, relationship and students are
+# checked by the controller, address too).
+PARENT_CREATE_REQUIRED = ('gender', 'birth_date', 'email')
 
 # The screen's limits: 5 MB per student document.
-DOCUMENT_MAX_BYTES = {'op.student': 5 * 1024 * 1024}
+DOCUMENT_MAX_BYTES = {'op.student': 5 * 1024 * 1024, 'op.parent': 5 * 1024 * 1024}
 
 ADDRESS_SPEC = _spec(
     street=F('street'), street2=F('street2'), city=F('city'), zip=F('zip'),
@@ -166,7 +172,13 @@ DOCUMENT_SETS = {
         'previous_school_certificate': 'previous_school_certificate_ids',
         'medical_records': 'medical_record_ids',
     },
-    'op.parent': {'additional': 'additional_document_ids'},
+    'op.parent': {
+        'additional': 'additional_document_ids',
+        # The Add / Edit Parent screen's Additional Documents.
+        'aadhaar_card': 'bxi_aadhaar_card_ids',
+        'pan_card': 'bxi_pan_card_ids',
+        'id_proof': 'bxi_id_proof_ids',
+    },
     # Sent as a plain "academic_documents" list (teachers' "documents" are
     # their typed teacher-document records).
     'op.faculty': {'academic_documents': 'teacher_documents_ids'},

@@ -67,7 +67,7 @@ class TestBxiApiSupportPeopleAadhaar(ApiSupportHttpCase):
                          {'number_masked': None, 'last4': None, 'status': 'unverified', 'verified_at': None})
 
         student_id = self._student('2').json()['data']['id']
-        parent = self._post('/api/v1/parents', {
+        parent = self._post('/api/v1/parents', {**self._parent_screen_fields(),
             'name': 'Aad Parent', 'mobile': '9800099911', 'relationship_id': self.relationship.id,
             'student_ids': [student_id], 'aadhaar_number': '456789012341',
             'account': {'username': 'aad.parent', 'password': 'AadParent99'}})

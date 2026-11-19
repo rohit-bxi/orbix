@@ -55,7 +55,7 @@ from .people_account import (
     security_dict, transaction,
 )
 from .people_fields import (
-    DOCUMENT_SETS, PARENT_SPEC, REQUIRED, STUDENT_CREATE_REQUIRED, STUDENT_SPEC, TEACHER_ADDRESSES, TEACHER_SPEC, WEEKDAYS, address_dict,
+    DOCUMENT_SETS, PARENT_CREATE_REQUIRED, PARENT_SPEC, REQUIRED, STUDENT_CREATE_REQUIRED, STUDENT_SPEC, TEACHER_ADDRESSES, TEACHER_SPEC, WEEKDAYS, address_dict,
     apply_document_sets, documents_dict, emergency_contact_dict, fields_dict, health_dict, parse_address,
     parse_available_days, parse_document_sets, parse_fields, parse_health, parse_rte, parse_teacher_addresses,
     parse_teacher_documents, rte_dict,
@@ -468,10 +468,10 @@ _STUDENT_COMPLETION = (
 )
 
 
-def _profile_completion(data):
-    """{percent, label, missing} for the screen's Profile badge."""
-    missing = [key for key, filled in _STUDENT_COMPLETION if not filled(data)]
-    percent = round(100 * (len(_STUDENT_COMPLETION) - len(missing)) / len(_STUDENT_COMPLETION))
+def _profile_completion(data, checks=_STUDENT_COMPLETION):
+    """{percent, label, missing} for the screens' Profile badge."""
+    missing = [key for key, filled in checks if not filled(data)]
+    percent = round(100 * (len(checks) - len(missing)) / len(checks))
     label = 'Just started' if percent < 25 else 'In progress' if percent < 75 else \
         'Almost done' if percent < 100 else 'Complete'
     return {'percent': percent, 'label': label, 'missing': missing}
@@ -901,12 +901,53 @@ def _transfer(student, transfer):
     return None
 
 
+def _discard(record, model, partner):
+    """Delete a draft with its own files, then its contact - kept archived
+    when something else still uses it (a message, a log)."""
+    attachments = request.env['ir.attachment'].sudo()
+    for field in DOCUMENT_SETS[model].values():
+        attachments |= record[field]
+    attachments |= record.id_document_ids
+    attachments.filtered(lambda a: a.res_model == model and a.res_id == record.id).unlink()
+    record.unlink()
+    try:
+        with request.env.cr.savepoint():
+            partner.unlink()
+    except (UserError, IntegrityError):
+        partner.active = False
+
+
 def _student_record(student_id):
     student = request.env['op.student'].sudo().with_context(active_test=False).browse(student_id)
     return student if student.exists() else None
 
 
 # -- parents ------------------------------------------------------------------------------
+
+
+_PARENT_COMPLETION = (
+    ('image', lambda d: d['has_photo']),
+    ('name', lambda d: d.get('name')),
+    ('gender', lambda d: d.get('gender')),
+    ('birth_date', lambda d: d.get('birth_date')),
+    ('email', lambda d: d.get('email')),
+    ('phone', lambda d: d.get('phone')),
+    ('address', lambda d: any(d['address'].values())),
+    ('relationship', lambda d: d.get('relationship')),
+    ('students', lambda d: d.get('students')),
+    ('aadhaar_card', lambda d: d['documents'].get('aadhaar_card')),
+    ('pan_card', lambda d: d['documents'].get('pan_card')),
+    ('id_proof', lambda d: d['documents'].get('id_proof')),
+)
+
+
+def _linked_student(student):
+    """A Linked Students row: name, admission number, class and section."""
+    line = student._bxi_current_enrolment()
+    return {
+        'id': student.id, 'name': student.name, 'admission_number': student.gr_no or None,
+        'class': ref(line.course_id), 'section': ref(line.batch_id), 'roll_number': line.roll_number or None,
+    }
 
 
 def _parent_dict(parent):
@@ -916,8 +957,10 @@ def _parent_dict(parent):
         'name': parent.name.name,
         'email': parent.email or parent.name.email or None,
         'mobile': parent.mobile or None,
+        'phone': parent.mobile or None,
         'relationship': ref(parent.relationship_id),
-        'students': [ref(s) for s in parent.student_ids],
+        'draft': bool(parent.bxi_is_draft),
+        'students': [_linked_student(s) for s in parent.student_ids],
         # Read-only, from the children's running enrolments.
         'departments': [ref(d) for d in enrollments.course_id.department_id],
         'classes': [{'student': ref(line.student_id), 'class': ref(line.course_id), 'section': ref(line.batch_id)}
@@ -939,7 +982,63 @@ def _parent_detail(parent):
     for key, value in fields_dict(parent, PARENT_SPEC).items():
         data.setdefault(key, value)
     data.update(security_dict(parent))
+    data['profile_completion'] = _profile_completion(data, _PARENT_COMPLETION)
     return data
+
+
+def _parent_record(parent_id):
+    parent = request.env['op.parent'].sudo().with_context(active_test=False).browse(parent_id)
+    return parent if parent.exists() else None
+
+
+def _parent_mobile(payload):
+    """The mobile a parent body sends, as "mobile" or "phone"."""
+    for key in ('phone', 'mobile'):
+        if not _blank_text(payload.get(key)):
+            return str(payload[key]).strip()
+    return None
+
+
+def _missing_parent_field(payload):
+    """The first starred field of the Add Parent screen missing from a
+    create body, or None."""
+    if _blank_text(payload.get('name')):
+        return 'name'
+    if not _parent_mobile(payload):
+        return 'mobile'
+    for key in PARENT_CREATE_REQUIRED:
+        if _blank_text(payload.get(key)):
+            return key
+    if not _address_given(payload.get('address')):
+        return 'address'
+    for key in ('relationship_id', 'student_ids'):
+        if not payload.get(key):
+            return key
+    return None
+
+
+def _check_parent_complete(parent):
+    """Raise PeopleError for the first starred field a parent draft being
+    completed still lacks."""
+    parent = parent.sudo()
+    for key, value in (
+        ('mobile', parent.mobile), ('gender', parent.gender), ('birth_date', parent.birth_date),
+        ('email', parent.email or parent.name.email), ('address', parent.street or parent.street2 or parent.city),
+        ('relationship_id', parent.relationship_id), ('student_ids', parent.student_ids),
+    ):
+        if not value:
+            raise PeopleError('%s is required to complete the draft.' % key, 'missing_%s' % key)
+
+
+def _parent_mobile_error(payload, parent=None):
+    """409 parent_exists when the mobile sent is another parent's."""
+    mobile = _parent_mobile(payload)
+    if not mobile:
+        return None
+    existing = _parent_with_mobile(mobile)
+    if existing and existing != parent:
+        return _parent_exists_error(existing)
+    return None
 
 
 def _parent_status(Model, payload):
@@ -969,11 +1068,15 @@ def _parent_vals(payload):
     """(vals, partner_vals, document_sets, error) for a parent create or
     update. partner_vals go to the parent's contact: name, photo, and the
     email/mobile login credentials are sent to."""
+    if 'phone' in payload and _blank_text(payload['phone']) and not _blank_text(payload.get('mobile')):
+        # "phone" is the screen's name for the mobile: an empty one next
+        # to a mobile changes nothing.
+        payload = {key: value for key, value in payload.items() if key != 'phone'}
     vals, error = _profile_vals(request.env['op.parent'], payload, PARENT_SPEC, parse_address, parse_rte,
                                 _parent_status, _parent_students)
     if error:
         return None, None, None, error
-    partner_vals, error = _image_value(payload)
+    partner_vals, error = _image_value(payload, STUDENT_PHOTO_MAX_BYTES)
     if error:
         return None, None, None, error
     if 'name' in payload:
@@ -1247,19 +1350,7 @@ class BxiApiSupportPeopleController(http.Controller):
             return api_error('Only a draft can be discarded.', status=400, code='not_a_draft')
 
         def discard():
-            attachments = request.env['ir.attachment'].sudo()
-            for field in DOCUMENT_SETS['op.student'].values():
-                attachments |= student[field]
-            attachments |= student.id_document_ids
-            partner = student.partner_id
-            attachments.filtered(lambda a: a.res_model == 'op.student' and a.res_id == student.id).unlink()
-            student.unlink()
-            try:
-                with request.env.cr.savepoint():
-                    partner.unlink()
-            except (UserError, IntegrityError):
-                # Still used elsewhere (a message, a log): keep it, archived.
-                partner.active = False
+            _discard(student, 'op.student', student.partner_id)
             return True
 
         _result, error = transaction(discard)
@@ -1435,13 +1526,19 @@ class BxiApiSupportPeopleController(http.Controller):
 
     @http.route('/api/v1/parents', type='http', auth='public', methods=['GET'], csrf=False)
     @require_auth
-    def list_parents(self, q=None, student_id=None, **kwargs):
+    def list_parents(self, q=None, student_id=None, draft=None, **kwargs):
+        """?draft=true: the drafts saved with "Save Draft" (left out of the
+        normal list)."""
         if not _can_list_students(request.env.user):
             return api_error('Not authorized to list parents.', status=403, code='forbidden')
         limit, offset, error = parse_pagination(kwargs)
         if error:
             return error
         domain = []
+        Parent = request.env['op.parent'].sudo()
+        if draft in ('1', 'true', 'True'):
+            Parent = Parent.with_context(active_test=False)
+            domain.append(('bxi_is_draft', '=', True))
         if q:
             domain += ['|', '|', ('name.name', 'ilike', q), ('mobile', 'ilike', q), ('email', 'ilike', q)]
         if student_id:
@@ -1449,7 +1546,6 @@ class BxiApiSupportPeopleController(http.Controller):
             if error:
                 return error
             domain.append(('student_ids', 'in', student_id))
-        Parent = request.env['op.parent'].sudo()
         total = Parent.search_count(domain)
         parents = Parent.search(domain, limit=limit, offset=offset)
         return api_response({'parents': [_parent_dict(p) for p in parents]},
@@ -1478,26 +1574,48 @@ class BxiApiSupportPeopleController(http.Controller):
     @http.route('/api/v1/parents', type='http', auth='public', methods=['POST'], csrf=False)
     @require_auth
     def create_parent(self, **kwargs):
-        """{"name", "mobile", "email"?, "relationship_id", "student_ids",
-        "image"?, "status"?, "account": {"username", "password", "active"?,
-        "send_credentials"?, "channel"?}}: a parent record linked to their
-        children, with the portal login they use for the app. Every update
-        field is accepted too."""
+        """The office's Add Parent screen: {"name", "gender", "birth_date",
+        "email", "phone" (or "mobile"), "address" (text or object),
+        "relationship_id", "student_ids", "image"? (JPG/PNG, max 1 MB),
+        "documents"?: {"aadhaar_card", "pan_card", "id_proof",
+        "additional"} (max 5 MB each), "status"?, ...} plus every update
+        field. A mobile that is already a parent's answers 409
+        parent_exists with its id. Without "account" the login is the
+        parent's email with a one-time password, returned once as
+        "credentials".
+
+        "draft": true saves the screen as it is ("Save Draft"): only the
+        name is required and no login is made until the draft is completed
+        with /parents/<id>/update {"draft": false}."""
         if not is_manager(request.env.user):
             return api_error('Not authorized to add parents.', status=403, code='forbidden')
         payload = json_body() or {}
-        for required in ('name', 'mobile', 'relationship_id', 'student_ids'):
-            if not payload.get(required):
-                return api_error(f'{required} is required.', status=400, code=f'missing_{required}')
+        draft, error = _parse_draft(payload)
+        if error:
+            return error
+        if draft:
+            if _blank_text(payload.get('name')):
+                return api_error('name is required.', status=400, code='missing_name')
+        else:
+            missing = _missing_parent_field(payload)
+            if missing:
+                return api_error(f'{missing} is required.', status=400, code=f'missing_{missing}')
         vals, partner_vals, documents, error = _parent_vals(payload)
+        if error:
+            return error
+        error = _parent_mobile_error(payload)
         if error:
             return error
         blocks, error = _security_blocks(payload)
         if error:
             return error
-        error = _require_login(blocks)
-        if error:
-            return error
+        if draft:
+            error = _check_draft_blocks(blocks)
+            if error:
+                return error
+            vals.update(bxi_is_draft=True, active=False)
+        else:
+            blocks['account'] = dict(blocks['account'] or {}, create_login=True)
 
         def create():
             partner = request.env['res.partner'].sudo().create(dict(partner_vals, is_parent=True))
@@ -1514,25 +1632,48 @@ class BxiApiSupportPeopleController(http.Controller):
     @http.route('/api/v1/parents/<int:parent_id>/update', type='http', auth='public', methods=['POST'], csrf=False)
     @require_auth
     def update_parent(self, parent_id, **kwargs):
-        """Any of the create fields (people_fields.PARENT_SPEC, plus "name",
-        "image", "status", "student_ids", "address", "rte": {"category",
-        "annual_income", "bpl_number", "bpl_list_type",
-        "income_certificate_financial_year", "income_certificate",
-        "category_certificate"}, "documents": {"additional"} and the Account &
-        Security blocks). A new email or mobile is also set on the parent's
-        contact, where login credentials are sent."""
+        """The Edit Parent screen. Any of the create fields
+        (people_fields.PARENT_SPEC, plus "name", "image", "status",
+        "student_ids" (the whole list - add one to link a new student),
+        "address", "rte": {"category", "annual_income", "bpl_number",
+        "bpl_list_type", "income_certificate_financial_year",
+        "income_certificate", "category_certificate"}, "documents":
+        {"aadhaar_card", "pan_card", "id_proof", "additional"} and the
+        Account & Security blocks). A new email or mobile is also set on the
+        parent's contact, where login credentials are sent.
+
+        On a draft: "draft": false completes it - every starred field must
+        then be filled in, and the login is created. "draft": true on a
+        parent already saved is an ordinary save."""
         if not is_manager(request.env.user):
             return api_error('Not authorized to edit parents.', status=403, code='forbidden')
-        parent = request.env['op.parent'].sudo().with_context(active_test=False).browse(parent_id)
-        if not parent.exists():
+        parent = _parent_record(parent_id)
+        if not parent:
             return api_error('Parent not found.', status=404, code='not_found')
         payload = json_body() or {}
+        draft, error = _parse_draft(payload)
+        if error:
+            return error
+        is_draft = parent.bxi_is_draft
+        complete = is_draft and draft is False
         vals, partner_vals, documents, error = _parent_vals(payload)
+        if error:
+            return error
+        error = _parent_mobile_error(payload, parent)
         if error:
             return error
         blocks, error = _security_blocks(payload)
         if error:
             return error
+        if is_draft:
+            if not complete:
+                error = _check_draft_blocks(blocks)
+                if error:
+                    return error
+            # Completing the draft is what makes it active.
+            vals.pop('active', None)
+        if complete:
+            blocks['account'] = dict(blocks['account'] or {}, create_login=True)
 
         def write():
             if vals:
@@ -1540,9 +1681,34 @@ class BxiApiSupportPeopleController(http.Controller):
             if partner_vals:
                 parent.name.write(partner_vals)
             apply_document_sets(parent, documents)
+            if complete:
+                _check_parent_complete(parent)
+                parent.write({'active': True, 'bxi_is_draft': False})
             return _apply_security(parent, blocks)
 
         delivery, error = transaction(write)
         if error:
             return error
         return api_response(_with_credentials(_parent_detail(parent), parent, delivery))
+
+    @http.route('/api/v1/parents/<int:parent_id>/discard', type='http', auth='public', methods=['POST'],
+                csrf=False)
+    @require_auth
+    def discard_parent_draft(self, parent_id, **kwargs):
+        """Delete a parent draft saved with "Save Draft", with its files."""
+        if not is_manager(request.env.user):
+            return api_error('Not authorized to edit parents.', status=403, code='forbidden')
+        parent = _parent_record(parent_id)
+        if not parent:
+            return api_error('Parent not found.', status=404, code='not_found')
+        if not parent.bxi_is_draft:
+            return api_error('Only a draft can be discarded.', status=400, code='not_a_draft')
+
+        def discard():
+            _discard(parent, 'op.parent', parent.name)
+            return True
+
+        _result, error = transaction(discard)
+        if error:
+            return error
+        return api_response({'id': parent_id, 'discarded': True})

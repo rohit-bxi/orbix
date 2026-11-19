@@ -4,7 +4,8 @@
 """Read-only Class / Section / Department / Status on the Student and
 Parent forms, derived from enrolments (the requirement sheet's
 "Department", "Class / Group" and "Status")."""
-from odoo import api, fields, models
+from odoo import _, api, fields, models
+from odoo.exceptions import ValidationError
 
 ENROLMENT_STATES = [('running', 'Running'), ('finished', 'Finished')]
 
@@ -84,6 +85,34 @@ class OpStudent(models.Model):
 
 class OpParent(models.Model):
     _inherit = 'op.parent'
+
+    # A draft (the app's "Save Draft") may not have a child or a
+    # relationship yet: required only once it is a real parent (see
+    # _check_bxi_complete).
+    student_ids = fields.Many2many(required=False)
+    relationship_id = fields.Many2one(required=False)
+    bxi_is_draft = fields.Boolean(
+        string='Draft', index=True, copy=False, readonly=True,
+        help="Saved with \"Save Draft\" on the app's Add Parent screen: kept archived with no login until it is "
+             "completed.")
+    # The Add / Edit Parent screen's Additional Documents.
+    bxi_aadhaar_card_ids = fields.Many2many(
+        'ir.attachment', 'op_parent_bxi_aadhaar_card_rel', 'parent_id', 'attachment_id', string='Aadhaar Card')
+    bxi_pan_card_ids = fields.Many2many(
+        'ir.attachment', 'op_parent_bxi_pan_card_rel', 'parent_id', 'attachment_id', string='PAN Card')
+    bxi_id_proof_ids = fields.Many2many(
+        'ir.attachment', 'op_parent_bxi_id_proof_rel', 'parent_id', 'attachment_id', string='ID Proof')
+
+    @api.constrains('student_ids', 'relationship_id', 'bxi_is_draft')
+    def _check_bxi_complete(self):
+        # Archived students count: a student draft gets its parent too.
+        for parent in self.with_context(active_test=False):
+            if parent.bxi_is_draft:
+                continue
+            if not parent.student_ids:
+                raise ValidationError(_('Link at least one student to %s.', parent.name.name))
+            if not parent.relationship_id:
+                raise ValidationError(_('Set the relation with the student for %s.', parent.name.name))
 
     bxi_child_department_ids = fields.Many2many(
         'op.department', string='Department', compute='_compute_bxi_children_classes',

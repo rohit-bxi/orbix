@@ -136,7 +136,7 @@ class TestBxiApiSupportOperations(ApiSupportHttpCase):
             'first_name': 'Tara', 'last_name': 'Teach', 'gender': 'female', 'birth_date': '1990-01-01'})
         self.assertEqual(teacher.status_code, 201, teacher.text)
         relationship = self.env['op.parent.relationship'].search([], limit=1)
-        parent = self.url_open('/api/v1/parents', headers=self._office(), json={
+        parent = self.url_open('/api/v1/parents', headers=self._office(), json={**self._parent_screen_fields(),
             'name': 'Pat Parent', 'mobile': '9800033344', 'relationship_id': relationship.id,
             'student_ids': [created.json()['data']['id']],
             'account': {'username': 'pat.parent', 'password': 'PatParent99'}})
