@@ -4342,6 +4342,249 @@
           "response": []
         },
         {
+          "name": "Curriculum Dropdown (approved)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/academic/curricula?status=approved",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "academic",
+                "curricula"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "approved",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "Add / Edit Smart Book screen's Curriculum dropdown: approved curricula only. status is one of draft, approved, rejected (400 invalid_status otherwise)."
+          },
+          "response": []
+        },
+        {
+          "name": "List Smart Books",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/academic/smart-books?",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "academic",
+                "smart-books"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "curriculum_id",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "class_id",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "subject_id",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Smart Books Management screen: books mapped to a curriculum. Optional filters q (title), curriculum_id, class_id, subject_id; limit / offset. Staff only. Each row: id, title, subjects, classes, curriculum {id, name, approval_status}, locked, active."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Smart Book",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/academic/smart-books/:smart_book_id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "academic",
+                "smart-books",
+                ":smart_book_id"
+              ],
+              "variable": [
+                {
+                  "key": "smart_book_id",
+                  "value": "{{smart_book_id}}"
+                }
+              ]
+            },
+            "description": "Edit Smart Book screen pre-fill. 404 not_found for a library book with no curriculum."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Smart Book",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/academic/smart-books",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "academic",
+                "smart-books"
+              ]
+            },
+            "description": "Add Smart Book screen. All four are required: title, subject_ids (or \"subjects\": names as typed, a list or \"Mathematics, Science\"), class_ids (or \"classes\": names as typed, e.g. \"Class 9, Class 10\"), curriculum_id. Names match an existing record by name or code, ignoring case (400 unknown_subject / unknown_class, ambiguous_*). 400 curriculum_rejected; 400 class_not_in_curriculum when the curriculum has assigned classes and a class is not among them; 409 smart_book_exists for the same title in the same curriculum. Academic coordinators and managers. Returns 201.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Mathematics Grade 9\",\n  \"subjects\": \"Mathematics\",\n  \"classes\": \"Class 9\",\n  \"curriculum_id\": {{curriculum_id}}\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Smart Book",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/academic/smart-books/:smart_book_id/update",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "academic",
+                "smart-books",
+                ":smart_book_id",
+                "update"
+              ],
+              "variable": [
+                {
+                  "key": "smart_book_id",
+                  "value": "{{smart_book_id}}"
+                }
+              ]
+            },
+            "description": "Edit Smart Book screen (\"Update Smart Book\"): any of the create keys; only the keys sent change. Same checks as create. 409 smart_book_locked while locked.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Mathematics Grade 9\",\n  \"subject_ids\": [\n    1\n  ],\n  \"class_ids\": [\n    1\n  ],\n  \"curriculum_id\": {{curriculum_id}}\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Toggle Smart Book Lock",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/academic/smart-books/:smart_book_id/toggle-lock",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "academic",
+                "smart-books",
+                ":smart_book_id",
+                "toggle-lock"
+              ],
+              "variable": [
+                {
+                  "key": "smart_book_id",
+                  "value": "{{smart_book_id}}"
+                }
+              ]
+            },
+            "description": "Lock icon on the card: locks or unlocks. A locked book cannot be updated or deleted (409 smart_book_locked).",
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Smart Book",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/academic/smart-books/:smart_book_id/delete",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "academic",
+                "smart-books",
+                ":smart_book_id",
+                "delete"
+              ],
+              "variable": [
+                {
+                  "key": "smart_book_id",
+                  "value": "{{smart_book_id}}"
+                }
+              ]
+            },
+            "description": "Delete icon on the card. Returns {id, deleted, archived}: a book that was ever issued or reserved is archived instead, so the library history stays. 409 smart_book_locked while locked.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          },
+          "response": []
+        },
+        {
           "name": "List Subject Mappings",
           "request": {
             "method": "GET",
@@ -18426,6 +18669,10 @@
     },
     {
       "key": "document_id",
+      "value": "1"
+    },
+    {
+      "key": "smart_book_id",
       "value": "1"
     }
   ]
