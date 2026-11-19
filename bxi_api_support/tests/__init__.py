@@ -48,3 +48,4 @@ from . import test_smart_book_api
 from . import test_subject_mapping_api
 from . import test_exam_schedule_api
 from . import test_ptm_screen_api
+from . import test_holiday_screen_api
