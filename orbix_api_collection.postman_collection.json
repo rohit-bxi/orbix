@@ -5050,10 +5050,10 @@
                 "ptm-meetings"
               ]
             },
-            "description": "Times in UTC. Parents of the classes' students and the classes' teachers are notified.",
+            "description": "Schedule PTM screen. Required: name, date (DD/MM/YYYY or YYYY-MM-DD) and time (\"10:15 AM\", \"10 : 15 : AM\" or \"22:15\") in the school's time zone, venue, and at least one of section_ids / sections (the \"Class 10 A\" chips, names as typed) or class_ids / classes (whole classes). Optional duration_minutes (default 60). start_datetime / end_datetime in UTC still work instead of date + time. Only the chosen sections of a class are invited; a section's class is added for it. Response adds date, time, time_label, duration_minutes, sections, section_ids, classes_detail. 400 missing_*, invalid_time, invalid_date, unknown_section / unknown_class.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Term 1 PTM\",\n  \"start_datetime\": \"2026-12-12 04:30:00\",\n  \"end_datetime\": \"2026-12-12 07:30:00\",\n  \"venue\": \"Main Hall\",\n  \"class_ids\": [\n    1,\n    2\n  ]\n}"
+              "raw": "{\n  \"name\": \"First Term PTM\",\n  \"date\": \"25/05/2026\",\n  \"time\": \"10:15 AM\",\n  \"venue\": \"Main Auditorium\",\n  \"sections\": \"Class 10 A, Class 10 B\"\n}"
             }
           },
           "response": []
@@ -5082,10 +5082,10 @@
                 "update"
               ]
             },
-            "description": "Changing time, venue or classes notifies everyone again.",
+            "description": "Edit Schedule PTM screen: any create key; only the keys sent change. A new date or time keeps the meeting's length unless duration_minutes is sent. Chips: section_ids / class_ids (whole lists), or add_section_ids / remove_section_ids, add_class_ids / remove_class_ids; taking a class off takes its sections with it. Changing time, venue, classes or sections notifies everyone again.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"venue\": \"Library\"\n}"
+              "raw": "{\n  \"time\": \"10:15 AM\",\n  \"venue\": \"Main Auditorium\",\n  \"add_section_ids\": [\n    1\n  ],\n  \"remove_section_ids\": [\n    2\n  ]\n}"
             }
           },
           "response": []

@@ -373,6 +373,7 @@ def _ptm_dict(meeting):
         'end_datetime': meeting.end_datetime and meeting.end_datetime.isoformat(),
         'venue': meeting.venue,
         'classes': meeting.class_ids.mapped('display_name'),
+        'section_names': meeting.batch_ids.mapped('display_name'),
     }
 
 
@@ -1052,6 +1053,10 @@ class BxiApiSupportAcademicController(http.Controller):
         if include_past not in ('1', 'true', 'True'):
             domain &= Domain('end_datetime', '>=', fields.Datetime.now())
         meetings = request.env['bxi.ptm.meeting'].sudo().search(domain, order='start_datetime')
+        if not faculty:
+            # A class with sections chosen invites only those sections.
+            meetings = meetings.filtered(lambda m: (parent and parent in m.parent_ids) or m._bxi_covers(
+                context['family_courses'], context['family_batches']))
         return api_response({'meetings': [_ptm_dict(m) for m in meetings]})
 
     @http.route('/api/v1/academic/ptm-meetings/<int:meeting_id>', type='http', auth='public', methods=['GET'], csrf=False)

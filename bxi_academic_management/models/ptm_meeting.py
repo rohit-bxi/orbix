@@ -16,6 +16,10 @@ class BxiPtmMeeting(models.Model):
     end_datetime = fields.Datetime('Ends On', required=True, tracking=True)
     venue = fields.Char('Venue', required=True, tracking=True)
     class_ids = fields.Many2many('op.course', string='Classes', required=True, tracking=True)
+    batch_ids = fields.Many2many(
+        'op.batch', 'bxi_ptm_meeting_batch_rel', 'meeting_id', 'batch_id', string='Sections', tracking=True,
+        help='Only these sections of their classes are invited (the app\'s "Class 10 A" chips). A class '
+             'with no section chosen here is invited whole.')
     active = fields.Boolean(default=True)
     company_id = fields.Many2one('res.company', default=lambda self: self.env.company)
 
@@ -38,13 +42,35 @@ class BxiPtmMeeting(models.Model):
                     and meeting.end_datetime <= meeting.start_datetime:
                 raise ValidationError(_('End time must be after start time.'))
 
-    @api.depends('class_ids')
+    @api.constrains('class_ids', 'batch_ids')
+    def _check_sections_in_classes(self):
+        for meeting in self:
+            outside = meeting.batch_ids.filtered(lambda b: b.course_id not in meeting.class_ids)
+            if outside:
+                raise ValidationError(_('Add the class of %s too.', ', '.join(outside.mapped('display_name'))))
+
+    def _bxi_covers(self, courses, batches):
+        """Whether this meeting invites a student of one of `courses`,
+        in one of `batches` (a class with sections chosen invites only
+        those sections)."""
+        self.ensure_one()
+        for course in self.class_ids & courses:
+            chosen = self.batch_ids.filtered(lambda b, c=course: b.course_id == c)
+            if not chosen or chosen & batches:
+                return True
+        return False
+
+    def _bxi_enrollment_domain(self):
+        self.ensure_one()
+        whole = self.class_ids - self.batch_ids.course_id
+        domain = [('state', '=', 'running'), '|', ('course_id', 'in', whole.ids), ('batch_id', 'in', self.batch_ids.ids)]
+        return domain
+
+    @api.depends('class_ids', 'batch_ids')
     def _compute_parent_ids(self):
         Enrollment = self.env['op.student.course']
         for meeting in self:
-            enrollments = Enrollment.search([
-                ('course_id', 'in', meeting.class_ids.ids), ('state', '=', 'running'),
-            ])
+            enrollments = Enrollment.search(meeting._bxi_enrollment_domain())
             meeting.parent_ids = enrollments.student_id.parent_ids
 
     @api.depends('class_ids')
@@ -61,7 +87,7 @@ class BxiPtmMeeting(models.Model):
         return meetings
 
     def write(self, vals):
-        should_notify = bool({'start_datetime', 'end_datetime', 'venue', 'class_ids'} & set(vals))
+        should_notify = bool({'start_datetime', 'end_datetime', 'venue', 'class_ids', 'batch_ids'} & set(vals))
         res = super().write(vals)
         if should_notify:
             self._dispatch_notifications()

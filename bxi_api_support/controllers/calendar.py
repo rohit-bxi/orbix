@@ -84,6 +84,7 @@ class BxiApiSupportCalendarController(http.Controller):
                 ('class_ids', 'in', enrollment.course_id.id),
                 ('start_datetime', '<=', end), ('end_datetime', '>=', start),
             ])
+            meetings = meetings.filtered(lambda m: m._bxi_covers(enrollment.course_id, enrollment.batch_id))
             items += [_item('ptm', m.id, m.name, m.start_datetime, m.end_datetime, venue=m.venue)
                       for m in meetings]
 

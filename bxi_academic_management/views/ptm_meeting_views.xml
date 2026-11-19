@@ -43,6 +43,7 @@
                 <field name="end_datetime"/>
                 <field name="venue"/>
                 <field name="class_ids" widget="many2many_tags"/>
+                <field name="batch_ids" widget="many2many_tags" optional="show"/>
             </list>
         </field>
     </record>
@@ -72,6 +73,8 @@
                         <field name="class_ids" widget="many2many_tags"
                                placeholder="Add class"
                                options="{'no_create': True, 'no_create_edit': True}"/>
+                        <field name="batch_ids" widget="many2many_tags" domain="[('course_id', 'in', class_ids)]"
+                               options="{'no_create': True}"/>
                     </group>
                     <group string="Notified" groups="bxi_academic_management.group_academic_coordinator,bxi_academic_management.group_academic_manager">
                         <field name="parent_ids" widget="many2many_tags" readonly="1"/>

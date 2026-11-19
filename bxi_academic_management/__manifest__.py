@@ -2,7 +2,7 @@
 
 {
     'name': 'Academic Management',
-    'version': '19.0.4.0.0',
+    'version': '19.0.4.1.0',
     'category': 'Education',
     'summary': 'Curriculum boards, class assignment, smart books and subject-teacher mapping',
     'description': """
