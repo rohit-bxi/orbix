@@ -37,6 +37,7 @@ MASTERS = {
     'classrooms': {'model': 'op.classroom', 'fields': ['name', 'code', 'capacity', 'course_id', 'batch_id'], 'order': 'name'},
     'departments': {'model': 'op.department', 'fields': ['name', 'code'], 'order': 'name'},
     'relationships': {'model': 'op.parent.relationship', 'fields': ['name'], 'order': 'name'},
+    'boards': {'model': 'bxi.board', 'fields': ['name'], 'order': 'name', 'staff': True},
     'exam-types': {'model': 'op.exam.type', 'fields': ['name', 'code'], 'order': 'name'},
     'assignment-types': {'model': 'grading.assignment.type', 'fields': ['name', 'code', 'assign_type'], 'order': 'name'},
     'library-genres': {'model': 'op.media.genre', 'fields': ['name'], 'order': 'name'},

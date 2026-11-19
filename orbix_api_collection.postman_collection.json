@@ -4057,6 +4057,112 @@
           "response": []
         },
         {
+          "name": "Create Curriculum",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/academic/curricula",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "academic",
+                "curricula"
+              ]
+            },
+            "description": "Add Curriculum screen (academic coordinators and managers). Required: name, description, board (as typed - CBSE, ICSE, State Board; matched ignoring case or created) or board_id (GET /masters/boards), class_id (the screen's single class) or class_ids (GET /masters/classes). Starts as draft. 400 missing_<key> / invalid_class_ids / invalid_board_id, 409 curriculum_exists (same name on the same board), 403 for other users. Response adds board_id, class_ids and classes_detail [{id, name}] to the existing keys.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"CBSE Curriculum 2026\",\n  \"board\": \"CBSE\",\n  \"description\": \"Central Board of Secondary Education curriculum for 2026\",\n  \"class_id\": 1\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Curriculum",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/academic/curricula/:curriculum_id/update",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "academic",
+                "curricula",
+                ":curriculum_id",
+                "update"
+              ],
+              "variable": [
+                {
+                  "key": "curriculum_id",
+                  "value": "{{curriculum_id}}"
+                }
+              ]
+            },
+            "description": "Edit Curriculum screen: any of name, description, board / board_id, class_ids; only the keys sent change. A locked curriculum keeps its board and classes (409 curriculum_locked - toggle-lock first); an approved curriculum whose board or classes change goes back to draft. 409 curriculum_exists for a name already used on that board.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"CBSE Curriculum 2024\",\n  \"board\": \"CBSE\",\n  \"description\": \"Central Board of Secondary Education curriculum for 2024\",\n  \"class_ids\": [\n    1\n  ]\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Assign Classes to Curriculum",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/academic/curricula/:curriculum_id/update",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "academic",
+                "curricula",
+                ":curriculum_id",
+                "update"
+              ],
+              "variable": [
+                {
+                  "key": "curriculum_id",
+                  "value": "{{curriculum_id}}"
+                }
+              ]
+            },
+            "description": "Assign Classes screen: class_ids is the whole list of chips (removing a chip = leaving it out; at least one, 400 missing_class_ids), or add_class_ids / remove_class_ids to change only some. Name and board may be sent back with it.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"class_ids\": [\n    9,\n    10\n  ],\n  \"name\": \"CBSE Curriculum 2024\",\n  \"board\": \"CBSE\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
           "name": "Get Curriculum",
           "request": {
             "method": "GET",

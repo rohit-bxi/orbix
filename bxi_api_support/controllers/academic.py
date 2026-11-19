@@ -7,7 +7,7 @@ from odoo.http import request
 
 from odoo.addons.bxi_api.controllers.auth import api_error, api_response, call_action, require_auth
 
-from .common import parse_pagination, school_context
+from .common import atomic, is_staff, json_body, parse_pagination, resolve_record, resolve_records, school_context
 
 COORDINATOR_GROUP = 'bxi_academic_management.group_academic_coordinator'
 MANAGER_GROUP = 'bxi_academic_management.group_academic_manager'
@@ -22,11 +22,94 @@ def _curriculum_dict(curriculum):
         'id': curriculum.id,
         'name': curriculum.name,
         'board': curriculum.board_id.display_name,
+        'board_id': curriculum.board_id.id or None,
         'description': curriculum.description,
         'classes': curriculum.class_ids.mapped('display_name'),
+        'class_ids': curriculum.class_ids.ids,
+        'classes_detail': [{'id': c.id, 'name': c.display_name} for c in curriculum.class_ids],
         'approval_status': curriculum.approval_status,
         'locked': curriculum.locked,
     }
+
+
+class _Refused(Exception):
+    """Raised inside atomic() to roll back with an error response (e.g. a
+    board created for a curriculum that turns out to be a duplicate)."""
+
+    def __init__(self, response):
+        super().__init__()
+        self.response = response
+
+
+def _atomic(func):
+    try:
+        return atomic(func)
+    except _Refused as exc:
+        return None, exc.response
+
+
+def _blank(value):
+    return value is None or (isinstance(value, str) and not value.strip())
+
+
+def _board(payload):
+    """(bxi.board or None when not sent, error): "board_id", or "board" as
+    typed on the screen (CBSE, ICSE, State Board) - matched by name
+    ignoring case, created when new."""
+    if payload.get('board_id') not in (None, ''):
+        board, error = resolve_record(request.env, 'bxi.board', payload['board_id'], 'board_id')
+        return (None, error) if error else (board, None)
+    if 'board' not in payload and 'board_id' not in payload:
+        return None, None
+    name = payload.get('board')
+    if _blank(name) or not isinstance(name, str):
+        return None, api_error('board is required.', status=400, code='missing_board')
+    Board = request.env['bxi.board'].sudo().with_context(active_test=False)
+    board = Board.search([('name', '=ilike', name.strip())], limit=1)
+    if board and not board.active:
+        board.active = True
+    return board or Board.create({'name': name.strip()}), None
+
+
+def _classes(payload, curriculum=None):
+    """(op.course records or None when not sent, error): "class_ids" (the
+    whole list), "class_id" (the Add screen's single class), or
+    "add_class_ids" / "remove_class_ids" on update."""
+    Course = request.env['op.course'].sudo()
+    if 'class_ids' in payload or 'class_id' in payload:
+        raw = payload['class_ids'] if 'class_ids' in payload else (
+            [payload['class_id']] if payload['class_id'] not in (None, '') else [])
+        classes, error = resolve_records(request.env, 'op.course', raw, 'class_ids')
+        return (None, error) if error else (classes, None)
+    if curriculum is not None and ('add_class_ids' in payload or 'remove_class_ids' in payload):
+        added, error = resolve_records(request.env, 'op.course', payload.get('add_class_ids') or [], 'add_class_ids')
+        if error:
+            return None, error
+        removed, error = resolve_records(request.env, 'op.course', payload.get('remove_class_ids') or [],
+                                         'remove_class_ids')
+        if error:
+            return None, error
+        return (curriculum.class_ids | added) - removed, None
+    return (None, None) if curriculum is not None else (Course, None)
+
+
+def _text(payload, key):
+    """(value or None when not sent, error) for a required text field."""
+    if key not in payload:
+        return None, None
+    if _blank(payload[key]) or not isinstance(payload[key], str):
+        return None, api_error('%s is required.' % key, status=400, code='missing_%s' % key)
+    return payload[key].strip(), None
+
+
+def _duplicate_error(name, board, curriculum=None):
+    domain = [('name', '=ilike', name), ('board_id', '=', board.id)]
+    if curriculum:
+        domain.append(('id', '!=', curriculum.id))
+    if request.env['bxi.curriculum'].sudo().with_context(active_test=False).search_count(domain, limit=1):
+        return api_error('A curriculum with this name already exists for %s.' % board.name, status=409,
+                         code='curriculum_exists')
+    return None
 
 
 def _mapping_dict(mapping):
@@ -55,6 +138,9 @@ class BxiApiSupportAcademicController(http.Controller):
     @http.route('/api/v1/academic/curricula', type='http', auth='public', methods=['GET'], csrf=False)
     @require_auth
     def list_curricula(self, **kwargs):
+        # School setup data: staff only, not families.
+        if not is_staff(request.env):
+            return api_error('Not authorized to view curricula.', status=403, code='forbidden')
         limit, offset, error = parse_pagination(kwargs)
         if error:
             return error
@@ -68,9 +154,111 @@ class BxiApiSupportAcademicController(http.Controller):
     @http.route('/api/v1/academic/curricula/<int:curriculum_id>', type='http', auth='public', methods=['GET'], csrf=False)
     @require_auth
     def get_curriculum(self, curriculum_id, **kwargs):
+        if not is_staff(request.env):
+            return api_error('Not authorized to view curricula.', status=403, code='forbidden')
         curriculum = request.env['bxi.curriculum'].sudo().browse(curriculum_id)
         if not curriculum.exists():
             return api_error('Curriculum not found.', status=404, code='not_found')
+        return api_response(_curriculum_dict(curriculum))
+
+    @http.route('/api/v1/academic/curricula', type='http', auth='public', methods=['POST'], csrf=False)
+    @require_auth
+    def create_curriculum(self, **kwargs):
+        """The Add Curriculum screen: {"name", "description", "board" (as
+        typed - matched or created) or "board_id", "class_id" or
+        "class_ids"} - all required. Academic coordinators and managers.
+        A new curriculum is a draft; 409 curriculum_exists for the same name
+        on the same board."""
+        if not _is_coordinator_or_manager(request.env.user):
+            return api_error('Not authorized to manage curricula.', status=403, code='forbidden')
+        payload = json_body() or {}
+        for key in ('name', 'description'):
+            if key not in payload:
+                return api_error('%s is required.' % key, status=400, code='missing_%s' % key)
+        if 'board' not in payload and 'board_id' not in payload:
+            return api_error('board is required.', status=400, code='missing_board')
+        values = {}
+        for key in ('name', 'description'):
+            values[key], error = _text(payload, key)
+            if error:
+                return error
+        classes, error = _classes(payload)
+        if error:
+            return error
+        if not classes:
+            return api_error('class_ids is required.', status=400, code='missing_class_ids')
+
+        def create():
+            board, error = _board(payload)
+            if error:
+                raise _Refused(error)
+            error = _duplicate_error(values['name'], board)
+            if error:
+                # Also forgets a board created just for this request.
+                raise _Refused(error)
+            return request.env['bxi.curriculum'].sudo().create(dict(
+                values, board_id=board.id, class_ids=[(6, 0, classes.ids)]))
+
+        curriculum, error = _atomic(create)
+        if error:
+            return error
+        return api_response(_curriculum_dict(curriculum), status=201)
+
+    @http.route('/api/v1/academic/curricula/<int:curriculum_id>/update', type='http', auth='public',
+                methods=['POST'], csrf=False)
+    @require_auth
+    def update_curriculum(self, curriculum_id, **kwargs):
+        """The Edit Curriculum and Assign Classes screens: any of "name",
+        "description", "board" / "board_id", "class_ids" (the whole list),
+        "class_id", or "add_class_ids" / "remove_class_ids". Only the keys
+        sent change. A locked curriculum keeps its board and classes (409
+        curriculum_locked); an approved one whose board or classes change
+        goes back to draft for approval again."""
+        if not _is_coordinator_or_manager(request.env.user):
+            return api_error('Not authorized to manage curricula.', status=403, code='forbidden')
+        curriculum = request.env['bxi.curriculum'].sudo().browse(curriculum_id)
+        if not curriculum.exists():
+            return api_error('Curriculum not found.', status=404, code='not_found')
+        payload = json_body() or {}
+        values = {}
+        for key in ('name', 'description'):
+            value, error = _text(payload, key)
+            if error:
+                return error
+            if value is not None:
+                values[key] = value
+        classes, error = _classes(payload, curriculum)
+        if error:
+            return error
+        if classes is not None and not classes:
+            return api_error('A curriculum needs at least one class.', status=400, code='missing_class_ids')
+
+        def write():
+            board, error = _board(payload)
+            if error:
+                raise _Refused(error)
+            changed_scope = (board and board != curriculum.board_id) or \
+                (classes is not None and classes != curriculum.class_ids)
+            if changed_scope and curriculum.locked:
+                raise _Refused(api_error('This curriculum is locked: unlock it to change its board or classes.',
+                                         status=409, code='curriculum_locked'))
+            error = _duplicate_error(values.get('name', curriculum.name), board or curriculum.board_id, curriculum)
+            if error:
+                raise _Refused(error)
+            vals = dict(values)
+            if board:
+                vals['board_id'] = board.id
+            if classes is not None:
+                vals['class_ids'] = [(6, 0, classes.ids)]
+            if changed_scope and curriculum.approval_status == 'approved':
+                vals['approval_status'] = 'draft'
+            if vals:
+                curriculum.write(vals)
+            return True
+
+        _result, error = _atomic(write)
+        if error:
+            return error
         return api_response(_curriculum_dict(curriculum))
 
     @http.route('/api/v1/academic/curricula/<int:curriculum_id>/approve', type='http', auth='public', methods=['POST'], csrf=False)
