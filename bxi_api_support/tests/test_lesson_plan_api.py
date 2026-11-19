@@ -44,6 +44,8 @@ class TestBxiApiSupportLessonPlan(ApiSupportHttpCase):
             'topic': 'Fractions', 'objective': 'Understand fractions', 'activities': 'Group work',
             'resources': 'Textbook', 'assessment_method': 'Quiz',
             'start_date': '2026-07-01', 'end_date': '2026-07-05', 'plan_date': '2026-07-01',
+            'duration': '5 days', 'recall_questions': ['What is a fraction?'], 'class_work': ['Worksheet 1'],
+            'teaching_aids': ['Fraction strips'], 'home_work': ['Exercise 3'],
         })
 
     def test_plans_require_auth(self):
@@ -59,7 +61,7 @@ class TestBxiApiSupportLessonPlan(ApiSupportHttpCase):
             'subject_id': self.subject.id,
         })
         self.assertEqual(resp.status_code, 400)
-        self.assertEqual(resp.json()['error']['code'], 'missing_fields')
+        self.assertEqual(resp.json()['error']['code'], 'missing_topic', 'One error per field, like the other screens.')
 
     def test_coordinator_can_review_reject_then_teacher_resubmits(self):
         plan_id = self._create_plan().json()['data']['id']
@@ -83,6 +85,8 @@ class TestBxiApiSupportLessonPlan(ApiSupportHttpCase):
             'topic': 'Decimals', 'objective': 'Understand decimals', 'activities': 'Pair work',
             'resources': 'Worksheet', 'assessment_method': 'Quiz',
             'start_date': '2026-07-08', 'end_date': '2026-07-10', 'plan_date': '2026-07-08',
+            'duration': '5 days', 'recall_questions': ['What is a fraction?'], 'class_work': ['Worksheet 1'],
+            'teaching_aids': ['Fraction strips'], 'home_work': ['Exercise 3'],
         }, **extra)
 
     def test_coordinator_creates_plan_for_a_teacher(self):

@@ -5185,7 +5185,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"subject_id\": 1,\n  \"class_id\": 1,\n  \"quarter_id\": 1,\n  \"topic\": \"Fractions\",\n  \"objective\": \"Understand fractions\",\n  \"activities\": \"Group work\",\n  \"resources\": \"Textbook\",\n  \"assessment_method\": \"Quiz\",\n  \"start_date\": \"2026-07-01\",\n  \"end_date\": \"2026-07-05\",\n  \"plan_date\": \"2026-07-01\",\n  \"teacher_id\": {{teacher_id}}\n}"
+              "raw": "{\n  \"subject\": \"Mathematics\",\n  \"class\": \"Class 9\",\n  \"duration\": \"5 days\",\n  \"topic\": \"Algebra - Linear Equations\",\n  \"learning_objectives\": \"Solve linear equations in one variable\",\n  \"activities\": \"Board work, pair practice\",\n  \"resources\": \"Textbook chapter 4\",\n  \"assessment_method\": \"Exit quiz\",\n  \"start_date\": \"02/05/2026\",\n  \"end_date\": \"06/05/2026\",\n  \"plan_date\": \"04/05/2026\",\n  \"recall_questions\": [\n    \"What is a linear equation?\"\n  ],\n  \"class_work\": [\n    \"Solving linear equations\"\n  ],\n  \"teaching_aids\": [\n    \"Whiteboard\",\n    \"markers\"\n  ],\n  \"home_work\": [\n    \"Practice problems\"\n  ],\n  \"remarks\": [\n    \"Students showed good understanding\"\n  ]\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/v1/lesson-plans",
@@ -5198,7 +5198,44 @@
                 "lesson-plans"
               ]
             },
-            "description": "Teacher: the plan is always their own. Coordinator/manager (no teacher record of their own): teacher_id is required and names the teacher; anyone else gets 403. All other fields required."
+            "description": "Create Lesson Plan screen. Required: subject_id or \"subject\" (as typed), class_id or \"class\", \"duration\" (free text, e.g. \"5 days, 2 weeks\"), \"topic\", \"learning_objectives\" (or \"objective\"), \"activities\", \"resources\", \"assessment_method\", \"start_date\", \"end_date\", \"plan_date\" (Day and Date: DD/MM/YYYY, YYYY-MM-DD or \"Monday, April 6, 2026\"), and at least one item in \"recall_questions\", \"class_work\", \"teaching_aids\", \"home_work\" (lists of strings); \"remarks\" optional. Teacher: a teacher is always themselves; a coordinator sends teacher_id or \"teacher\" as typed (a Dr./Mr./Ms. title is ignored). The quarter is taken from the start date (narrowest academic term) unless quarter_id is sent. 400 missing_<field>, unknown_* / ambiguous_*, invalid_dates, plan_date_outside_dates, subject_not_in_class, no_quarter. Response adds the ids, every text field, duration / duration_days, plan_day and the lists as [{id, text}]."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Lesson Plan",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"duration\": \"1 week\",\n  \"teaching_aids\": [\n    \"Whiteboard\"\n  ],\n  \"recall_questions\": [\n    \"What is a linear equation?\",\n    \"What is a variable?\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/lesson-plans/:lesson_plan_id/update",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "lesson-plans",
+                ":lesson_plan_id",
+                "update"
+              ],
+              "variable": [
+                {
+                  "key": "lesson_plan_id",
+                  "value": "{{lesson_plan_id}}"
+                }
+              ]
+            },
+            "description": "Edit Lesson Plan screen: any create key; only the keys sent change. A list sent replaces that list (\"+ Add\" and the x); the four starred lists cannot be emptied, remarks can. The plan's teacher or a coordinator. Editing an approved plan sends it back to pending for review. Same errors as create."
           },
           "response": []
         },

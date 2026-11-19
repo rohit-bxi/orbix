@@ -1,6 +1,6 @@
 {
     'name': 'Lesson Plan',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.1.0',
     'category': 'Education',
     'summary': 'Teacher lesson plan authoring and Academic Coordinator/Manager approval workflow',
     'description': """

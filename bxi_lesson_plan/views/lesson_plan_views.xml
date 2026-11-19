@@ -96,6 +96,7 @@
                         <group string="Schedule">
                             <field name="start_date"/>
                             <field name="end_date"/>
+                            <field name="duration_label" placeholder="e.g., 5 days, 2 weeks"/>
                             <field name="duration" readonly="1"/>
                             <field name="plan_date"/>
                             <field name="plan_day" readonly="1"/>
