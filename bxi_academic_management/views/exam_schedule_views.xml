@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_exam_schedule_list" model="ir.ui.view">
+        <field name="name">bxi.exam.schedule.list</field>
+        <field name="model">bxi.exam.schedule</field>
+        <field name="arch" type="xml">
+            <list string="Exams">
+                <field name="name"/>
+                <field name="start_date"/>
+                <field name="end_date"/>
+                <field name="batch_ids" widget="many2many_tags"/>
+                <field name="subject_ids" widget="many2many_tags"/>
+                <field name="exam_type_id" optional="hide"/>
+                <field name="paper_count" optional="show"/>
+                <field name="state" widget="badge"
+                       decoration-info="state in ('draft', 'partly_scheduled')"
+                       decoration-success="state in ('scheduled', 'done')"
+                       decoration-warning="state == 'in_progress'"
+                       decoration-muted="state == 'cancelled'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_exam_schedule_form" model="ir.ui.view">
+        <field name="name">bxi.exam.schedule.form</field>
+        <field name="model">bxi.exam.schedule</field>
+        <field name="arch" type="xml">
+            <form string="Exam">
+                <header>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,scheduled,in_progress,done"/>
+                </header>
+                <sheet>
+                    <field name="active" invisible="1"/>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" placeholder="e.g., Mid-Term Examination"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="start_date"/>
+                            <field name="end_date"/>
+                            <field name="exam_type_id" options="{'no_create': True}"/>
+                        </group>
+                        <group>
+                            <field name="batch_ids" widget="many2many_tags" placeholder="Add class"
+                                   options="{'no_create': True}"/>
+                            <field name="subject_ids" widget="many2many_tags" placeholder="Add subject"
+                                   options="{'no_create': True}"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Sessions per Section" name="sessions">
+                            <field name="session_ids" readonly="1">
+                                <list>
+                                    <field name="batch_id"/>
+                                    <field name="course_id"/>
+                                    <field name="exam_code"/>
+                                    <field name="exams_count" string="Papers"/>
+                                    <field name="state" widget="badge"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_exam_schedule_search" model="ir.ui.view">
+        <field name="name">bxi.exam.schedule.search</field>
+        <field name="model">bxi.exam.schedule</field>
+        <field name="arch" type="xml">
+            <search string="Exams">
+                <field name="name"/>
+                <field name="batch_ids"/>
+                <field name="subject_ids"/>
+                <filter string="Draft" name="filter_draft" domain="[('state', '=', 'draft')]"/>
+                <filter string="Scheduled" name="filter_scheduled" domain="[('state', '=', 'scheduled')]"/>
+                <filter string="Archived" name="filter_archived" domain="[('active', '=', False)]"/>
+                <group name="group_by">
+                    <filter string="Status" name="group_state" context="{'group_by': 'state'}"/>
+                    <filter string="Exam Type" name="group_type" context="{'group_by': 'exam_type_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_exam_schedule" model="ir.actions.act_window">
+        <field name="name">Exams</field>
+        <field name="res_model">bxi.exam.schedule</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_exam_schedule_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Add an exam</p>
+            <p>One exam across several classes: a session is set up for each class, ready for its papers.</p>
+        </field>
+    </record>
+
+    <record id="view_op_exam_session_form_schedule" model="ir.ui.view">
+        <field name="name">op.exam.session.form.bxi.schedule</field>
+        <field name="model">op.exam.session</field>
+        <field name="inherit_id" ref="openeducat_exam.view_op_exam_session_form"/>
+        <field name="arch" type="xml">
+            <field name="evaluation_type" position="after">
+                <field name="bxi_schedule_id" invisible="not bxi_schedule_id"/>
+            </field>
+        </field>
+    </record>
+</odoo>

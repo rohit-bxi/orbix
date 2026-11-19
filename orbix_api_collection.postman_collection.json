@@ -4585,6 +4585,198 @@
           "response": []
         },
         {
+          "name": "List Exams",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/academic/exams",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "academic",
+                "exams"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "class_id",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "section_id",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "subject_id",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "date_from",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "date_to",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Exam list (one exam across sections). Filters: q (name), class_id, section_id, subject_id, status (draft, partly_scheduled, scheduled, in_progress, done, cancelled), date_from / date_to (exams overlapping the range). Exam staff only."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Exam",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/academic/exams/:exam_schedule_id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "academic",
+                "exams",
+                ":exam_schedule_id"
+              ],
+              "variable": [
+                {
+                  "key": "exam_schedule_id",
+                  "value": "{{exam_schedule_id}}"
+                }
+              ]
+            },
+            "description": "Edit Exam pre-fill. Includes sessions [{id, section, class, exam_code, state, papers}] - add papers to each with POST /api/v1/exams/sessions/<id>/exams - and papers_progress {set_up, expected}."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Exam",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/academic/exams",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "academic",
+                "exams"
+              ]
+            },
+            "description": "Add Exam screen. Required: name, start_date and end_date (DD/MM/YYYY or YYYY-MM-DD), section_ids or \"sections\" (names as typed, e.g. \"Class 10 A, Class 10 B\"), subject_ids or \"subjects\". Optional exam_type_id (default General). Creates one draft exam session per section. 400 missing_*, invalid_dates, subject_not_in_class (when the class lists subjects), unknown_section / unknown_subject; 409 exam_exists (same name, overlapping dates, a shared section). Returns 201.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Mid-Term Examination\",\n  \"start_date\": \"10/07/2026\",\n  \"end_date\": \"20/07/2026\",\n  \"section_ids\": [\n    1,\n    2\n  ],\n  \"subject_ids\": [\n    1,\n    2\n  ]\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Exam",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/academic/exams/:exam_schedule_id/update",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "academic",
+                "exams",
+                ":exam_schedule_id",
+                "update"
+              ],
+              "variable": [
+                {
+                  "key": "exam_schedule_id",
+                  "value": "{{exam_schedule_id}}"
+                }
+              ]
+            },
+            "description": "Edit Exam screen: any create key (whole lists), or add_section_ids / remove_section_ids and add_subject_ids / remove_subject_ids for the chips. Only the keys sent change; name, dates and exam type follow to the sessions. 409 section_in_use (that section already has papers or is scheduled), subject_has_papers, papers_outside_dates.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Mid-Term Examination\",\n  \"start_date\": \"10/07/2026\",\n  \"end_date\": \"20/07/2026\",\n  \"add_section_ids\": [\n    3\n  ],\n  \"remove_subject_ids\": [\n    2\n  ]\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Exam",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/academic/exams/:exam_schedule_id/delete",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "academic",
+                "exams",
+                ":exam_schedule_id",
+                "delete"
+              ],
+              "variable": [
+                {
+                  "key": "exam_schedule_id",
+                  "value": "{{exam_schedule_id}}"
+                }
+              ]
+            },
+            "description": "Deletes the exam and its sessions while no paper is set up and no section is scheduled; otherwise 409 exam_in_progress (cancel the sessions instead).",
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          },
+          "response": []
+        },
+        {
           "name": "List Subject Mappings",
           "request": {
             "method": "GET",
@@ -18838,6 +19030,10 @@
     },
     {
       "key": "mapping_id",
+      "value": "1"
+    },
+    {
+      "key": "exam_schedule_id",
       "value": "1"
     }
   ]

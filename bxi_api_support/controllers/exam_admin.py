@@ -103,6 +103,10 @@ def _exam_vals(env, payload, session, exam=None):
         if session.course_id.subject_ids and subject not in session.course_id.subject_ids:
             return None, api_error(f'{subject.name} is not a subject of {session.course_id.name}.',
                                    status=400, code='subject_not_in_class')
+        schedule = session.bxi_schedule_id
+        if schedule and subject not in schedule.subject_ids:
+            return None, api_error(f'{subject.name} is not a subject of the exam {schedule.name}.',
+                                   status=400, code='subject_not_in_exam')
         vals['subject_id'] = subject.id
     if 'name' in payload:
         if not payload['name']:

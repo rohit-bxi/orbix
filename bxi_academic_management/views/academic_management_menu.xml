@@ -25,6 +25,12 @@
               action="action_subject_mapping"
               sequence="20"/>
 
+    <menuitem id="menu_exam_schedule"
+              name="Exams"
+              parent="menu_academic_management_root"
+              action="action_exam_schedule"
+              sequence="25"/>
+
     <menuitem id="menu_event_root"
               name="Event"
               parent="menu_academic_management_root"

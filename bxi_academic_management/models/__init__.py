@@ -7,3 +7,4 @@ from . import media_curriculum
 from . import ptm_meeting
 from . import resource_calendar_leaves
 from . import subject_mapping
+from . import exam_schedule

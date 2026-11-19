@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) 2026 BXI Technology Pvt. Ltd. All Rights Reserved.
 # License OPL-1 (Odoo Proprietary License v1.0, see LICENSE file for full text).
+import datetime
 import re
 
 from odoo import fields, http
@@ -9,9 +10,13 @@ from odoo.http import request
 
 from odoo.addons.bxi_api.controllers.auth import api_error, api_response, call_action, parse_int, require_auth
 
+from odoo.addons.bxi_academic_management.models.exam_schedule import ExamScheduleError
+
 from .common import (
-    atomic, is_staff, json_body, parse_pagination, ref, resolve_record, resolve_records, school_context,
+    atomic, date_str, is_staff, json_body, parse_date, parse_pagination, ref, resolve_record, resolve_records,
+    school_context,
 )
+from .exam import _is_exam_staff
 
 COORDINATOR_GROUP = 'bxi_academic_management.group_academic_coordinator'
 MANAGER_GROUP = 'bxi_academic_management.group_academic_manager'
@@ -218,6 +223,83 @@ def _smart_book_error(title, curriculum, classes, book=None):
         return api_error('%s already has a smart book with this title.' % curriculum.name, status=409,
                          code='smart_book_exists')
     return None
+
+
+# -- Exams (bxi.exam.schedule: one exam across sections) ------------------------
+
+EXAM_STATUSES = ('draft', 'partly_scheduled', 'scheduled', 'in_progress', 'done', 'cancelled')
+
+
+def _exam_schedule_dict(schedule):
+    sessions = schedule.sudo().session_ids.sorted(lambda s: (s.batch_id.display_name or '', s.id))
+    papers = sessions.exam_ids.filtered(lambda e: e.state != 'cancel')
+    live = sessions.filtered(lambda s: s.state != 'cancel')
+    return {
+        'id': schedule.id,
+        'name': schedule.name,
+        'start_date': date_str(schedule.start_date),
+        'end_date': date_str(schedule.end_date),
+        'exam_type': ref(schedule.exam_type_id),
+        'status': schedule.state,
+        'classes': [ref(b) for b in schedule.batch_ids],
+        'section_ids': schedule.batch_ids.ids,
+        'subjects': [ref(s) for s in schedule.subject_ids],
+        'subject_ids': schedule.subject_ids.ids,
+        'sessions': [{
+            'id': session.id, 'section': ref(session.batch_id), 'class': ref(session.course_id),
+            'exam_code': session.exam_code, 'state': session.state, 'papers': len(session.exam_ids),
+        } for session in sessions],
+        'papers_progress': {'set_up': len(papers), 'expected': len(live) * len(schedule.subject_ids)},
+        'active': schedule.active,
+    }
+
+
+def _screen_date(payload, key):
+    """(date or None when not sent, error): DD/MM/YYYY as on the screen, or
+    YYYY-MM-DD."""
+    if key not in payload:
+        return None, None
+    value = payload[key]
+    if _blank(value):
+        return None, api_error('%s is required.' % key, status=400, code='missing_%s' % key)
+    if isinstance(value, str) and '/' in value:
+        try:
+            return datetime.datetime.strptime(value.strip(), '%d/%m/%Y').date(), None
+        except ValueError:
+            return None, api_error('%s must be DD/MM/YYYY or YYYY-MM-DD.' % key, status=400,
+                                   code='invalid_%s' % key)
+    return parse_date(value, key)
+
+
+def _chips(payload, model, key, current=None):
+    """(records or None when not sent, error) for the Classes / Subjects
+    chips: the whole list ("<key>_ids" or the typed "<key>s"), or on
+    update "add_<key>_ids" / "remove_<key>_ids"."""
+    records, error = _named_list(payload, model, key)
+    if error or records is not None:
+        return records, error
+    if current is None:
+        return None, None
+    add_key, remove_key = 'add_%s_ids' % key, 'remove_%s_ids' % key
+    if add_key not in payload and remove_key not in payload:
+        return None, None
+    added, error = resolve_records(request.env, model, payload.get(add_key) or [], add_key)
+    if error:
+        return None, error
+    removed, error = resolve_records(request.env, model, payload.get(remove_key) or [], remove_key)
+    if error:
+        return None, error
+    return (current | added) - removed, None
+
+
+def _exam_atomic(func):
+    """atomic(), reporting the schedule's own refusals with their codes."""
+    def guarded():
+        try:
+            return func()
+        except ExamScheduleError as exc:
+            raise _Refused(api_error(exc.args[0], status=exc.status, code=exc.code))
+    return _atomic(guarded)
 
 
 def _mapping_dict(mapping):
@@ -650,6 +732,157 @@ class BxiApiSupportAcademicController(http.Controller):
         if error:
             return error
         return api_response({'id': book_id, 'deleted': not has_history, 'archived': has_history})
+
+    # -- Exams -----------------------------------------------------------------
+
+    def _exam_schedule(self, schedule_id):
+        schedule = request.env['bxi.exam.schedule'].sudo().browse(schedule_id).exists()
+        if not schedule:
+            return None, api_error('Exam not found.', status=404, code='not_found')
+        return schedule, None
+
+    def _exam_forbidden(self):
+        return api_error('Only exam staff can manage exams.', status=403, code='forbidden')
+
+    def _exam_values(self, payload, schedule=None):
+        """(vals, error) from the Add / Edit Exam body."""
+        vals = {}
+        name, error = _text(payload, 'name')
+        if error:
+            return None, error
+        if name is not None:
+            vals['name'] = name
+        for key in ('start_date', 'end_date'):
+            value, error = _screen_date(payload, key)
+            if error:
+                return None, error
+            if value is not None:
+                vals[key] = value
+        for key, model, field in (('section', 'op.batch', 'batch_ids'), ('subject', 'op.subject', 'subject_ids')):
+            records, error = _chips(payload, model, key, schedule[field] if schedule else None)
+            if error:
+                return None, error
+            if records is not None:
+                if not records:
+                    return None, api_error('Add at least one %s.' % ('class' if key == 'section' else key),
+                                           status=400, code='missing_%s_ids' % key)
+                vals[field] = [(6, 0, records.ids)]
+        if 'exam_type_id' in payload:
+            exam_type, error = resolve_record(request.env, 'op.exam.type', payload['exam_type_id'], 'exam_type_id')
+            if error:
+                return None, error
+            if exam_type:
+                vals['exam_type_id'] = exam_type.id
+        return vals, None
+
+    @http.route('/api/v1/academic/exams', type='http', auth='public', methods=['GET'], csrf=False)
+    @require_auth
+    def list_exams(self, q=None, status=None, date_from=None, date_to=None, **kwargs):
+        """Filters: q (name), class_id, section_id, subject_id, status,
+        date_from / date_to (exams overlapping that range)."""
+        if not _is_exam_staff(request.env.user):
+            return self._exam_forbidden()
+        limit, offset, error = parse_pagination(kwargs)
+        if error:
+            return error
+        domain = []
+        if q:
+            domain.append(('name', 'ilike', q))
+        for param, field in (('class_id', 'batch_ids.course_id'), ('section_id', 'batch_ids'),
+                             ('subject_id', 'subject_ids')):
+            if kwargs.get(param):
+                value, error = parse_int(kwargs[param], param)
+                if error:
+                    return error
+                domain.append((field, 'in', [value]))
+        if status:
+            if status not in EXAM_STATUSES:
+                return api_error('status must be one of %s.' % ', '.join(EXAM_STATUSES), status=400,
+                                 code='invalid_status')
+            domain.append(('state', '=', status))
+        for key, raw, operator, field in (('date_from', date_from, '>=', 'end_date'),
+                                          ('date_to', date_to, '<=', 'start_date')):
+            if raw:
+                value, error = _screen_date({key: raw}, key)
+                if error:
+                    return error
+                domain.append((field, operator, value))
+        Schedule = request.env['bxi.exam.schedule'].sudo()
+        total = Schedule.search_count(domain)
+        schedules = Schedule.search(domain, limit=limit, offset=offset)
+        return api_response({'exams': [_exam_schedule_dict(s) for s in schedules]},
+                            meta={'total': total, 'limit': limit, 'offset': offset})
+
+    @http.route('/api/v1/academic/exams/<int:schedule_id>', type='http', auth='public', methods=['GET'], csrf=False)
+    @require_auth
+    def get_exam(self, schedule_id, **kwargs):
+        if not _is_exam_staff(request.env.user):
+            return self._exam_forbidden()
+        schedule, error = self._exam_schedule(schedule_id)
+        if error:
+            return error
+        return api_response(_exam_schedule_dict(schedule))
+
+    @http.route('/api/v1/academic/exams', type='http', auth='public', methods=['POST'], csrf=False)
+    @require_auth
+    def create_exam(self, **kwargs):
+        """The Add Exam screen: "name", "start_date", "end_date"
+        (DD/MM/YYYY or YYYY-MM-DD), "section_ids" or "sections" (as typed),
+        "subject_ids" or "subjects", "exam_type_id"? (default General). A
+        draft exam session is created for each section, ready for papers."""
+        if not _is_exam_staff(request.env.user):
+            return self._exam_forbidden()
+        payload = json_body() or {}
+        for key in ('name', 'start_date', 'end_date'):
+            if key not in payload:
+                return api_error('%s is required.' % key, status=400, code='missing_%s' % key)
+        vals, error = self._exam_values(payload)
+        if error:
+            return error
+        for field, key in (('batch_ids', 'section_ids'), ('subject_ids', 'subject_ids')):
+            if field not in vals:
+                return api_error('%s is required.' % key, status=400, code='missing_%s' % key)
+        schedule, error = _exam_atomic(lambda: request.env['bxi.exam.schedule'].sudo().create(vals))
+        if error:
+            return error
+        return api_response(_exam_schedule_dict(schedule), status=201)
+
+    @http.route('/api/v1/academic/exams/<int:schedule_id>/update', type='http', auth='public', methods=['POST'],
+                csrf=False)
+    @require_auth
+    def update_exam(self, schedule_id, **kwargs):
+        """The Edit Exam screen: any create key, or add_section_ids /
+        remove_section_ids and add_subject_ids / remove_subject_ids for the
+        chips. Only the keys sent change."""
+        if not _is_exam_staff(request.env.user):
+            return self._exam_forbidden()
+        schedule, error = self._exam_schedule(schedule_id)
+        if error:
+            return error
+        vals, error = self._exam_values(json_body() or {}, schedule)
+        if error:
+            return error
+        if vals:
+            _result, error = _exam_atomic(lambda: schedule.write(vals))
+            if error:
+                return error
+        return api_response(_exam_schedule_dict(schedule))
+
+    @http.route('/api/v1/academic/exams/<int:schedule_id>/delete', type='http', auth='public', methods=['POST'],
+                csrf=False)
+    @require_auth
+    def delete_exam(self, schedule_id, **kwargs):
+        """Only before any paper is set up or section scheduled (409
+        exam_in_progress): cancel its sessions instead."""
+        if not _is_exam_staff(request.env.user):
+            return self._exam_forbidden()
+        schedule, error = self._exam_schedule(schedule_id)
+        if error:
+            return error
+        _result, error = _exam_atomic(schedule.unlink)
+        if error:
+            return error
+        return api_response({'id': schedule_id, 'deleted': True})
 
     @http.route('/api/v1/academic/subject-mappings', type='http', auth='public', methods=['GET'], csrf=False)
     @require_auth
