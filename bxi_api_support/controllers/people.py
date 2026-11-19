@@ -760,7 +760,11 @@ def _apply_student_parent(student, parsed):
     parent = parent.sudo()
     if parent not in student.parent_ids:
         student.write({'parent_ids': [(4, parent.id)]})
-    parent_vals = {key: details[key] for key in ('mobile', 'email', 'relationship_id') if key in details}
+    if 'relationship_id' in details:
+        # The relationship with this student (Father of one child,
+        # Guardian of another) - not the parent's main one.
+        parent._bxi_set_relationship(student, request.env['op.parent.relationship'].browse(details['relationship_id']))
+    parent_vals = {key: details[key] for key in ('mobile', 'email') if key in details}
     partner_vals = {'name': details['name']} if 'name' in details else {}
     if 'mobile' in details:
         partner_vals['phone'] = details['mobile']
@@ -941,12 +945,14 @@ _PARENT_COMPLETION = (
 )
 
 
-def _linked_student(student):
-    """A Linked Students row: name, admission number, class and section."""
+def _linked_student(student, parent):
+    """A Linked Students row: name, admission number, class, section and
+    this parent's relationship with the student."""
     line = student._bxi_current_enrolment()
     return {
         'id': student.id, 'name': student.name, 'admission_number': student.gr_no or None,
         'class': ref(line.course_id), 'section': ref(line.batch_id), 'roll_number': line.roll_number or None,
+        'relationship': ref(parent._bxi_relationship_for(student)),
     }
 
 
@@ -960,7 +966,7 @@ def _parent_dict(parent):
         'phone': parent.mobile or None,
         'relationship': ref(parent.relationship_id),
         'draft': bool(parent.bxi_is_draft),
-        'students': [_linked_student(s) for s in parent.student_ids],
+        'students': [_linked_student(s, parent) for s in parent.student_ids],
         # Read-only, from the children's running enrolments.
         'departments': [ref(d) for d in enrollments.course_id.department_id],
         'classes': [{'student': ref(line.student_id), 'class': ref(line.course_id), 'section': ref(line.batch_id)}
@@ -1120,6 +1126,12 @@ class BxiApiSupportPeopleController(http.Controller):
                 return api_error('Not authorized to list students.', status=403, code='forbidden')
             domain += [('course_detail_ids.batch_id', 'in', context['teaching_batches'].ids),
                        ('course_detail_ids.state', '=', 'running')]
+        if kwargs.get('exclude_parent_id'):
+            # Link Student: leave out the children this parent already has.
+            exclude, error = parse_int(kwargs['exclude_parent_id'], 'exclude_parent_id')
+            if error:
+                return error
+            domain.append(('parent_ids', 'not in', exclude))
         for param, raw, field in (('course_id', course_id, 'course_detail_ids.course_id'),
                                   ('batch_id', batch_id, 'course_detail_ids.batch_id')):
             if raw:
@@ -1712,3 +1724,86 @@ class BxiApiSupportPeopleController(http.Controller):
         if error:
             return error
         return api_response({'id': parent_id, 'discarded': True})
+
+    def _link_target(self, parent_id, payload):
+        """(parent, student, error) for the link routes."""
+        if not is_manager(request.env.user):
+            return None, None, api_error('Not authorized to edit parents.', status=403, code='forbidden')
+        parent = _parent_record(parent_id)
+        if not parent:
+            return None, None, api_error('Parent not found.', status=404, code='not_found')
+        if parent.bxi_is_draft:
+            return None, None, api_error('Complete the parent draft first.', status=400, code='parent_is_draft')
+        if _blank_text(payload.get('student_id')):
+            return None, None, api_error('student_id is required.', status=400, code='missing_student_id')
+        student_id, error = parse_int(payload['student_id'], 'student_id')
+        if error:
+            return None, None, error
+        student = _student_record(student_id)
+        if not student:
+            return None, None, api_error('Student not found.', status=404, code='not_found')
+        return parent, student, None
+
+    @http.route('/api/v1/parents/<int:parent_id>/link-student', type='http', auth='public', methods=['POST'],
+                csrf=False)
+    @require_auth
+    def link_student(self, parent_id, **kwargs):
+        """The Link Student screen: {"student_id", "relationship_id"} adds
+        the student to the parent (whose portal login then sees them) with
+        that relationship - the parent can be Father of one child and
+        Guardian of another. Find students with GET
+        /students?q=<name or admission number>&exclude_parent_id=<id>; the
+        relationships are GET /masters/relationships. Answers the parent
+        profile; 409 already_linked if they are linked already."""
+        payload = json_body() or {}
+        parent, student, error = self._link_target(parent_id, payload)
+        if error:
+            return error
+        if student.bxi_is_draft:
+            return api_error('Complete the student draft first.', status=400, code='student_is_draft')
+        if _blank_text(payload.get('relationship_id')):
+            return api_error('relationship_id is required.', status=400, code='missing_relationship_id')
+        relationship, error = resolve_record(request.env, 'op.parent.relationship', payload['relationship_id'],
+                                             'relationship_id')
+        if error:
+            return error
+        if student in parent.student_ids:
+            return request.make_json_response({'success': False, 'error': {
+                'message': '%s is already linked to %s.' % (student.name, parent.name.name),
+                'code': 'already_linked',
+                'relationship': ref(parent._bxi_relationship_for(student))}}, status=409)
+
+        def link():
+            parent.write({'student_ids': [(4, student.id)]})
+            parent._bxi_set_relationship(student, relationship)
+            return True
+
+        _result, error = transaction(link)
+        if error:
+            return error
+        return api_response(_parent_detail(parent))
+
+    @http.route('/api/v1/parents/<int:parent_id>/unlink-student', type='http', auth='public', methods=['POST'],
+                csrf=False)
+    @require_auth
+    def unlink_student(self, parent_id, **kwargs):
+        """{"student_id"}: remove the student from the parent. A parent keeps
+        at least one student (400 last_student)."""
+        payload = json_body() or {}
+        parent, student, error = self._link_target(parent_id, payload)
+        if error:
+            return error
+        if student not in parent.student_ids:
+            return api_error('This student is not linked to this parent.', status=400, code='not_linked')
+        if parent.student_ids == student:
+            return api_error('A parent needs at least one student: link another one first.', status=400,
+                             code='last_student')
+
+        def unlink():
+            parent.write({'student_ids': [(3, student.id)]})
+            return True
+
+        _result, error = transaction(unlink)
+        if error:
+            return error
+        return api_response(_parent_detail(parent))

@@ -59,7 +59,8 @@ class TestParentScreenApi(ApiSupportHttpCase):
         self.assertEqual(data['students'], [{
             'id': self.student.id, 'name': self.student.name, 'admission_number': 'PS-2024001',
             'class': {'id': self.course.id, 'name': self.course.display_name},
-            'section': {'id': self.batch.id, 'name': self.batch.display_name}, 'roll_number': None}])
+            'section': {'id': self.batch.id, 'name': self.batch.display_name}, 'roll_number': None,
+            'relationship': {'id': self.relationship.id, 'name': self.relationship.display_name}}])
         self.assertEqual(data['documents']['aadhaar_card'][0]['name'], 'aadhaar.pdf')
         self.assertEqual(len(data['documents']['id_proof']), 2)
         document = data['documents']['pan_card'][0]['id']

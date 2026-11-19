@@ -5,3 +5,4 @@ from . import staff_responsibility
 from . import op_faculty
 from . import faculty_document
 from . import op_student_parent
+from . import parent_student_link

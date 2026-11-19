@@ -14455,6 +14455,115 @@
           "response": []
         },
         {
+          "name": "Search Students to Link",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/students?q=Ma&exclude_parent_id={{parent_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "students"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "Ma"
+                },
+                {
+                  "key": "exclude_parent_id",
+                  "value": "{{parent_id}}"
+                }
+              ]
+            },
+            "description": "Link Student search: by name or admission number, leaving out the children this parent already has. Each row: id, name, gr_no (admission number), class, section."
+          },
+          "response": []
+        },
+        {
+          "name": "Link Student to Parent",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/parents/:parent_id/link-student",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "parents",
+                ":parent_id",
+                "link-student"
+              ],
+              "variable": [
+                {
+                  "key": "parent_id",
+                  "value": "{{parent_id}}"
+                }
+              ]
+            },
+            "description": "The Link Student screen: {student_id, relationship_id (GET /masters/relationships: Mother, Father, Guardian, Grandparents, Other)}. The relationship is kept per linked student (Father of one child, Guardian of another); the parent's own relationship (the profile header) is set by the first link when empty. The parent's portal login then sees the child. Answers the parent profile, whose students[] rows carry each relationship. 409 already_linked (with error.relationship), 400 missing_student_id / missing_relationship_id / student_is_draft / parent_is_draft, 404 unknown parent or student.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"student_id\": 2,\n  \"relationship_id\": 1\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Unlink Student from Parent",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/parents/:parent_id/unlink-student",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "parents",
+                ":parent_id",
+                "unlink-student"
+              ],
+              "variable": [
+                {
+                  "key": "parent_id",
+                  "value": "{{parent_id}}"
+                }
+              ]
+            },
+            "description": "{student_id}: removes the student from the parent (and the relationship kept for them). 400 not_linked, 400 last_student (a parent keeps at least one student).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"student_id\": 2\n}"
+            }
+          },
+          "response": []
+        },
+        {
           "name": "Download Parent Document",
           "request": {
             "method": "GET",

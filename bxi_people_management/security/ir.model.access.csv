@@ -3,3 +3,7 @@ access_bxi_staff_responsibility_user,bxi.staff.responsibility.user,model_bxi_sta
 access_bxi_staff_responsibility_admin,bxi.staff.responsibility.admin,model_bxi_staff_responsibility,openeducat_core.group_op_back_office_admin,1,1,1,1
 access_bxi_faculty_document_admin,bxi.faculty.document.admin,model_bxi_faculty_document,openeducat_core.group_op_back_office_admin,1,1,1,1
 access_bxi_faculty_document_faculty,bxi.faculty.document.faculty,model_bxi_faculty_document,openeducat_core.group_op_faculty,1,0,0,0
+access_bxi_parent_student_link_user,bxi.parent.student.link.user,model_bxi_parent_student_link,base.group_user,1,0,0,0
+access_bxi_parent_student_link_portal,bxi.parent.student.link.portal,model_bxi_parent_student_link,base.group_portal,1,0,0,0
+access_bxi_parent_student_link_admin,bxi.parent.student.link.admin,model_bxi_parent_student_link,openeducat_core.group_op_back_office_admin,1,1,1,1
+access_bxi_parent_student_link_parent_manager,bxi.parent.student.link.parent.manager,model_bxi_parent_student_link,openeducat_parent.group_op_parent_manager,1,1,1,1
