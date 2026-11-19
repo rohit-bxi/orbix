@@ -4599,9 +4599,170 @@
                 "v1",
                 "academic",
                 "subject-mappings"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "class_id",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "teacher_id",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "subject_id",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "curriculum_id",
+                  "value": "",
+                  "disabled": true
+                }
               ]
             },
-            "description": "Optional ?class_id=&teacher_id="
+            "description": "Subject mappings, filtered by q (subject, class or teacher name), class_id, teacher_id, subject_id, curriculum_id. Rows: id, subject / class / teacher / curriculum as {id, name}, the four *_id values and display_name. Internal users only."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Subject Mapping",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/academic/subject-mappings/:mapping_id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "academic",
+                "subject-mappings",
+                ":mapping_id"
+              ],
+              "variable": [
+                {
+                  "key": "mapping_id",
+                  "value": "{{mapping_id}}"
+                }
+              ]
+            },
+            "description": "Edit Subject Mapping screen pre-fill."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Subject Mapping",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/academic/subject-mappings",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "academic",
+                "subject-mappings"
+              ]
+            },
+            "description": "Add Subject Mapping screen. All required: subject_id or \"subject\" (name or code as typed), class_id or \"class\", teacher_id or \"teacher\" (full name; a Dr./Mr./Mrs./Ms./Prof. title is ignored), curriculum_id. 400 missing_*_id, unknown_* / ambiguous_*, teacher_inactive, curriculum_rejected, class_not_in_curriculum (curriculum has assigned classes), subject_not_in_class (class has a subject list); 409 mapping_exists with existing_mapping_id for the same subject + class + curriculum. Academic coordinators and managers. Returns 201.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subject\": \"Mathematics\",\n  \"class\": \"Class 9\",\n  \"teacher\": \"Dr. Sarah Johnson\",\n  \"curriculum_id\": {{curriculum_id}}\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Subject Mapping",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/academic/subject-mappings/:mapping_id/update",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "academic",
+                "subject-mappings",
+                ":mapping_id",
+                "update"
+              ],
+              "variable": [
+                {
+                  "key": "mapping_id",
+                  "value": "{{mapping_id}}"
+                }
+              ]
+            },
+            "description": "Edit Subject Mapping screen: any of the create keys; only the keys sent change. Same checks as create.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subject_id\": 1,\n  \"class_id\": 1,\n  \"teacher_id\": 1,\n  \"curriculum_id\": {{curriculum_id}}\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Subject Mapping",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/academic/subject-mappings/:mapping_id/delete",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "academic",
+                "subject-mappings",
+                ":mapping_id",
+                "delete"
+              ],
+              "variable": [
+                {
+                  "key": "mapping_id",
+                  "value": "{{mapping_id}}"
+                }
+              ]
+            },
+            "description": "Removes the mapping. Returns {id, deleted: true}.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
           },
           "response": []
         },
@@ -18673,6 +18834,10 @@
     },
     {
       "key": "smart_book_id",
+      "value": "1"
+    },
+    {
+      "key": "mapping_id",
       "value": "1"
     }
   ]

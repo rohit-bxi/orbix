@@ -85,7 +85,8 @@ class TestBxiApiSupportAcademic(ApiSupportHttpCase):
         by_class = self.url_open(f'/api/v1/academic/subject-mappings?class_id={course_a.id}', headers=headers)
         self.assertEqual(by_class.status_code, 200, by_class.text)
         self.assertEqual([m['id'] for m in by_class.json()['data']['mappings']], [first.id])
-        self.assertEqual(by_class.json()['data']['mappings'][0]['teacher'], teacher_a.display_name)
+        self.assertEqual(by_class.json()['data']['mappings'][0]['teacher'],
+                         {'id': teacher_a.id, 'name': teacher_a.display_name})
         by_teacher = self.url_open(f'/api/v1/academic/subject-mappings?teacher_id={teacher_b.id}', headers=headers).json()
         self.assertEqual([m['id'] for m in by_teacher['data']['mappings']], [second.id])
         self.assertEqual(by_teacher['meta']['total'], 1)

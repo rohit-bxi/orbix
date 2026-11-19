@@ -1,13 +1,17 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) 2026 BXI Technology Pvt. Ltd. All Rights Reserved.
 # License OPL-1 (Odoo Proprietary License v1.0, see LICENSE file for full text).
+import re
+
 from odoo import fields, http
 from odoo.fields import Domain
 from odoo.http import request
 
 from odoo.addons.bxi_api.controllers.auth import api_error, api_response, call_action, parse_int, require_auth
 
-from .common import atomic, is_staff, json_body, parse_pagination, resolve_record, resolve_records, school_context
+from .common import (
+    atomic, is_staff, json_body, parse_pagination, ref, resolve_record, resolve_records, school_context,
+)
 
 COORDINATOR_GROUP = 'bxi_academic_management.group_academic_coordinator'
 MANAGER_GROUP = 'bxi_academic_management.group_academic_manager'
@@ -156,22 +160,45 @@ def _named_list(payload, model, key):
         names = []
     if not isinstance(names, list):
         return None, api_error('%s must be a list of names.' % names_key, status=400, code='invalid_%s' % names_key)
-    Model = env[model].sudo()
-    records = Model
+    records = env[model].sudo()
     for name in names:
         name = str(name or '').strip()
         if not name:
             continue
-        found = Model.search([('name', '=ilike', name)])
-        if not found:
-            found = Model.search([('code', '=ilike', name)])
-        if not found:
-            return None, api_error('No %s named "%s".' % (key, name), status=400, code='unknown_%s' % key)
-        if len(found) > 1:
-            return None, api_error('More than one %s is named "%s": send %s instead.' % (key, name, ids_key),
-                                   status=400, code='ambiguous_%s' % key)
+        found, error = _match_name(model, name, key, ids_key)
+        if error:
+            return None, error
         records |= found
     return records, None
+
+
+# Titles the screens' examples carry ("Dr. Sarah Johnson") that the
+# teacher's name does not.
+TEACHER_TITLES = re.compile(r'^(dr|mr|mrs|ms|miss|prof)\.?\s+', re.IGNORECASE)
+
+
+def _match_name(model, name, key, id_key):
+    """(the one record named `name`, error): by name, else by code,
+    ignoring case; a teacher also without a title. Nothing is created."""
+    Model = request.env[model].sudo()
+    candidates = [name]
+    if model == 'op.faculty':
+        bare = TEACHER_TITLES.sub('', name).strip()
+        if bare and bare != name:
+            candidates.append(bare)
+    found = Model.browse()
+    for candidate in candidates:
+        found = Model.search([('name', '=ilike', candidate)])
+        if not found and 'code' in Model._fields:
+            found = Model.search([('code', '=ilike', candidate)])
+        if found:
+            break
+    if not found:
+        return None, api_error('No %s named "%s".' % (key, name), status=400, code='unknown_%s' % key)
+    if len(found) > 1:
+        return None, api_error('More than one %s is named "%s": send %s instead.' % (key, name, id_key),
+                               status=400, code='ambiguous_%s' % key)
+    return found, None
 
 
 def _smart_book_error(title, curriculum, classes, book=None):
@@ -196,11 +223,64 @@ def _smart_book_error(title, curriculum, classes, book=None):
 def _mapping_dict(mapping):
     return {
         'id': mapping.id,
-        'subject': mapping.subject_id.display_name,
-        'class': mapping.class_id.display_name,
-        'teacher': mapping.teacher_id.display_name,
-        'curriculum': mapping.curriculum_id.display_name,
+        'subject': ref(mapping.subject_id),
+        'class': ref(mapping.class_id),
+        'teacher': ref(mapping.teacher_id),
+        'curriculum': ref(mapping.curriculum_id),
+        'subject_id': mapping.subject_id.id,
+        'class_id': mapping.class_id.id,
+        'teacher_id': mapping.teacher_id.id,
+        'curriculum_id': mapping.curriculum_id.id,
+        'display_name': mapping.display_name,
     }
+
+
+# key on the screen -> model; "<key>_id" or "<key>" (the name as typed).
+MAPPING_FIELDS = (('subject', 'op.subject'), ('class', 'op.course'), ('teacher', 'op.faculty'),
+                  ('curriculum', 'bxi.curriculum'))
+
+
+def _mapping_value(payload, key, model):
+    """(record, None when not sent, or error) for one Add / Edit Subject
+    Mapping field. A blank value comes back as an empty recordset."""
+    id_key = '%s_id' % key
+    if id_key in payload:
+        # An archived teacher is found too, to say so (teacher_inactive).
+        return resolve_record(request.env, model, payload[id_key], id_key)
+    if key in payload and model != 'bxi.curriculum':
+        name = payload[key]
+        if _blank(name):
+            return request.env[model].sudo(), None
+        if not isinstance(name, str):
+            return None, api_error('%s must be a name.' % key, status=400, code='invalid_%s' % key)
+        return _match_name(model, name.strip(), key, id_key)
+    return None, None
+
+
+def _mapping_error(subject, course, teacher, curriculum, mapping=None):
+    """The checks shared by create and update, on the values the mapping
+    would end up with."""
+    if not teacher.active:
+        return api_error('%s is archived.' % teacher.name, status=400, code='teacher_inactive')
+    if curriculum.approval_status == 'rejected':
+        return api_error('%s was rejected: choose another curriculum.' % curriculum.name, status=400,
+                         code='curriculum_rejected')
+    if curriculum.class_ids and course not in curriculum.class_ids:
+        return api_error('%s is not assigned to %s.' % (course.display_name, curriculum.name), status=400,
+                         code='class_not_in_curriculum')
+    if course.subject_ids and subject not in course.subject_ids:
+        return api_error('%s is not a subject of %s.' % (subject.display_name, course.display_name), status=400,
+                         code='subject_not_in_class')
+    domain = [('subject_id', '=', subject.id), ('class_id', '=', course.id), ('curriculum_id', '=', curriculum.id)]
+    if mapping:
+        domain.append(('id', '!=', mapping.id))
+    existing = request.env['bxi.subject.mapping'].sudo().with_context(active_test=False).search(domain, limit=1)
+    if existing:
+        return request.make_json_response({'success': False, 'error': {
+            'message': '%s is already mapped for %s in %s (to %s).' % (
+                subject.display_name, course.display_name, curriculum.name, existing.teacher_id.name),
+            'code': 'mapping_exists', 'existing_mapping_id': existing.id}}, status=409)
+    return None
 
 
 def _ptm_dict(meeting):
@@ -573,7 +653,9 @@ class BxiApiSupportAcademicController(http.Controller):
 
     @http.route('/api/v1/academic/subject-mappings', type='http', auth='public', methods=['GET'], csrf=False)
     @require_auth
-    def list_subject_mappings(self, class_id=None, teacher_id=None, **kwargs):
+    def list_subject_mappings(self, q=None, **kwargs):
+        """Filters: class_id, teacher_id, subject_id, curriculum_id and "q"
+        (subject, class or teacher name)."""
         # Staff directory data; families aren't shown it, as with other staff lists.
         if not request.env.user.has_group('base.group_user'):
             return api_error('Not authorized to view subject mappings.', status=403, code='forbidden')
@@ -581,16 +663,125 @@ class BxiApiSupportAcademicController(http.Controller):
         if error:
             return error
         domain = []
-        if class_id:
-            domain.append(('class_id', '=', int(class_id)))
-        if teacher_id:
-            domain.append(('teacher_id', '=', int(teacher_id)))
+        for param in ('class_id', 'teacher_id', 'subject_id', 'curriculum_id'):
+            if kwargs.get(param):
+                value, error = parse_int(kwargs[param], param)
+                if error:
+                    return error
+                domain.append((param, '=', value))
+        if q:
+            domain += ['|', '|', ('subject_id.name', 'ilike', q), ('class_id.name', 'ilike', q),
+                       ('teacher_id.name', 'ilike', q)]
         Mapping = request.env['bxi.subject.mapping'].sudo()
         total = Mapping.search_count(domain)
         mappings = Mapping.search(domain, limit=limit, offset=offset, order='id desc')
         return api_response(
             {'mappings': [_mapping_dict(m) for m in mappings]},
             meta={'total': total, 'limit': limit, 'offset': offset})
+
+    def _mapping(self, mapping_id):
+        mapping = request.env['bxi.subject.mapping'].sudo().browse(mapping_id).exists()
+        if not mapping:
+            return None, api_error('Subject mapping not found.', status=404, code='not_found')
+        return mapping, None
+
+    def _mapping_manager(self):
+        if not _is_coordinator_or_manager(request.env.user):
+            return api_error('Not authorized to manage subject mappings.', status=403, code='forbidden')
+        return None
+
+    @http.route('/api/v1/academic/subject-mappings/<int:mapping_id>', type='http', auth='public', methods=['GET'],
+                csrf=False)
+    @require_auth
+    def get_subject_mapping(self, mapping_id, **kwargs):
+        if not request.env.user.has_group('base.group_user'):
+            return api_error('Not authorized to view subject mappings.', status=403, code='forbidden')
+        mapping, error = self._mapping(mapping_id)
+        if error:
+            return error
+        return api_response(_mapping_dict(mapping))
+
+    @http.route('/api/v1/academic/subject-mappings', type='http', auth='public', methods=['POST'], csrf=False)
+    @require_auth
+    def create_subject_mapping(self, **kwargs):
+        """The Add Subject Mapping screen - all required: "subject_id" or
+        "subject" (name as typed), "class_id" or "class", "teacher_id" or
+        "teacher" ("Dr. Sarah Johnson" - a title is ignored),
+        "curriculum_id". Academic coordinators and managers. 409
+        mapping_exists (with existing_mapping_id) when the subject is
+        already mapped for that class and curriculum."""
+        error = self._mapping_manager()
+        if error:
+            return error
+        payload = json_body() or {}
+        values = {}
+        for key, model in MAPPING_FIELDS:
+            record, error = _mapping_value(payload, key, model)
+            if error:
+                return error
+            if not record:
+                return api_error('%s_id is required.' % key, status=400, code='missing_%s_id' % key)
+            values[key] = record
+        error = _mapping_error(values['subject'], values['class'], values['teacher'], values['curriculum'])
+        if error:
+            return error
+        mapping, error = atomic(lambda: request.env['bxi.subject.mapping'].sudo().create({
+            'subject_id': values['subject'].id, 'class_id': values['class'].id,
+            'teacher_id': values['teacher'].id, 'curriculum_id': values['curriculum'].id}))
+        if error:
+            return error
+        return api_response(_mapping_dict(mapping), status=201)
+
+    @http.route('/api/v1/academic/subject-mappings/<int:mapping_id>/update', type='http', auth='public',
+                methods=['POST'], csrf=False)
+    @require_auth
+    def update_subject_mapping(self, mapping_id, **kwargs):
+        """The Edit Subject Mapping screen: any of the create keys; only
+        the keys sent change. Same checks as create."""
+        error = self._mapping_manager()
+        if error:
+            return error
+        mapping, error = self._mapping(mapping_id)
+        if error:
+            return error
+        payload = json_body() or {}
+        current = {'subject': mapping.subject_id, 'class': mapping.class_id, 'teacher': mapping.teacher_id,
+                   'curriculum': mapping.curriculum_id}
+        vals = {}
+        for key, model in MAPPING_FIELDS:
+            record, error = _mapping_value(payload, key, model)
+            if error:
+                return error
+            if record is None:
+                continue
+            if not record:
+                return api_error('%s_id is required.' % key, status=400, code='missing_%s_id' % key)
+            current[key] = record
+            vals['%s_id' % key] = record.id
+        if vals:
+            error = _mapping_error(current['subject'], current['class'], current['teacher'], current['curriculum'],
+                                   mapping)
+            if error:
+                return error
+            _result, error = atomic(lambda: mapping.write(vals))
+            if error:
+                return error
+        return api_response(_mapping_dict(mapping))
+
+    @http.route('/api/v1/academic/subject-mappings/<int:mapping_id>/delete', type='http', auth='public',
+                methods=['POST'], csrf=False)
+    @require_auth
+    def delete_subject_mapping(self, mapping_id, **kwargs):
+        error = self._mapping_manager()
+        if error:
+            return error
+        mapping, error = self._mapping(mapping_id)
+        if error:
+            return error
+        _result, error = atomic(mapping.unlink)
+        if error:
+            return error
+        return api_response({'id': mapping_id, 'deleted': True})
 
     @http.route('/api/v1/academic/ptm-meetings', type='http', auth='public', methods=['GET'], csrf=False)
     @require_auth

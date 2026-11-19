@@ -45,3 +45,4 @@ from . import test_student_screen_api
 from . import test_parent_screen_api
 from . import test_parent_link_api
 from . import test_smart_book_api
+from . import test_subject_mapping_api
