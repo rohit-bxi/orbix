@@ -39,8 +39,20 @@ class TestBxiApiSupportPeopleAadhaar(ApiSupportHttpCase):
         self.assertEqual(data['aadhaar']['number_masked'], 'XXXX XXXX 0124')
         self.assertEqual(data['aadhaar']['last4'], '0124')
         self.assertEqual(data['aadhaar']['status'], 'verified')
+        self.assertEqual(data['aadhaar_number'], 'XXXX XXXX 0124', 'Shown masked in the Aadhaar box.')
         self.assertNotIn('234567890124', resp.text, 'The full number is never returned.')
-        self.assertEqual(self.env['op.student'].browse(data['id']).aadhar_card, '234567890124')
+        student = self.env['op.student'].browse(data['id'])
+        self.assertEqual(student.aadhar_card, '234567890124')
+
+        # The edit screen sends the masked value back with the rest of the form.
+        url = '/api/v1/students/%s/update' % student.id
+        for shown in ('XXXX XXXX 0124', 'xxxx-xxxx-0124', '********0124'):
+            again = self._post(url, {'aadhaar_number': shown, 'blood_group': 'A+'})
+            self.assertEqual(again.status_code, 200, again.text)
+            self.assertEqual(student.aadhar_card, '234567890124', shown)
+        changed = self._post(url, {'aadhaar_number': '5678-9012-3458'}).json()['data']
+        self.assertEqual(changed['aadhaar_number'], 'XXXX XXXX 3458')
+        self.assertIsNone(self._post(url, {'aadhaar_number': None}).json()['data']['aadhaar_number'])
 
     def test_teacher_and_parent_update(self):
         teacher = self._post('/api/v1/teachers', {
