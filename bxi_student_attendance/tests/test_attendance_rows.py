@@ -3,6 +3,7 @@
 # License OPL-1 (Odoo Proprietary License v1.0, see LICENSE file for full text).
 from datetime import date, datetime
 
+from odoo.exceptions import ValidationError
 from odoo.tests.common import TransactionCase, tagged
 
 
@@ -42,6 +43,30 @@ class TestStudentAttendanceRows(TransactionCase):
             'employee_id': self.student.employee_id.id, 'session_id': session.id, 'status': status,
             'check_in': session.start_datetime, 'check_out': session.start_datetime,
         })
+
+    def test_same_second_hand_marks_are_accepted(self):
+        """Marking a student's periods one after another stamps rows in the
+        same second, then the next: hr_attendance's overlap check could
+        pick different rows of that tie and refuse a valid mark."""
+        Attendance = self.env['hr.attendance']
+        employee = self.student.employee_id.id
+        first, second = datetime(2026, 9, 14, 4, 0, 0), datetime(2026, 9, 14, 4, 0, 1)
+        sessions = [self._session(datetime(2026, 9, 14, 9 + i, 0), self.maths) for i in range(4)]
+        for session, stamp in zip(sessions, (first, first, first, second)):
+            Attendance.create({'employee_id': employee, 'session_id': session.id, 'status': 'present',
+                               'check_in': stamp, 'check_out': stamp})
+        self.assertEqual(Attendance.search_count([('student_id', '=', self.student.id)]), 4)
+
+    def test_hand_mark_inside_a_real_stay_is_refused(self):
+        Attendance = self.env['hr.attendance']
+        employee = self.student.employee_id.id
+        Attendance.create({'employee_id': employee, 'check_in': datetime(2026, 9, 15, 3, 0),
+                           'check_out': datetime(2026, 9, 15, 9, 0)})
+        session = self._session(datetime(2026, 9, 15, 10, 0), self.maths)
+        stamp = datetime(2026, 9, 15, 5, 0)
+        with self.assertRaises(ValidationError):
+            Attendance.create({'employee_id': employee, 'session_id': session.id, 'status': 'late',
+                               'check_in': stamp, 'check_out': stamp})
 
     def test_hand_marked_row_is_dated_by_its_period_not_marking_time(self):
         # No check_in given: create() stamps the row with the marking time
@@ -101,7 +126,9 @@ class TestStudentAttendanceRows(TransactionCase):
             })
             self.env['op.attendance.line'].create(dict(flags, attendance_id=sheet.id, student_id=self.student.id))
 
-        copied, skipped, conflicts = self.env['hr.attendance']._copy_legacy_op_attendance()
+        # Only this test's register: the database may hold other legacy lines.
+        copied, skipped, conflicts = self.env['hr.attendance']._copy_legacy_op_attendance(
+            [('attendance_id.register_id', '=', register.id)])
         self.assertEqual((copied, conflicts), (1, 0))
         self.assertGreaterEqual(skipped, 1)
         by_date = {r['date']: r['status'] for r in self.student._get_attendance_rows()}
@@ -109,5 +136,21 @@ class TestStudentAttendanceRows(TransactionCase):
         self.assertEqual(by_date[date(2026, 9, 11)], 'present', 'Existing hr.attendance must win.')
 
         # Running it again copies nothing new.
-        copied_again, _skipped, _conflicts = self.env['hr.attendance']._copy_legacy_op_attendance()
+        copied_again, _skipped, _conflicts = self.env['hr.attendance']._copy_legacy_op_attendance(
+            [('attendance_id.register_id', '=', register.id)])
         self.assertEqual(copied_again, 0)
+
+    def test_legacy_lines_without_a_period_are_copied_once(self):
+        register = self.env['op.attendance.register'].create({
+            'name': 'Rows Undated Register', 'code': 'ROWU', 'course_id': self.course.id,
+            'batch_id': self.batch.id,
+        })
+        for flags in ({'absent': True}, {'late': True}):
+            sheet = self.env['op.attendance.sheet'].create({
+                'register_id': register.id, 'attendance_date': date(2026, 9, 21)})
+            self.env['op.attendance.line'].create(dict(flags, attendance_id=sheet.id, student_id=self.student.id))
+        scope = [('attendance_id.register_id', '=', register.id)]
+        copied, _skipped, conflicts = self.env['hr.attendance']._copy_legacy_op_attendance(scope)
+        self.assertEqual((copied, conflicts), (2, 0), 'Two different marks on one day are both kept.')
+        copied_again, _skipped, _conflicts = self.env['hr.attendance']._copy_legacy_op_attendance(scope)
+        self.assertEqual(copied_again, 0, 'A rerun does not copy them twice.')

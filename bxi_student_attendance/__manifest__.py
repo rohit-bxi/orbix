@@ -2,7 +2,7 @@
 
 {
     'name': 'Student Attendance',
-    'version': '19.0.1.1.0',
+    'version': '19.0.1.2.0',
     'category': 'Education',
     'summary': 'Student check-in/out on the standard Attendances kiosk, filterable by Student/Class/Section/Date',
     'description': """

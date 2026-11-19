@@ -857,11 +857,13 @@ def _change_enrollment(student, enrollment):
         if 'roll_number' in enrollment:
             current.roll_number = str(enrollment['roll_number'] or '').strip() or False
         return None
+    # The roll number is optional on the Add / Edit Student screens, so a
+    # new section need not come with one (unlike the "transfer" key).
     return _transfer(student, {key: enrollment.get(key) for key in ('batch_id', 'course_id', 'roll_number')
-                               if enrollment.get(key)} | {'batch_id': batch_id})
+                               if enrollment.get(key)} | {'batch_id': batch_id}, require_roll_number=False)
 
 
-def _transfer(student, transfer):
+def _transfer(student, transfer, require_roll_number=True):
     """Move a student to another section (optionally another class): the
     current enrolment is finished and a running one opened for the new
     section, so attendance and results keep their history. Re-entering a
@@ -887,7 +889,7 @@ def _transfer(student, transfer):
             current.roll_number = roll_number
         return None
     previous = student.course_detail_ids.filtered(lambda l: l.course_id == course and l.batch_id == batch)[:1]
-    if not previous and not roll_number:
+    if not previous and not roll_number and require_roll_number:
         return api_error('transfer.roll_number is required.', status=400, code='missing_roll_number')
     if current:
         current.state = 'finished'

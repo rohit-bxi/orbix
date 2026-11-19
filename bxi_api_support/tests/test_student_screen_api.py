@@ -295,6 +295,18 @@ class TestStudentScreenApi(ApiSupportHttpCase):
         self.assertEqual(student.course_detail_ids.filtered(lambda l: l.batch_id == self.batch).state, 'finished')
         cleared = self._post(url, {'enrollment': {'roll_number': ''}}).json()['data']
         self.assertIsNone(cleared['roll_number'])
+        # The roll number is optional on this screen, also when the section changes.
+        back = self._post(url, {'enrollment': {'course_id': self.course.id, 'batch_id': self.batch.id}})
+        self.assertEqual(back.status_code, 200, back.text)
+        self.assertEqual(back.json()['data']['section']['id'], self.batch.id)
+        batch_c = self.env['op.batch'].create({
+            'name': 'SS Section C', 'code': 'SS-C3', 'course_id': self.course.id,
+            'start_date': '2026-01-01', 'end_date': '2027-12-31'})
+        new_section = self._post(url, {'enrollment': {'batch_id': batch_c.id}})
+        self.assertEqual(new_section.status_code, 200, new_section.text)
+        self.assertEqual((new_section.json()['data']['section']['id'], new_section.json()['data']['roll_number']),
+                         (batch_c.id, None))
+        self._post(url, {'enrollment': {'batch_id': batch_b.id}})
         self._error(self._post(url, {'enrollment': {'batch_id': self.other_batch.id, 'course_id': self.course.id}}),
                     400, 'batch_course_mismatch')
         self._error(self._post(url, {'enrollment': {'roll_number': '1'}, 'transfer': {'batch_id': batch_b.id}}),
