@@ -71,6 +71,7 @@ class TestBxiApiSupportPeopleAccount(ApiSupportHttpCase):
         body = {'first_name': 'Stu', 'last_name': 'Dent%s' % roll, 'gender': 'm', 'email': 'stu%s@uma.test' % roll,
                 'enrollment': {'course_id': self.course.id, 'batch_id': self.batch.id, 'roll_number': roll},
                 'account': {'username': 'stu%s.uma' % roll, 'password': 'StudentPass%s9' % roll}}
+        body.update(self._student_screen_fields())
         body.update(extra)
         return self._post('/api/v1/students', body)
 
@@ -136,7 +137,8 @@ class TestBxiApiSupportPeopleAccount(ApiSupportHttpCase):
         self.assertTrue(user.has_group('base.group_portal'))
         self.assertTrue(user.bxi_must_change_password, 'A typed password is still a one-time password.')
         self.assertFalse(data['credentials']['sent'])
-        self.assertEqual(data['credentials']['reason'], 'no_phone')
+        # The student has a phone (required), but no SMS provider is set up.
+        self.assertEqual(data['credentials']['reason'], 'sms_not_sent')
         self.assertNotIn('one_time_password', data['credentials'], 'The office typed it; it is not echoed back.')
 
         parent = self._post('/api/v1/parents', {
@@ -148,22 +150,25 @@ class TestBxiApiSupportPeopleAccount(ApiSupportHttpCase):
         self.assertEqual(record.user_id.child_ids, user)
         self.assertEqual(self._login('paula.parent', 'ParentTyped9').status_code, 200)
 
-    def test_student_and_parent_create_require_username_and_password(self):
-        before = self.env['op.student'].search_count([])
-        for account, code in (
-            (None, 'missing_username'),
-            ({'password': 'StudentPass9'}, 'missing_username'),
-            ({'username': 'no.password'}, 'missing_password'),
-            ({'username': 'no.password', 'create_login': False}, 'missing_password'),
-        ):
-            resp = self._student('9', account=account)
-            self.assertEqual(resp.status_code, 400, account)
-            self.assertEqual(resp.json()['error']['code'], code, account)
-        self.assertEqual(self.env['op.student'].search_count([]), before, 'Nothing is half-created.')
+    def test_student_login_is_automatic_and_parent_needs_username_and_password(self):
+        # The Add New Student screen has no username/password: the login is
+        # the email with a one-time password, returned once.
+        auto = self._student('8', account=None)
+        self.assertEqual(auto.status_code, 201, auto.text)
+        data = auto.json()['data']
+        self.assertEqual(data['account']['username'], 'stu8@uma.test')
+        self.assertTrue(data['credentials']['one_time_password'])
+        self.assertTrue(self.env['op.student'].browse(data['id']).user_id.bxi_must_change_password)
+        self.assertEqual(self._login('stu8@uma.test', data['credentials']['one_time_password']).status_code, 200)
+
+        username_only = self._student('7', account={'username': 'stu.seven'}).json()['data']
+        self.assertEqual(username_only['account']['username'], 'stu.seven')
+        self.assertTrue(username_only['credentials']['one_time_password'])
+
         created = self._student('9', account={'username': 'stu.nine', 'password': 'StudentNine9', 'create_login': False})
         self.assertEqual(created.status_code, 201, created.text)
         self.assertEqual(created.json()['data']['account']['username'], 'stu.nine',
-                         'Username and password always come with a login.')
+                         'A student always gets a login.')
 
         student_id = created.json()['data']['id']
         parent_body = {'name': 'Pam Parent', 'mobile': '9800012347', 'relationship_id': self.relationship.id,

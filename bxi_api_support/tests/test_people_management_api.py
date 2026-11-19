@@ -57,6 +57,7 @@ class TestBxiApiSupportPeopleManagement(ApiSupportHttpCase):
         body = {'first_name': 'Sam', 'last_name': 'Pupil', 'gender': 'm', 'email': 'sam.pupil@um.test',
                 'enrollment': {'course_id': self.course.id, 'batch_id': self.batch.id, 'roll_number': '7'},
                 'account': {'username': 'sam.pupil', 'password': 'SamPupil99'}}
+        body.update(self._student_screen_fields())
         body.update(overrides)
         return body
 
@@ -147,7 +148,6 @@ class TestBxiApiSupportPeopleManagement(ApiSupportHttpCase):
         for overrides, code in (
             ({'email': ''}, 'missing_email'),
             ({'enrollment': None}, 'missing_enrollment'),
-            ({'enrollment': {'course_id': self.course.id, 'batch_id': self.batch.id}}, 'missing_roll_number'),
             ({'enrollment': {'course_id': self.course.id, 'roll_number': '1'}}, 'missing_batch_id'),
             ({'enrollment': {'course_id': self.course.id, 'batch_id': self.other_batch.id, 'roll_number': '1'}},
              'batch_course_mismatch'),

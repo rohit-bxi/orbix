@@ -13765,10 +13765,10 @@
                 "students"
               ]
             },
-            "description": "Office creates and enrols a student. Required: first_name, last_name, gender, email, enrollment.course_id, enrollment.batch_id, enrollment.roll_number (the section must belong to the class), account.username and account.password (400 missing_username / missing_password). Account & Security blocks: \"account\" (username and password required; active, send_credentials, channel email|sms optional), \"face\" (enabled, image|images, consent_reference for students), \"id_verification\" (document|documents image/PDF, doc_type). The password is a one-time password the person must change at first sign-in. Everything is saved together or not at all. Every field of the matching update request is accepted here too.",
+            "description": "The app's Add New Student screen. Required (400 missing_<key>): name (or first_name; one word is fine), gender, birth_date, email, phone, address (one line of text, or {street, street2, city, zip, state_id, country_id}), admission_number (unique, 409 admission_number_taken; the core gr_no), admission_date, enrollment.course_id and enrollment.batch_id (the section must belong to the class; roll_number optional), and a parent: \"parent\": {\"parent_id\"} links an existing one (find it with GET /parents?q=<phone or name>), {\"name\", \"relationship_id\", \"mobile\", \"email\"?} adds a new one (409 parent_exists with error.existing_parent_id when that mobile is already a parent), or \"parent_ids\": [..]. Optional: status running|finished (default running), blood_group, image (JPG/PNG, max 1 MB, 413 photo_too_large), aadhaar_number, id_verification {doc_type, document}, face, medical_conditions (the Medical Conditions / Allergies box), documents {medical_records, birth_certificate, transfer_certificate, previous_school_certificate} (image/PDF, max 5 MB each, 413 file_too_large). \"account\" is optional: without username/password the login is the student's email with a generated one-time password, returned once as data.credentials.one_time_password. Every response has profile_completion {percent, label, missing}. Everything is saved together or not at all. Every field of the update request is accepted too. The example sends every accepted key (name instead of first/middle/last name); send only the ones you need.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"first_name\": \"Aarav\",\n  \"last_name\": \"Patel\",\n  \"gender\": \"m\",\n  \"birth_date\": \"2016-04-12\",\n  \"gr_no\": \"GR-1001\",\n  \"email\": \"aarav.patel@school.test\",\n  \"blood_group\": \"O+\",\n  \"image\": \"<base64 photo>\",\n  \"enrollment\": {\n    \"course_id\": 1,\n    \"batch_id\": 1,\n    \"roll_number\": \"12\",\n    \"academic_year_id\": 1\n  },\n  \"account\": {\n    \"create_login\": true,\n    \"username\": \"aarav.patel\",\n    \"password\": \"Welcome@2026\",\n    \"active\": true,\n    \"send_credentials\": true,\n    \"channel\": \"sms\"\n  },\n  \"face\": {\n    \"enabled\": true,\n    \"image\": \"<base64 photo>\",\n    \"consent_reference\": \"Form 2026/118 (students only)\"\n  },\n  \"id_verification\": {\n    \"document\": {\n      \"data\": \"<base64 image or PDF>\",\n      \"filename\": \"aadhaar.pdf\"\n    },\n    \"doc_type\": \"aadhaar\"\n  }\n}"
+              "raw": "{\n  \"name\": \"Aarav Kumar Sharma\",\n  \"gender\": \"m\",\n  \"birth_date\": \"2015-04-12\",\n  \"email\": \"aarav.sharma@school.test\",\n  \"phone\": \"+91 98765 43210\",\n  \"blood_group\": \"B+\",\n  \"address\": \"12 MG Road, Indore\",\n  \"image\": \"<base64 JPG/PNG, max 1 MB>\",\n  \"admission_number\": \"2024-ST-001\",\n  \"admission_date\": \"2024-04-01\",\n  \"enrollment\": {\n    \"course_id\": 1,\n    \"batch_id\": 1,\n    \"roll_number\": \"10A-01\"\n  },\n  \"status\": \"running\",\n  \"parent\": {\n    \"name\": \"Rakesh Sharma\",\n    \"relationship_id\": 1,\n    \"mobile\": \"+91 98765 43211\"\n  },\n  \"aadhaar_number\": \"2345 6789 0124\",\n  \"id_verification\": {\n    \"doc_type\": \"aadhaar\",\n    \"document\": {\n      \"data\": \"<base64 image or PDF>\",\n      \"filename\": \"aadhaar.pdf\"\n    }\n  },\n  \"face\": {\n    \"enabled\": true,\n    \"image\": \"<base64 photo>\",\n    \"consent_reference\": \"Form 2026/118\"\n  },\n  \"medical_conditions\": \"Peanut allergy\",\n  \"documents\": {\n    \"medical_records\": [\n      {\n        \"data\": \"<base64 image or PDF, max 5 MB>\",\n        \"filename\": \"vaccination.pdf\"\n      }\n    ],\n    \"birth_certificate\": [\n      {\n        \"data\": \"<base64>\",\n        \"filename\": \"birth_certificate.pdf\"\n      }\n    ],\n    \"transfer_certificate\": [\n      {\n        \"data\": \"<base64>\",\n        \"filename\": \"tc.pdf\"\n      }\n    ],\n    \"previous_school_certificate\": [\n      {\n        \"data\": \"<base64>\",\n        \"filename\": \"marksheet_2023.pdf\"\n      }\n    ]\n  },\n  \"account\": {\n    \"send_credentials\": true,\n    \"channel\": \"email\"\n  },\n  \"title_id\": 1,\n  \"nationality_id\": 104,\n  \"id_number\": \"ID-2231\",\n  \"lang\": \"en_US\",\n  \"religion\": \"hindu\",\n  \"category_id\": 1,\n  \"visa_info\": \"\",\n  \"nick_name\": \"Aru\",\n  \"scolar_number\": \"SC-104\",\n  \"enrollment_status\": \"active\",\n  \"mode_of_transport\": \"school_bus\",\n  \"trait\": \"Curious and helpful\",\n  \"other_sibling\": \"Riya, Class 3\",\n  \"pickup_person\": \"Grandfather\",\n  \"special_needs_and_abilities\": \"Chess\",\n  \"notes\": \"Sits in the front row. Needs glasses.\",\n  \"library_card_id\": 2,\n  \"emergency_contact\": {\n    \"name\": \"Raj Patel\",\n    \"phone\": \"9800000002\"\n  },\n  \"health\": {\n    \"is_allergy\": true,\n    \"allergy\": \"Peanuts\",\n    \"chronic_conditions\": \"Asthma\",\n    \"disabilities\": \"None\",\n    \"dietary_restrictions\": \"Vegetarian\",\n    \"primary_physician\": \"Dr Rao\",\n    \"physician_contact\": \"9800000099\",\n    \"insurance_provider\": \"LIC\",\n    \"insurance_policy_no\": \"POL-778\"\n  }\n}"
             }
           },
           "response": []
@@ -13802,10 +13802,177 @@
                 }
               ]
             },
-            "description": "Only the keys sent are changed; null or \"\" clears a value (first_name, last_name, gender and email are required and answer 400 missing_<key>). Profile: first_name, middle_name, last_name, title_id, gender, birth_date, email, phone, blood_group, nationality (or nationality_id), id_number, lang, religion, category_id, visa_info, gr_no, admission_date, nick_name, scolar_number, enrollment_status (new_admission|active|transferred|alumni|dropped), mode_of_transport, trait, other_sibling, pickup_person, special_needs_and_abilities, parent_ids, active (archive). Objects: image, address {street, street2, city, zip, state_id, country_id}, emergency_contact {name, phone}, health {is_allergy, allergy, chronic_conditions, disabilities, dietary_restrictions, primary_physician, physician_contact, insurance_provider, insurance_policy_no, medical_notes}, documents {birth_certificate, transfer_certificate, previous_school_certificate, medical_records}: each a list of files (base64 or {data, filename}) and/or ids of files already there - the list becomes the whole set, files left out are deleted. Enrolment: \"transfer\" {batch_id, course_id?, roll_number} moves to another section (history kept); \"status\" running|finished for the current enrolment. Account & Security blocks (all optional): \"account\" (create_login, username, password, active, send_credentials, channel email|sms), \"face\" (enabled, image|images, consent_reference), \"id_verification\" (document|documents image/PDF, doc_type), \"aadhaar_number\". Everything is saved together or not at all. The example body sends every accepted key; send only the ones you want to change.",
+            "description": "Only the keys sent are changed; null or \"\" clears a value (first_name, gender and email are required and answer 400 missing_<key>). \"name\" sets first/middle/last name from one Full Name; \"address\" may be one line of text; admission_number (= gr_no, still accepted) is unique; medical_conditions is the Medical Conditions / Allergies box (health.medical_notes); \"parent\" ({parent_id} or {name, relationship_id, mobile}) adds one parent, parent_ids replaces them all. image: JPG/PNG max 1 MB; documents max 5 MB each. On a draft: the same keys plus \"enrollment\" {course_id, batch_id, roll_number} and \"status\" (kept until completion); transfer, account, face and id_verification answer 400; \"draft\": false completes it (see Complete Student Draft). Profile: first_name, middle_name, last_name, title_id, gender, birth_date, email, phone, blood_group, nationality (or nationality_id), id_number, lang, religion, category_id, visa_info, admission_number, admission_date, nick_name, scolar_number, enrollment_status (new_admission|active|transferred|alumni|dropped), mode_of_transport, trait, other_sibling, pickup_person, special_needs_and_abilities, notes (the form's Notes, plain text), library_card_id (a student card from POST /library/cards; 409 library_card_taken if it is another student's), parent_ids, active (archive). Objects: image, address {street, street2, city, zip, state_id, country_id}, emergency_contact {name, phone}, health {is_allergy, allergy, chronic_conditions, disabilities, dietary_restrictions, primary_physician, physician_contact, insurance_provider, insurance_policy_no, medical_notes}, documents {birth_certificate, transfer_certificate, previous_school_certificate, medical_records}: each a list of files (base64 or {data, filename}) and/or ids of files already there - the list becomes the whole set, files left out are deleted. Enrolment: \"transfer\" {batch_id, course_id?, roll_number} moves to another section (history kept); \"status\" running|finished for the current enrolment. Account & Security blocks (all optional): \"account\" (create_login, username, password, active, send_credentials, channel email|sms), \"face\" (enabled, image|images, consent_reference), \"id_verification\" (document|documents image/PDF, doc_type), \"aadhaar_number\". Everything is saved together or not at all. The example body sends every accepted key; send only the ones you want to change. Edit Student screen: \"enrollment\" {course_id?, batch_id?, roll_number?} - the same section changes only the roll number (\"\" clears it), another section moves the student there with history kept (\"transfer\" is the older name; not both). \"status\": running|finished or the screen's active|inactive; the response has status_label (Active/Inactive). \"parent\": send the linked parent back as shown ({name, relationship_id, mobile}) and it is corrected, not duplicated; {parent_id, name?, relationship_id?, mobile?, email?} links/corrects that parent; add \"replace_parent_id\" to swap out a linked parent; a mobile that is another parent's answers 409 parent_exists with existing_parent_id. \"draft\": true on a saved student is an ordinary save.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"first_name\": \"Aarav\",\n  \"middle_name\": \"Kumar\",\n  \"last_name\": \"Patel\",\n  \"title_id\": 1,\n  \"gender\": \"m\",\n  \"birth_date\": \"2014-06-15\",\n  \"email\": \"aarav.p@school.test\",\n  \"phone\": \"9800000001\",\n  \"blood_group\": \"B+\",\n  \"nationality_id\": 104,\n  \"id_number\": \"ID-2231\",\n  \"lang\": \"en_US\",\n  \"religion\": \"hindu\",\n  \"category_id\": 1,\n  \"visa_info\": \"\",\n  \"gr_no\": \"GR-1042\",\n  \"admission_date\": \"2024-06-01\",\n  \"nick_name\": \"Aru\",\n  \"scolar_number\": \"SC-104\",\n  \"enrollment_status\": \"active\",\n  \"mode_of_transport\": \"school_bus\",\n  \"trait\": \"Curious and helpful\",\n  \"other_sibling\": \"Riya, Class 3\",\n  \"pickup_person\": \"Grandfather\",\n  \"special_needs_and_abilities\": \"Chess\",\n  \"parent_ids\": [\n    3\n  ],\n  \"image\": \"<base64 JPG/PNG>\",\n  \"address\": {\n    \"street\": \"12 MG Road\",\n    \"street2\": \"Near City Park\",\n    \"city\": \"Pune\",\n    \"zip\": \"411001\",\n    \"state_id\": 596,\n    \"country_id\": 104\n  },\n  \"emergency_contact\": {\n    \"name\": \"Raj Patel\",\n    \"phone\": \"9800000002\"\n  },\n  \"health\": {\n    \"is_allergy\": true,\n    \"allergy\": \"Peanuts\",\n    \"chronic_conditions\": \"Asthma\",\n    \"disabilities\": \"None\",\n    \"dietary_restrictions\": \"Vegetarian\",\n    \"primary_physician\": \"Dr Rao\",\n    \"physician_contact\": \"9800000099\",\n    \"insurance_provider\": \"LIC\",\n    \"insurance_policy_no\": \"POL-778\",\n    \"medical_notes\": \"Carries an inhaler\"\n  },\n  \"documents\": {\n    \"birth_certificate\": [\n      {\n        \"data\": \"<base64 image or PDF>\",\n        \"filename\": \"birth.pdf\"\n      }\n    ],\n    \"transfer_certificate\": [],\n    \"previous_school_certificate\": [\n      {\n        \"data\": \"<base64 image or PDF>\",\n        \"filename\": \"tc-old-school.pdf\"\n      }\n    ],\n    \"medical_records\": []\n  },\n  \"transfer\": {\n    \"batch_id\": 2,\n    \"roll_number\": \"7\"\n  },\n  \"status\": \"running\",\n  \"account\": {\n    \"active\": true\n  }\n}"
+              "raw": "{\n  \"first_name\": \"Aarav\",\n  \"middle_name\": \"Kumar\",\n  \"last_name\": \"Patel\",\n  \"title_id\": 1,\n  \"gender\": \"m\",\n  \"birth_date\": \"2014-06-15\",\n  \"email\": \"aarav.p@school.test\",\n  \"phone\": \"9800000001\",\n  \"blood_group\": \"B+\",\n  \"nationality_id\": 104,\n  \"id_number\": \"ID-2231\",\n  \"lang\": \"en_US\",\n  \"religion\": \"hindu\",\n  \"category_id\": 1,\n  \"visa_info\": \"\",\n  \"admission_date\": \"2024-06-01\",\n  \"admission_number\": \"GR-1042\",\n  \"nick_name\": \"Aru\",\n  \"scolar_number\": \"SC-104\",\n  \"enrollment_status\": \"active\",\n  \"mode_of_transport\": \"school_bus\",\n  \"trait\": \"Curious and helpful\",\n  \"other_sibling\": \"Riya, Class 3\",\n  \"pickup_person\": \"Grandfather\",\n  \"special_needs_and_abilities\": \"Chess\",\n  \"notes\": \"Sits in the front row. Needs glasses.\",\n  \"library_card_id\": 2,\n  \"parent_ids\": [\n    3\n  ],\n  \"parent\": {\n    \"parent_id\": 4,\n    \"name\": \"Sanjay Sharma\",\n    \"relationship_id\": 1,\n    \"mobile\": \"+91 98765 43210\"\n  },\n  \"image\": \"<base64 JPG/PNG>\",\n  \"address\": {\n    \"street\": \"12 MG Road\",\n    \"street2\": \"Near City Park\",\n    \"city\": \"Pune\",\n    \"zip\": \"411001\",\n    \"state_id\": 596,\n    \"country_id\": 104\n  },\n  \"emergency_contact\": {\n    \"name\": \"Raj Patel\",\n    \"phone\": \"9800000002\"\n  },\n  \"health\": {\n    \"is_allergy\": true,\n    \"allergy\": \"Peanuts\",\n    \"chronic_conditions\": \"Asthma\",\n    \"disabilities\": \"None\",\n    \"dietary_restrictions\": \"Vegetarian\",\n    \"primary_physician\": \"Dr Rao\",\n    \"physician_contact\": \"9800000099\",\n    \"insurance_provider\": \"LIC\",\n    \"insurance_policy_no\": \"POL-778\",\n    \"medical_notes\": \"Carries an inhaler\"\n  },\n  \"medical_conditions\": \"Asthma, peanut allergy\",\n  \"documents\": {\n    \"birth_certificate\": [\n      {\n        \"data\": \"<base64 image or PDF>\",\n        \"filename\": \"birth.pdf\"\n      }\n    ],\n    \"transfer_certificate\": [],\n    \"previous_school_certificate\": [\n      {\n        \"data\": \"<base64 image or PDF>\",\n        \"filename\": \"tc-old-school.pdf\"\n      }\n    ],\n    \"medical_records\": []\n  },\n  \"status\": \"active\",\n  \"account\": {\n    \"active\": true\n  },\n  \"enrollment\": {\n    \"course_id\": 1,\n    \"batch_id\": 2,\n    \"roll_number\": \"23\"\n  }\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Student - Link Existing Parent",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/students",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "students"
+              ]
+            },
+            "description": "Same as Create Student, linking a parent who is already registered (e.g. a sibling's parent, found with GET /api/v1/parents?q=<phone>).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Ishaan Sharma\",\n  \"gender\": \"m\",\n  \"birth_date\": \"2015-04-12\",\n  \"email\": \"ishaan.sharma@school.test\",\n  \"phone\": \"+91 98765 43210\",\n  \"blood_group\": \"B+\",\n  \"address\": \"12 MG Road, Indore\",\n  \"admission_number\": \"2024-ST-002\",\n  \"admission_date\": \"2024-04-01\",\n  \"enrollment\": {\n    \"course_id\": 1,\n    \"batch_id\": 1\n  },\n  \"status\": \"running\",\n  \"parent\": {\n    \"parent_id\": 4\n  },\n  \"aadhaar_number\": \"2345 6789 0124\",\n  \"medical_conditions\": \"Peanut allergy\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Student - Save Draft",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/students",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "students"
+              ]
+            },
+            "description": "\"Save Draft\": only name is required; every other key is checked if sent. A draft is kept archived with no enrolment and no login (out of every list, attendance and fee); its chosen class/section/roll number/status are kept and shown in the response (draft: true). account, face and id_verification answer 400 not_allowed_in_draft. Continue with Update Student, finish with Complete Student Draft or delete with Discard Student Draft.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"draft\": true,\n  \"name\": \"Aarav Kumar Sharma\",\n  \"gender\": \"m\",\n  \"enrollment\": {\n    \"course_id\": 1,\n    \"batch_id\": 1,\n    \"roll_number\": \"10A-01\"\n  },\n  \"documents\": {\n    \"birth_certificate\": [\n      {\n        \"data\": \"<base64>\",\n        \"filename\": \"birth_certificate.pdf\"\n      }\n    ]\n  }\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Student Drafts",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/students?draft=true&q=",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "students"
+              ],
+              "query": [
+                {
+                  "key": "draft",
+                  "value": "true"
+                },
+                {
+                  "key": "q",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Office staff only: the drafts saved with Save Draft (left out of List Students)."
+          },
+          "response": []
+        },
+        {
+          "name": "Complete Student Draft",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/students/:student_id/update",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "students",
+                ":student_id",
+                "update"
+              ],
+              "variable": [
+                {
+                  "key": "student_id",
+                  "value": "{{student_id}}"
+                }
+              ]
+            },
+            "description": "\"draft\": false (with any other keys) completes a draft: every starred field of Create Student must then be filled in (400 missing_<key>, nothing changes), the enrolment is created from the class/section/roll number/status it kept, the student becomes active and gets a login (the email with a one-time password unless account says otherwise), returned once as credentials.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"draft\": false,\n  \"email\": \"aarav.sharma@school.test\",\n  \"birth_date\": \"2015-04-12\",\n  \"phone\": \"+91 98765 43210\",\n  \"address\": \"12 MG Road, Indore\",\n  \"admission_number\": \"2024-ST-001\",\n  \"admission_date\": \"2024-04-01\",\n  \"parent\": {\n    \"name\": \"Rakesh Sharma\",\n    \"relationship_id\": 1,\n    \"mobile\": \"+91 98765 43211\"\n  },\n  \"account\": {\n    \"send_credentials\": true,\n    \"channel\": \"email\"\n  }\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Discard Student Draft",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/students/:student_id/discard",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "students",
+                ":student_id",
+                "discard"
+              ],
+              "variable": [
+                {
+                  "key": "student_id",
+                  "value": "{{student_id}}"
+                }
+              ]
+            },
+            "description": "Deletes a draft and its files (400 not_a_draft for a completed student).",
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
             }
           },
           "response": []

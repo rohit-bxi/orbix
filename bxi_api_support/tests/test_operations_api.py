@@ -122,7 +122,8 @@ class TestBxiApiSupportOperations(ApiSupportHttpCase):
         created = self.url_open('/api/v1/students', headers=self._office(), json={
             'first_name': 'New', 'last_name': 'Joiner', 'gender': 'm', 'gr_no': 'OPS-NEW', 'email': 'new.joiner@ops.test',
             'enrollment': {'course_id': self.course.id, 'batch_id': self.batch.id, 'roll_number': '42'},
-            'account': {'username': 'new.joiner', 'password': 'NewJoiner99'}})
+            'account': {'username': 'new.joiner', 'password': 'NewJoiner99'}, **dict(
+                self._student_screen_fields(), admission_number='OPS-NEW')})
         self.assertEqual(created.status_code, 201, created.text)
         self.assertEqual(created.json()['data']['roll_number'], '42')
         listing = self.url_open(f'/api/v1/students?batch_id={self.batch.id}', headers=self._office()).json()

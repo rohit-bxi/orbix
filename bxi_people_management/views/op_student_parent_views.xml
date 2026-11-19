@@ -15,6 +15,29 @@
                        decoration-success="bxi_enrolment_state == 'running'"
                        decoration-muted="bxi_enrolment_state == 'finished'"/>
             </field>
+            <xpath expr="//field[@name='active']/following-sibling::widget[@name='web_ribbon'][1]" position="attributes">
+                <attribute name="invisible">active or bxi_is_draft</attribute>
+            </xpath>
+            <xpath expr="//field[@name='active']/following-sibling::widget[@name='web_ribbon'][1]" position="after">
+                <field name="bxi_is_draft" invisible="1"/>
+                <widget name="web_ribbon" title="Draft" bg_color="text-bg-warning" invisible="not bxi_is_draft"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Student drafts saved from the app ("Save Draft"): their own filter,
+         and left out of "Archived". -->
+    <record id="view_op_student_search_people_management" model="ir.ui.view">
+        <field name="name">op.student.search.people.management</field>
+        <field name="model">op.student</field>
+        <field name="inherit_id" ref="openeducat_core.view_op_student_search"/>
+        <field name="arch" type="xml">
+            <filter name="inactive" position="attributes">
+                <attribute name="domain">[('active', '=', False), ('bxi_is_draft', '=', False)]</attribute>
+            </filter>
+            <filter name="inactive" position="after">
+                <filter string="Drafts" name="bxi_drafts" domain="[('bxi_is_draft', '=', True), ('active', '=', False)]"/>
+            </filter>
         </field>
     </record>
 
