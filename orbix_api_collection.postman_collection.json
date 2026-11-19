@@ -4057,6 +4057,112 @@
           "response": []
         },
         {
+          "name": "Create Curriculum",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/academic/curricula",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "academic",
+                "curricula"
+              ]
+            },
+            "description": "Add Curriculum screen (academic coordinators and managers). Required: name, description, board (as typed - CBSE, ICSE, State Board; matched ignoring case or created) or board_id (GET /masters/boards), class_id (the screen's single class) or class_ids (GET /masters/classes). Starts as draft. 400 missing_<key> / invalid_class_ids / invalid_board_id, 409 curriculum_exists (same name on the same board), 403 for other users. Response adds board_id, class_ids and classes_detail [{id, name}] to the existing keys.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"CBSE Curriculum 2026\",\n  \"board\": \"CBSE\",\n  \"description\": \"Central Board of Secondary Education curriculum for 2026\",\n  \"class_id\": 1\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Curriculum",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/academic/curricula/:curriculum_id/update",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "academic",
+                "curricula",
+                ":curriculum_id",
+                "update"
+              ],
+              "variable": [
+                {
+                  "key": "curriculum_id",
+                  "value": "{{curriculum_id}}"
+                }
+              ]
+            },
+            "description": "Edit Curriculum screen: any of name, description, board / board_id, class_ids; only the keys sent change. A locked curriculum keeps its board and classes (409 curriculum_locked - toggle-lock first); an approved curriculum whose board or classes change goes back to draft. 409 curriculum_exists for a name already used on that board.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"CBSE Curriculum 2024\",\n  \"board\": \"CBSE\",\n  \"description\": \"Central Board of Secondary Education curriculum for 2024\",\n  \"class_ids\": [\n    1\n  ]\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Assign Classes to Curriculum",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/academic/curricula/:curriculum_id/update",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "academic",
+                "curricula",
+                ":curriculum_id",
+                "update"
+              ],
+              "variable": [
+                {
+                  "key": "curriculum_id",
+                  "value": "{{curriculum_id}}"
+                }
+              ]
+            },
+            "description": "Assign Classes screen: class_ids is the whole list of chips (removing a chip = leaving it out; at least one, 400 missing_class_ids), or add_class_ids / remove_class_ids to change only some. Name and board may be sent back with it.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"class_ids\": [\n    9,\n    10\n  ],\n  \"name\": \"CBSE Curriculum 2024\",\n  \"board\": \"CBSE\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
           "name": "Get Curriculum",
           "request": {
             "method": "GET",
@@ -4236,6 +4342,249 @@
           "response": []
         },
         {
+          "name": "Curriculum Dropdown (approved)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/academic/curricula?status=approved",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "academic",
+                "curricula"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "approved",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "Add / Edit Smart Book screen's Curriculum dropdown: approved curricula only. status is one of draft, approved, rejected (400 invalid_status otherwise)."
+          },
+          "response": []
+        },
+        {
+          "name": "List Smart Books",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/academic/smart-books?",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "academic",
+                "smart-books"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "curriculum_id",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "class_id",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "subject_id",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Smart Books Management screen: books mapped to a curriculum. Optional filters q (title), curriculum_id, class_id, subject_id; limit / offset. Staff only. Each row: id, title, subjects, classes, curriculum {id, name, approval_status}, locked, active."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Smart Book",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/academic/smart-books/:smart_book_id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "academic",
+                "smart-books",
+                ":smart_book_id"
+              ],
+              "variable": [
+                {
+                  "key": "smart_book_id",
+                  "value": "{{smart_book_id}}"
+                }
+              ]
+            },
+            "description": "Edit Smart Book screen pre-fill. 404 not_found for a library book with no curriculum."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Smart Book",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/academic/smart-books",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "academic",
+                "smart-books"
+              ]
+            },
+            "description": "Add Smart Book screen. All four are required: title, subject_ids (or \"subjects\": names as typed, a list or \"Mathematics, Science\"), class_ids (or \"classes\": names as typed, e.g. \"Class 9, Class 10\"), curriculum_id. Names match an existing record by name or code, ignoring case (400 unknown_subject / unknown_class, ambiguous_*). 400 curriculum_rejected; 400 class_not_in_curriculum when the curriculum has assigned classes and a class is not among them; 409 smart_book_exists for the same title in the same curriculum. Academic coordinators and managers. Returns 201.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Mathematics Grade 9\",\n  \"subjects\": \"Mathematics\",\n  \"classes\": \"Class 9\",\n  \"curriculum_id\": {{curriculum_id}}\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Smart Book",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/academic/smart-books/:smart_book_id/update",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "academic",
+                "smart-books",
+                ":smart_book_id",
+                "update"
+              ],
+              "variable": [
+                {
+                  "key": "smart_book_id",
+                  "value": "{{smart_book_id}}"
+                }
+              ]
+            },
+            "description": "Edit Smart Book screen (\"Update Smart Book\"): any of the create keys; only the keys sent change. Same checks as create. 409 smart_book_locked while locked.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Mathematics Grade 9\",\n  \"subject_ids\": [\n    1\n  ],\n  \"class_ids\": [\n    1\n  ],\n  \"curriculum_id\": {{curriculum_id}}\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Toggle Smart Book Lock",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/academic/smart-books/:smart_book_id/toggle-lock",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "academic",
+                "smart-books",
+                ":smart_book_id",
+                "toggle-lock"
+              ],
+              "variable": [
+                {
+                  "key": "smart_book_id",
+                  "value": "{{smart_book_id}}"
+                }
+              ]
+            },
+            "description": "Lock icon on the card: locks or unlocks. A locked book cannot be updated or deleted (409 smart_book_locked).",
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Smart Book",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/academic/smart-books/:smart_book_id/delete",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "academic",
+                "smart-books",
+                ":smart_book_id",
+                "delete"
+              ],
+              "variable": [
+                {
+                  "key": "smart_book_id",
+                  "value": "{{smart_book_id}}"
+                }
+              ]
+            },
+            "description": "Delete icon on the card. Returns {id, deleted, archived}: a book that was ever issued or reserved is archived instead, so the library history stays. 409 smart_book_locked while locked.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          },
+          "response": []
+        },
+        {
           "name": "List Subject Mappings",
           "request": {
             "method": "GET",
@@ -4250,9 +4599,170 @@
                 "v1",
                 "academic",
                 "subject-mappings"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "class_id",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "teacher_id",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "subject_id",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "curriculum_id",
+                  "value": "",
+                  "disabled": true
+                }
               ]
             },
-            "description": "Optional ?class_id=&teacher_id="
+            "description": "Subject mappings, filtered by q (subject, class or teacher name), class_id, teacher_id, subject_id, curriculum_id. Rows: id, subject / class / teacher / curriculum as {id, name}, the four *_id values and display_name. Internal users only."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Subject Mapping",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/academic/subject-mappings/:mapping_id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "academic",
+                "subject-mappings",
+                ":mapping_id"
+              ],
+              "variable": [
+                {
+                  "key": "mapping_id",
+                  "value": "{{mapping_id}}"
+                }
+              ]
+            },
+            "description": "Edit Subject Mapping screen pre-fill."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Subject Mapping",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/academic/subject-mappings",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "academic",
+                "subject-mappings"
+              ]
+            },
+            "description": "Add Subject Mapping screen. All required: subject_id or \"subject\" (name or code as typed), class_id or \"class\", teacher_id or \"teacher\" (full name; a Dr./Mr./Mrs./Ms./Prof. title is ignored), curriculum_id. 400 missing_*_id, unknown_* / ambiguous_*, teacher_inactive, curriculum_rejected, class_not_in_curriculum (curriculum has assigned classes), subject_not_in_class (class has a subject list); 409 mapping_exists with existing_mapping_id for the same subject + class + curriculum. Academic coordinators and managers. Returns 201.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subject\": \"Mathematics\",\n  \"class\": \"Class 9\",\n  \"teacher\": \"Dr. Sarah Johnson\",\n  \"curriculum_id\": {{curriculum_id}}\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Subject Mapping",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/academic/subject-mappings/:mapping_id/update",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "academic",
+                "subject-mappings",
+                ":mapping_id",
+                "update"
+              ],
+              "variable": [
+                {
+                  "key": "mapping_id",
+                  "value": "{{mapping_id}}"
+                }
+              ]
+            },
+            "description": "Edit Subject Mapping screen: any of the create keys; only the keys sent change. Same checks as create.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subject_id\": 1,\n  \"class_id\": 1,\n  \"teacher_id\": 1,\n  \"curriculum_id\": {{curriculum_id}}\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Subject Mapping",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/academic/subject-mappings/:mapping_id/delete",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "academic",
+                "subject-mappings",
+                ":mapping_id",
+                "delete"
+              ],
+              "variable": [
+                {
+                  "key": "mapping_id",
+                  "value": "{{mapping_id}}"
+                }
+              ]
+            },
+            "description": "Removes the mapping. Returns {id, deleted: true}.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
           },
           "response": []
         },
@@ -18320,6 +18830,14 @@
     },
     {
       "key": "document_id",
+      "value": "1"
+    },
+    {
+      "key": "smart_book_id",
+      "value": "1"
+    },
+    {
+      "key": "mapping_id",
       "value": "1"
     }
   ]
