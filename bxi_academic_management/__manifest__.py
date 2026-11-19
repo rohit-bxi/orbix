@@ -2,7 +2,7 @@
 
 {
     'name': 'Academic Management',
-    'version': '19.0.3.1.0',
+    'version': '19.0.4.1.0',
     'category': 'Education',
     'summary': 'Curriculum boards, class assignment, smart books and subject-teacher mapping',
     'description': """
@@ -13,6 +13,7 @@
           an optional lock that freezes its Board and Assigned Classes
         - Smart Book: curriculum-linked books, built on the existing Library media model
         - Subject Mapping: map Subject + Class + Curriculum to a Teacher
+        - Exams: one exam across several classes, kept in step with a draft exam session per class
         - Event: schedule Parent-Teacher Meetings for one or more Classes
     """,
     'author': 'BXI Technology Pvt. Ltd.',
@@ -24,18 +25,21 @@
         'hr_holidays',
         'openeducat_core',
         'openeducat_library',
+        'openeducat_exam',
     ],
     'data': [
         'security/academic_management_groups.xml',
         'security/ir.model.access.csv',
         'security/academic_management_security.xml',
         'data/mail_template_data.xml',
+        'data/exam_schedule_data.xml',
         'views/board_views.xml',
         'views/curriculum_views.xml',
         'views/media_curriculum_views.xml',
         'views/subject_mapping_views.xml',
         'views/ptm_meeting_views.xml',
         'views/holiday_views.xml',
+        'views/exam_schedule_views.xml',
         'views/academic_management_menu.xml',
     ],
     'installable': True,
