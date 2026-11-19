@@ -28,6 +28,7 @@ class TestBxiApiSupportPeopleAadhaar(ApiSupportHttpCase):
         body = {'first_name': 'Aad', 'last_name': 'Har%s' % roll, 'gender': 'm', 'email': 'aad%s@umaa.test' % roll,
                 'enrollment': {'course_id': self.course.id, 'batch_id': self.batch.id, 'roll_number': roll},
                 'account': {'username': 'aad%s.umaa' % roll, 'password': 'AadPass%s99' % roll}}
+        body.update(self._student_screen_fields())
         body.update(extra)
         return self._post('/api/v1/students', body)
 

@@ -1,7 +1,11 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) 2026 BXI Technology Pvt. Ltd. All Rights Reserved.
 # License OPL-1 (Odoo Proprietary License v1.0, see LICENSE file for full text).
+import itertools
+
 from odoo.tests import HttpCase
+
+_STUDENT_SEQ = itertools.count(1)
 
 
 class ApiSupportHttpCase(HttpCase):
@@ -110,6 +114,19 @@ class ApiSupportHttpCase(HttpCase):
             'first_name': first_name, 'last_name': last_name, 'gender': 'male',
             'birth_date': '1985-01-01', 'user_id': user.id,
         })
+
+    def _student_screen_fields(self):
+        """The Add New Student screen's other starred fields, unique per
+        call (admission number, parent mobile)."""
+        n = next(_STUDENT_SEQ)
+        relationship = self.env['op.parent.relationship'].search([], limit=1) or \
+            self.env['op.parent.relationship'].create({'name': 'Guardian'})
+        return {
+            'birth_date': '2014-05-06', 'phone': '+91 90000 %05d' % n, 'address': '%s School Road, Pune' % n,
+            'admission_number': 'TST-ADM-%05d' % n, 'admission_date': '2026-04-01',
+            'parent': {'name': 'Test Parent %s' % n, 'relationship_id': relationship.id,
+                       'mobile': '+91 97%08d' % n},
+        }
 
     def _headers(self, login, password):
         resp = self.url_open('/api/v1/auth/login', json={'login': login, 'password': password})

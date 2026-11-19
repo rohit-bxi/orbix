@@ -9,7 +9,9 @@ Every key is optional on update and only the keys sent are changed. null
 missing_<key>. Ids that do not exist answer 400 invalid_<key>.
 
 Shared shapes:
-  address objects  {"street", "street2", "city", "zip", "state_id", "country_id"}
+  address objects  {"street", "street2", "city", "zip", "state_id", "country_id"},
+                   ("address" may also be one line of text - the app's single
+                   Address box - kept as the street)
   "health"         {"is_allergy", "allergy", "chronic_conditions", "disabilities",
                     "dietary_restrictions", "primary_physician", "physician_contact",
                     "insurance_provider", "insurance_policy_no", "medical_notes"}
@@ -23,6 +25,7 @@ Shared shapes:
 import base64
 
 from odoo import fields
+from odoo.tools import html2plaintext, plaintext2html
 from odoo.http import request
 
 from odoo.addons.bxi_api.controllers.auth import api_error
@@ -31,8 +34,8 @@ from ..models.people_service import PeopleError
 from .common import check_selection, date_str, ref, resolve_record, resolve_records
 from .people_account import _file_entry
 
-CHAR, DATE, BOOL, NUMBER, SELECTION, LANG, M2O, M2M = (
-    'char', 'date', 'bool', 'number', 'selection', 'lang', 'm2o', 'm2m')
+CHAR, DATE, BOOL, NUMBER, SELECTION, LANG, M2O, M2M, HTML = (
+    'char', 'date', 'bool', 'number', 'selection', 'lang', 'm2o', 'm2m', 'html')
 
 
 class F:
@@ -79,7 +82,16 @@ _PERSON = dict(
 
 STUDENT_SPEC = _spec(
     **_PERSON,
-    gr_no=F('gr_no'), admission_date=F('admission_date', DATE), nick_name=F('nick_name'),
+    # The Add New Student screen's "Admission Number" is the core
+    # Registration Number (unique); "gr_no" stays accepted as before.
+    admission_number=F('gr_no'), gr_no=F('gr_no', out=False),
+    admission_date=F('admission_date', DATE), nick_name=F('nick_name'),
+    # The screen's single "Medical Conditions / Allergies" box.
+    medical_conditions=F('medical_notes'),
+    # The form's Notes (rich text there; plain text here).
+    notes=F('comment', HTML),
+    # A student card from POST /library/cards (checked in people.py).
+    library_card_id=F('library_card_id', M2O, 'op.library.card', out='library_card'),
     scolar_number=F('scolar_number'), enrollment_status=F('enrollment_status', SELECTION),
     mode_of_transport=F('mode_of_transport', SELECTION), trait=F('trait'), other_sibling=F('other_sibling'),
     pickup_person=F('pickup_person'), special_needs_and_abilities=F('special_needs_and_abilities'),
@@ -107,10 +119,19 @@ PARENT_SPEC = _spec(
 )
 
 REQUIRED = {
-    'op.student': ('first_name', 'last_name', 'gender', 'email'),
+    # One-word names are allowed for students: last_name is optional.
+    'op.student': ('first_name', 'gender', 'email'),
     'op.faculty': ('first_name', 'last_name', 'gender', 'birth_date'),
     'op.parent': ('mobile', 'gender', 'relationship_id'),
 }
+
+# Also required when a student is created (or a draft completed) - the
+# Add New Student screen's starred fields. Address, class/section and
+# parent are checked by the controller.
+STUDENT_CREATE_REQUIRED = ('birth_date', 'phone', 'admission_number', 'admission_date')
+
+# The screen's limits: 5 MB per student document.
+DOCUMENT_MAX_BYTES = {'op.student': 5 * 1024 * 1024}
 
 ADDRESS_SPEC = _spec(
     street=F('street'), street2=F('street2'), city=F('city'), zip=F('zip'),
@@ -168,10 +189,11 @@ def _invalid(label, code_key, what):
 def _value(Model, key, entry, value, label):
     """(model value, error) for one non-blank body value."""
     kind = entry.kind
-    if kind == CHAR:
+    if kind in (CHAR, HTML):
         if isinstance(value, bool) or not isinstance(value, (str, int, float)):
             return None, _invalid(label, key, 'text')
-        return str(value).strip(), None
+        value = str(value).strip()
+        return (plaintext2html(value) if kind == HTML else value), None
     if kind == DATE:
         try:
             return fields.Date.to_string(fields.Date.to_date(value)), None
@@ -231,8 +253,11 @@ def _block(payload, key):
 
 
 def parse_address(Model, payload, key='address', prefix=''):
-    """(vals, error) from an optional address object; `prefix` names the
+    """(vals, error) from an optional address object - the main "address"
+    may also be a line of text, kept as the street; `prefix` names the
     teacher's extra addresses (official_street...)."""
+    if key == 'address' and isinstance(payload.get(key), str):
+        return {prefix + 'street': payload[key].strip() or False}, None
     block, error = _block(payload, key)
     if error or block is None:
         return {}, error
@@ -302,13 +327,14 @@ def parse_document_sets(model, payload):
                                code='invalid_documents')
     sets = {}
     for name, entries in block.items():
-        sets[names[name]], error = _document_entries(entries, name, 'documents.%s' % name)
+        sets[names[name]], error = _document_entries(entries, name, 'documents.%s' % name,
+                                                     DOCUMENT_MAX_BYTES.get(model))
         if error:
             return None, error
     return sets, None
 
 
-def _document_entries(entries, name, label):
+def _document_entries(entries, name, label, max_bytes=None):
     """(list of attachment ids and files, error) for one document set."""
     entries = entries or []
     if not isinstance(entries, list):
@@ -321,6 +347,9 @@ def _document_entries(entries, name, label):
         file, error = _file_entry(entry, name, index)
         if error:
             return None, error
+        if max_bytes and len(file['content']) > max_bytes:
+            return None, api_error('%s: each file must be %s MB or smaller.' % (label, max_bytes // (1024 * 1024)),
+                                   status=413, code='file_too_large')
         checked.append(file)
     return checked, None
 
@@ -374,6 +403,8 @@ def _read(record, entry):
         return ref(value)
     if entry.kind == M2M:
         return [ref(r) for r in value]
+    if entry.kind == HTML:
+        return html2plaintext(value).strip() or None if value else None
     return value if value or entry.kind == NUMBER else None
 
 

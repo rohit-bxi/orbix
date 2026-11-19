@@ -19,10 +19,21 @@ and how they read back, are declared in people_fields.py. Common blocks:
             people_account.py.
 Everything a request asks for is saved together or not at all; login
 credentials are sent only once it is saved.
+
+Students follow the app's Add New Student screen: a single "name", the
+address as one line of text, "admission_number", "parent" to link or add
+a parent, an automatic login (the email, with a one-time password) and
+"draft": true for "Save Draft" - drafts are kept archived, with no
+enrolment and no login, until completed or discarded. Every student
+response carries "profile_completion".
 """
 import base64
 import binascii
+import re
 
+from psycopg2 import IntegrityError
+
+from odoo.exceptions import UserError
 from odoo.tools.mimetypes import guess_mimetype
 
 from odoo import http
@@ -44,7 +55,7 @@ from .people_account import (
     security_dict, transaction,
 )
 from .people_fields import (
-    DOCUMENT_SETS, PARENT_SPEC, REQUIRED, STUDENT_SPEC, TEACHER_ADDRESSES, TEACHER_SPEC, WEEKDAYS, address_dict,
+    DOCUMENT_SETS, PARENT_SPEC, REQUIRED, STUDENT_CREATE_REQUIRED, STUDENT_SPEC, TEACHER_ADDRESSES, TEACHER_SPEC, WEEKDAYS, address_dict,
     apply_document_sets, documents_dict, emergency_contact_dict, fields_dict, health_dict, parse_address,
     parse_available_days, parse_document_sets, parse_fields, parse_health, parse_rte, parse_teacher_addresses,
     parse_teacher_documents, rte_dict,
@@ -103,10 +114,9 @@ def _with_credentials(data, record, delivery):
     return data
 
 
-def _image_value(payload):
+def _image_value(payload, max_bytes=None):
     """(vals, error): {'image_1920': base64 or False} when the payload has
-    an "image" key. Whether the bytes are really an image is checked by the
-    field itself when written (a 400 through atomic())."""
+    an "image" key; a JPG/PNG picture of at most `max_bytes` when given."""
     if 'image' not in payload:
         return {}, None
     value = payload['image']
@@ -125,6 +135,9 @@ def _image_value(payload):
     if not mimetype.startswith('image/') or mimetype == 'image/svg+xml':
         # The profile photo is shown as a picture: a PDF cannot be one.
         return None, api_error('image must be a JPG or PNG picture.', status=400, code='invalid_image')
+    if max_bytes and len(content) > max_bytes:
+        return None, api_error('The photo must be %s MB or smaller.' % (max_bytes // (1024 * 1024)), status=413,
+                               code='photo_too_large')
     return {'image_1920': value}, None
 
 
@@ -144,6 +157,10 @@ def _profile_vals(Model, payload, spec, *builders):
 
 def _image_builder(Model, payload):
     return _image_value(payload)
+
+
+def _student_image_builder(Model, payload):
+    return _image_value(payload, STUDENT_PHOTO_MAX_BYTES)
 
 
 def _email_taken(email, partner=None):
@@ -420,10 +437,51 @@ def _current_enrollment(student):
     return student._bxi_current_enrolment()
 
 
+STUDENT_PHOTO_MAX_BYTES = 1024 * 1024
+
+# Profile Completion of the Add New Student screen: one equal share per
+# item that is filled in, worked out from the response itself.
+_STUDENT_COMPLETION = (
+    ('image', lambda d: d['has_photo']),
+    ('name', lambda d: d.get('first_name')),
+    ('gender', lambda d: d.get('gender')),
+    ('birth_date', lambda d: d.get('birth_date')),
+    ('email', lambda d: d.get('email')),
+    ('phone', lambda d: d.get('phone')),
+    ('blood_group', lambda d: d.get('blood_group')),
+    ('address', lambda d: any(d['address'].values())),
+    ('admission_number', lambda d: d.get('admission_number')),
+    ('admission_date', lambda d: d.get('admission_date')),
+    ('class', lambda d: d.get('class')),
+    ('section', lambda d: d.get('section')),
+    ('roll_number', lambda d: d.get('roll_number')),
+    ('parent', lambda d: d.get('parents')),
+    ('aadhaar_number', lambda d: (d.get('aadhaar') or {}).get('last4')),
+    ('aadhaar_document', lambda d: (d.get('id_verification') or {}).get('documents')),
+    ('face', lambda d: (d.get('face') or {}).get('state') in ('active', 'pending')),
+    ('medical_conditions', lambda d: d.get('medical_conditions') or d['health'].get('allergy')
+     or d['health'].get('chronic_conditions')),
+    ('medical_records', lambda d: d['documents'].get('medical_records')),
+    ('birth_certificate', lambda d: d['documents'].get('birth_certificate')),
+    ('transfer_certificate', lambda d: d['documents'].get('transfer_certificate')),
+    ('previous_school_certificate', lambda d: d['documents'].get('previous_school_certificate')),
+)
+
+
+def _profile_completion(data):
+    """{percent, label, missing} for the screen's Profile badge."""
+    missing = [key for key, filled in _STUDENT_COMPLETION if not filled(data)]
+    percent = round(100 * (len(_STUDENT_COMPLETION) - len(missing)) / len(_STUDENT_COMPLETION))
+    label = 'Just started' if percent < 25 else 'In progress' if percent < 75 else \
+        'Almost done' if percent < 100 else 'Complete'
+    return {'percent': percent, 'label': label, 'missing': missing}
+
+
 def _student_admin_dict(student):
     data = _student_detail(student)
     current = _current_enrollment(student)
     data.update({
+        'draft': bool(student.bxi_is_draft),
         'status': current.state or None,
         'department': ref(current.course_id.department_id),
         'certificate_number': student.certificate_number or None,
@@ -431,17 +489,295 @@ def _student_admin_dict(student):
         'health': health_dict(student),
         'documents': documents_dict(student),
     })
+    if student.bxi_is_draft:
+        # A draft has no enrolment yet: what was chosen on the screen.
+        data.update({
+            'class': ref(student.bxi_draft_course_id),
+            'section': ref(student.bxi_draft_batch_id),
+            'roll_number': student.bxi_draft_roll_number or None,
+            'status': student.bxi_draft_state or None,
+            'department': ref(student.bxi_draft_course_id.department_id),
+        })
+    data['status_label'] = STATUS_LABELS.get(data['status'])
     for key, value in fields_dict(student, STUDENT_SPEC).items():
         data.setdefault(key, value)
     data.update(security_dict(student))
+    data['profile_completion'] = _profile_completion(data)
     return data
+
+
+def _split_student_name(payload):
+    """(payload, error): the screen's single "Full Name" as first/middle/
+    last name - keys sent explicitly win. One word is a first name only."""
+    if 'name' not in payload:
+        return payload, None
+    name = payload['name']
+    if _blank_text(name):
+        return None, api_error('name is required.', status=400, code='missing_name')
+    if not isinstance(name, str):
+        return None, api_error('name must be text.', status=400, code='invalid_name')
+    parts = name.split()
+    payload = dict(payload)
+    payload.setdefault('first_name', parts[0])
+    payload.setdefault('middle_name', ' '.join(parts[1:-1]) or None)
+    payload.setdefault('last_name', parts[-1] if len(parts) > 1 else None)
+    return payload, None
+
+
+def _address_given(address):
+    if isinstance(address, str):
+        return bool(address.strip())
+    return isinstance(address, dict) and any(not _blank_text(value) for value in address.values())
+
+
+def _missing_create_field(payload):
+    """The first starred field of the Add New Student screen missing from
+    a create body, or None."""
+    for key in REQUIRED['op.student'] + STUDENT_CREATE_REQUIRED:
+        if _blank_text(payload.get(key)):
+            return key
+    if not _address_given(payload.get('address')):
+        return 'address'
+    if not payload.get('parent') and not payload.get('parent_ids'):
+        return 'parent'
+    return None
+
+
+def _check_complete(student):
+    """Raise PeopleError for the first starred field a draft being
+    completed still lacks (class and section are checked by the
+    enrolment)."""
+    student = student.sudo()
+    for key, value in (
+        ('first_name', student.first_name), ('gender', student.gender), ('email', student.email),
+        ('birth_date', student.birth_date), ('phone', student.phone), ('admission_number', student.gr_no),
+        ('admission_date', student.admission_date),
+        ('address', student.street or student.street2 or student.city), ('parent', student.parent_ids),
+    ):
+        if not value:
+            raise PeopleError('%s is required to complete the draft.' % key, 'missing_%s' % key)
+
+
+def _admission_number_error(number, student=None):
+    """409 when another student (drafts included) has this admission
+    number - the core keeps it unique."""
+    if not number:
+        return None
+    domain = [('gr_no', '=', number)]
+    if student:
+        domain.append(('id', '!=', student.id))
+    if request.env['op.student'].sudo().with_context(active_test=False).search_count(domain, limit=1):
+        return api_error('Another student already has this admission number.', status=409,
+                         code='admission_number_taken')
+    return None
+
+
+def _parse_draft(payload):
+    """(True / False / None when absent, error)."""
+    if 'draft' not in payload:
+        return None, None
+    if not isinstance(payload['draft'], bool):
+        return None, api_error('draft must be true or false.', status=400, code='invalid_draft')
+    return payload['draft'], None
+
+
+def _check_draft_blocks(blocks):
+    """A draft has no login yet: no account, face or ID review."""
+    for key in ('account', 'face', 'id_verification'):
+        if blocks[key] is not None:
+            return api_error('%s is not allowed on a draft: complete the student first.' % key, status=400,
+                             code='not_allowed_in_draft')
+    return None
+
+
+# The screen's Status words for the enrolment state.
+STATUS_ALIASES = {'active': 'running', 'inactive': 'finished'}
+STATUS_LABELS = {'running': 'Active', 'finished': 'Inactive'}
+
+
+def _check_status(status):
+    """(enrolment state, error) for a "status" value: running | finished,
+    or the screen's active | inactive."""
+    status = STATUS_ALIASES.get(status, status) if isinstance(status, str) else status
+    error = check_selection(request.env['op.student.course'], 'state', status, key='status')
+    return (None, error) if error else (status, None)
+
+
+def _enrollment_state(payload):
+    """(state or None, error): "status", or "enrollment.status", for a new
+    enrolment."""
+    enrollment = payload.get('enrollment') if isinstance(payload.get('enrollment'), dict) else {}
+    status = payload.get('status') or enrollment.get('status')
+    if not status:
+        return None, None
+    return _check_status(status)
+
+
+def _draft_enrollment_vals(payload):
+    """(vals, error): a draft's chosen class / section / roll number /
+    status, kept on the student until the enrolment is created."""
+    vals = {}
+    if 'enrollment' in payload and payload['enrollment'] is not None:
+        enrollment = payload['enrollment']
+        if not isinstance(enrollment, dict):
+            return None, api_error('enrollment must be an object.', status=400, code='invalid_enrollment')
+        records = {}
+        for key, field, model in (('course_id', 'bxi_draft_course_id', 'op.course'),
+                                  ('batch_id', 'bxi_draft_batch_id', 'op.batch')):
+            if key in enrollment:
+                records[key], error = resolve_record(request.env, model, enrollment[key], key)
+                if error:
+                    return None, error
+                vals[field] = records[key].id or False
+        if records.get('course_id') and records.get('batch_id') and \
+                records['batch_id'].course_id != records['course_id']:
+            return None, api_error('This section does not belong to that class.', status=400,
+                                   code='batch_course_mismatch')
+        if 'roll_number' in enrollment:
+            vals['bxi_draft_roll_number'] = str(enrollment['roll_number'] or '').strip() or False
+    state, error = _enrollment_state(payload)
+    if error:
+        return None, error
+    if state:
+        vals['bxi_draft_state'] = state
+    return vals, None
+
+
+def _draft_enrollment(student):
+    """The enrolment body of a draft being completed, from what it kept."""
+    return {
+        'course_id': student.bxi_draft_course_id.id, 'batch_id': student.bxi_draft_batch_id.id,
+        'roll_number': student.bxi_draft_roll_number,
+    }
+
+
+def _parent_with_mobile(mobile):
+    """An existing parent whose mobile is the same number (spaces, dashes
+    and the +91 prefix ignored)."""
+    digits = re.sub(r'\D', '', mobile)[-10:]
+    if len(digits) < 4:
+        return request.env['op.parent']
+    candidates = request.env['op.parent'].sudo().with_context(active_test=False).search(
+        [('mobile', 'ilike', digits[-4:])])
+    return candidates.filtered(lambda p: re.sub(r'\D', '', p.mobile or '')[-10:] == digits)[:1]
+
+
+def _parent_exists_error(existing):
+    return request.make_json_response({'success': False, 'error': {
+        'message': 'A parent with this phone number already exists (%s): link them instead.' % existing.name.name,
+        'code': 'parent_exists', 'existing_parent_id': existing.id}}, status=409)
+
+
+def _parent_detail_vals(block):
+    """(vals, error) for the parent details sent in a "parent" block:
+    {name?, relationship_id?, mobile?, email?}."""
+    vals = {}
+    for key in ('name', 'mobile'):
+        if key in block:
+            if _blank_text(block[key]):
+                return None, api_error('parent.%s is required.' % key, status=400, code='missing_parent_%s' % key)
+            vals[key] = str(block[key]).strip()
+    if 'relationship_id' in block:
+        if _blank_text(block['relationship_id']):
+            return None, api_error('parent.relationship_id is required.', status=400,
+                                   code='missing_parent_relationship_id')
+        relationship, error = resolve_record(request.env, 'op.parent.relationship', block['relationship_id'],
+                                             'relationship_id')
+        if error:
+            return None, error
+        vals['relationship_id'] = relationship.id
+    if 'email' in block:
+        vals['email'] = str(block['email'] or '').strip() or False
+    return vals, None
+
+
+def _parse_student_parent(payload, student=None):
+    """(parsed or None, error) for the screen's Parent Linking "parent"
+    block:
+      {"parent_id", <details>?}   link that parent (and correct its details)
+      {"name", "relationship_id", "mobile", "email"?}
+                                  add a new parent - or, when a parent
+                                  already linked to this student has that
+                                  mobile, correct that parent's details
+      "replace_parent_id"?        unlink that parent of this student (the
+                                  screen's single parent slot changing)
+    A mobile that belongs to another, unlinked parent answers 409
+    parent_exists with its id, so the app can offer to link them."""
+    block = payload.get('parent')
+    if block is None:
+        return None, None
+    if not isinstance(block, dict):
+        return None, api_error('parent must be an object.', status=400, code='invalid_parent')
+    linked = student.parent_ids if student else request.env['op.parent']
+    parsed = {'replace': request.env['op.parent']}
+    if block.get('replace_parent_id'):
+        old, error = resolve_record(request.env, 'op.parent', block['replace_parent_id'], 'replace_parent_id')
+        if error:
+            return None, error
+        if old not in linked:
+            return None, api_error('replace_parent_id is not a parent of this student.', status=400,
+                                   code='invalid_replace_parent_id')
+        parsed['replace'] = old
+    details, error = _parent_detail_vals(block)
+    if error:
+        return None, error
+    if block.get('parent_id'):
+        parent, error = resolve_record(request.env, 'op.parent', block['parent_id'], 'parent_id')
+        if error:
+            return None, error
+    else:
+        for key in ('name', 'relationship_id', 'mobile'):
+            if key not in details:
+                return None, api_error('parent.%s is required.' % key, status=400, code='missing_parent_%s' % key)
+        parent = _parent_with_mobile(details['mobile'])
+        if parent and parent not in linked:
+            return None, _parent_exists_error(parent)
+    if parent and details.get('mobile'):
+        # A changed mobile must not be another parent's.
+        other = _parent_with_mobile(details['mobile'])
+        if other and other != parent:
+            return None, _parent_exists_error(other)
+    if parent and parent == parsed['replace']:
+        parsed['replace'] = request.env['op.parent']
+    parsed.update(parent=parent, details=details)
+    return parsed, None
+
+
+def _apply_student_parent(student, parsed):
+    if not parsed:
+        return
+    parent, details = parsed['parent'], parsed['details']
+    if parsed['replace']:
+        student.write({'parent_ids': [(3, parsed['replace'].id)]})
+    if not parent:
+        partner = request.env['res.partner'].sudo().create({
+            'name': details['name'], 'phone': details['mobile'], 'email': details.get('email') or False,
+            'is_parent': True})
+        request.env['op.parent'].sudo().create({
+            'name': partner.id, 'mobile': details['mobile'], 'email': details.get('email') or False,
+            'relationship_id': details['relationship_id'], 'student_ids': [(4, student.id)]})
+        return
+    parent = parent.sudo()
+    if parent not in student.parent_ids:
+        student.write({'parent_ids': [(4, parent.id)]})
+    parent_vals = {key: details[key] for key in ('mobile', 'email', 'relationship_id') if key in details}
+    partner_vals = {'name': details['name']} if 'name' in details else {}
+    if 'mobile' in details:
+        partner_vals['phone'] = details['mobile']
+    if 'email' in details:
+        partner_vals['email'] = details['email']
+    if parent_vals:
+        parent.write(parent_vals)
+    if partner_vals:
+        parent.name.write(partner_vals)
 
 
 def _student_vals(payload, student=None):
     """(vals, emergency_contact, document_sets, error) for a student create
     (student=None) or update."""
     Student = request.env['op.student']
-    vals, error = _profile_vals(Student, payload, STUDENT_SPEC, _image_builder, parse_address, parse_health)
+    vals, error = _profile_vals(Student, payload, STUDENT_SPEC, _student_image_builder, parse_address,
+                                parse_health)
     if error:
         return None, None, None, error
     extra, contact, error = _emergency_contact(payload, student)
@@ -449,19 +785,34 @@ def _student_vals(payload, student=None):
         return None, None, None, error
     vals.update(extra)
     vals.update(_full_name_vals(student, vals))
+    if vals.get('library_card_id'):
+        card = request.env['op.library.card'].sudo().browse(vals['library_card_id'])
+        if card.type != 'student':
+            return None, None, None, api_error('library_card_id must be a student library card.', status=400,
+                                               code='invalid_library_card_id')
+        if card.student_id and card.student_id != student:
+            return None, None, None, api_error('This library card belongs to another student.', status=409,
+                                               code='library_card_taken')
     documents, error = parse_document_sets('op.student', payload)
     if error:
         return None, None, None, error
     return vals, contact, documents, None
 
 
-def _enrollment_line(enrollment):
-    """(op.student.course vals, error) for a new student's enrolment: class,
-    section and roll number are all required, and the section must belong
-    to the class."""
+def _sync_library_card(student, vals):
+    """The card's own Student follows the student's Library Card."""
+    card = student.library_card_id
+    if vals.get('library_card_id') and card.student_id != student:
+        card.write({'student_id': student.id, 'partner_id': student.partner_id.id})
+
+
+def _enrollment_line(enrollment, state=None):
+    """(op.student.course vals, error) for a new student's enrolment: class
+    and section are required (the roll number is optional), and the
+    section must belong to the class."""
     if not isinstance(enrollment, dict):
         return None, api_error('enrollment is required.', status=400, code='missing_enrollment')
-    for key in ('course_id', 'batch_id', 'roll_number'):
+    for key in ('course_id', 'batch_id'):
         if not enrollment.get(key):
             return None, api_error(f'enrollment.{key} is required.', status=400, code=f'missing_{key}')
     course, error = resolve_record(request.env, 'op.course', enrollment['course_id'], 'course_id')
@@ -473,7 +824,10 @@ def _enrollment_line(enrollment):
     if batch.course_id != course:
         return None, api_error('This section does not belong to that class.', status=400,
                                code='batch_course_mismatch')
-    line = {'course_id': course.id, 'batch_id': batch.id, 'roll_number': str(enrollment['roll_number']).strip()}
+    line = {'course_id': course.id, 'batch_id': batch.id,
+            'roll_number': str(enrollment.get('roll_number') or '').strip() or False}
+    if state:
+        line['state'] = state
     if enrollment.get('academic_year_id'):
         year, error = resolve_record(request.env, 'op.academic.year', enrollment['academic_year_id'],
                                      'academic_year_id')
@@ -481,6 +835,26 @@ def _enrollment_line(enrollment):
             return None, error
         line['academic_years_id'] = year.id
     return line, None
+
+
+def _change_enrollment(student, enrollment):
+    """The Edit Student screen's Class / Section / Roll Number ("enrollment"
+    on update): the same section only changes the roll number (blank clears
+    it); another section is a transfer (see _transfer)."""
+    if not isinstance(enrollment, dict):
+        return api_error('enrollment must be an object.', status=400, code='invalid_enrollment')
+    current = running_enrollment(student)
+    batch_id = enrollment.get('batch_id') or current.batch_id.id
+    if not batch_id:
+        return api_error('enrollment.batch_id is required.', status=400, code='missing_batch_id')
+    same_course = not enrollment.get('course_id') or parse_int(enrollment['course_id'], 'course_id')[0] == \
+        current.course_id.id
+    if current and parse_int(batch_id, 'batch_id')[0] == current.batch_id.id and same_course:
+        if 'roll_number' in enrollment:
+            current.roll_number = str(enrollment['roll_number'] or '').strip() or False
+        return None
+    return _transfer(student, {key: enrollment.get(key) for key in ('batch_id', 'course_id', 'roll_number')
+                               if enrollment.get(key)} | {'batch_id': batch_id})
 
 
 def _transfer(student, transfer):
@@ -623,13 +997,21 @@ class BxiApiSupportPeopleController(http.Controller):
 
     @http.route('/api/v1/students', type='http', auth='public', methods=['GET'], csrf=False)
     @require_auth
-    def list_students(self, q=None, course_id=None, batch_id=None, **kwargs):
-        """Office staff: every student. Teachers: the sections they teach."""
+    def list_students(self, q=None, course_id=None, batch_id=None, draft=None, **kwargs):
+        """Office staff: every student. Teachers: the sections they teach.
+        ?draft=true: office staff only, the drafts saved with "Save Draft"
+        (left out of the normal list)."""
         limit, offset, error = parse_pagination(kwargs)
         if error:
             return error
         domain = []
-        if not _can_list_students(request.env.user):
+        Student = request.env['op.student'].sudo()
+        if draft in ('1', 'true', 'True'):
+            if not _can_list_students(request.env.user):
+                return api_error('Not authorized to list drafts.', status=403, code='forbidden')
+            Student = Student.with_context(active_test=False)
+            domain.append(('bxi_is_draft', '=', True))
+        elif not _can_list_students(request.env.user):
             context = school_context(request.env)
             if not context['faculty']:
                 return api_error('Not authorized to list students.', status=403, code='forbidden')
@@ -644,7 +1026,6 @@ class BxiApiSupportPeopleController(http.Controller):
                 domain.append((field, '=', value))
         if q:
             domain += ['|', '|', ('name', 'ilike', q), ('gr_no', 'ilike', q), ('email', 'ilike', q)]
-        Student = request.env['op.student'].sudo()
         total = Student.search_count(domain)
         students = Student.search(domain, limit=limit, offset=offset, order='name')
         return api_response({'students': [student_summary(s) for s in students]},
@@ -653,38 +1034,71 @@ class BxiApiSupportPeopleController(http.Controller):
     @http.route('/api/v1/students', type='http', auth='public', methods=['POST'], csrf=False)
     @require_auth
     def create_student(self, **kwargs):
-        """Office creates and enrols a student: {"first_name", "last_name",
-        "gender", "email", ..., "image"?, "address"?, "enrollment":
-        {"course_id", "batch_id", "roll_number", "academic_year_id"?},
-        "account": {"username", "password", "active"?, "send_credentials"?,
-        "channel"?}} - email, class, section, roll number, username and
-        password are required. Every update field is accepted too."""
+        """The office's Add New Student screen: {"name" (or "first_name",
+        "middle_name"?, "last_name"?), "gender", "birth_date", "email",
+        "phone", "address" (text or object), "admission_number",
+        "admission_date", "enrollment": {"course_id", "batch_id",
+        "roll_number"?}, "status"?, "parent": {"parent_id"} | {"name",
+        "relationship_id", "mobile"} (or "parent_ids"), "image"?, ...} plus
+        every update field. Without "account" the login is the student's
+        email with a one-time password, returned once as "credentials".
+
+        "draft": true saves the screen as it is ("Save Draft"): only the
+        name is required, nothing is enrolled and no login is made until
+        the draft is completed with /students/<id>/update {"draft": false}."""
         if not is_manager(request.env.user):
             return api_error('Not authorized to add students.', status=403, code='forbidden')
-        payload = json_body() or {}
-        for required in REQUIRED['op.student']:
-            if not payload.get(required):
-                return api_error(f'{required} is required.', status=400, code=f'missing_{required}')
+        payload, error = _split_student_name(json_body() or {})
+        if error:
+            return error
+        draft, error = _parse_draft(payload)
+        if error:
+            return error
+        if draft:
+            if _blank_text(payload.get('first_name')):
+                return api_error('name is required.', status=400, code='missing_name')
+        else:
+            missing = _missing_create_field(payload)
+            if missing:
+                return api_error(f'{missing} is required.', status=400, code=f'missing_{missing}')
         vals, contact, documents, error = _student_vals(payload)
         if error:
             return error
-        line, error = _enrollment_line(payload.get('enrollment'))
+        parent, error = _parse_student_parent(payload)
         if error:
             return error
         blocks, error = _security_blocks(payload)
         if error:
             return error
-        error = _require_login(blocks)
+        if draft:
+            error = _check_draft_blocks(blocks)
+            if error:
+                return error
+            extra, error = _draft_enrollment_vals(payload)
+            if error:
+                return error
+            vals.update(extra, bxi_is_draft=True, active=False)
+        else:
+            state, error = _enrollment_state(payload)
+            if error:
+                return error
+            line, error = _enrollment_line(payload.get('enrollment'), state)
+            if error:
+                return error
+            vals['course_detail_ids'] = [(0, 0, line)]
+            blocks['account'] = dict(blocks['account'] or {}, create_login=True)
+        if _email_taken(payload.get('email')):
+            return _email_taken_error()
+        error = _admission_number_error(vals.get('gr_no'))
         if error:
             return error
-        if _email_taken(payload['email']):
-            return _email_taken_error()
-        vals['course_detail_ids'] = [(0, 0, line)]
 
         def create():
             student = request.env['op.student'].sudo().create(vals)
+            _sync_library_card(student, vals)
             _apply_emergency_contact(student, contact)
             apply_document_sets(student, documents)
+            _apply_student_parent(student, parent)
             return student, _apply_security(student, blocks)
 
         result, error = transaction(create)
@@ -708,41 +1122,101 @@ class BxiApiSupportPeopleController(http.Controller):
     @http.route('/api/v1/students/<int:student_id>/update', type='http', auth='public', methods=['POST'], csrf=False)
     @require_auth
     def update_student(self, student_id, **kwargs):
-        """Any of the create fields (people_fields.STUDENT_SPEC, plus "image",
-        "address", "health", "emergency_contact": {"name", "phone"},
+        """The Edit Student screen. Any of the create fields
+        (people_fields.STUDENT_SPEC, plus "name", "image", "address",
+        "health", "emergency_contact": {"name", "phone"}, "parent" (see
+        _parse_student_parent: link, add, correct or replace a parent),
         "documents": {"birth_certificate", "transfer_certificate",
         "previous_school_certificate", "medical_records"} and the Account &
-        Security blocks), plus "transfer": {"batch_id", "course_id"?,
-        "roll_number"} to move the student to another section, and
-        "status": "running" | "finished" for the current enrolment. Only the
-        keys sent are changed."""
+        Security blocks), plus "enrollment": {"course_id"?, "batch_id"?,
+        "roll_number"?} - the same section changes only the roll number,
+        another one moves the student there ("transfer" is the older name
+        of the same thing) - and "status": running | finished (or active |
+        inactive) for the current enrolment. Only the keys sent are changed;
+        "draft": true on a student already saved is an ordinary save.
+
+        On a draft: the same keys plus "enrollment" (the class / section /
+        roll number it keeps); "draft": false completes it - every starred
+        field must then be filled in, and the enrolment and login are
+        created."""
         if not is_manager(request.env.user):
             return api_error('Not authorized to edit students.', status=403, code='forbidden')
         student = _student_record(student_id)
         if not student:
             return api_error('Student not found.', status=404, code='not_found')
-        payload = json_body() or {}
+        payload, error = _split_student_name(json_body() or {})
+        if error:
+            return error
+        draft, error = _parse_draft(payload)
+        if error:
+            return error
+        is_draft = student.bxi_is_draft
+        # "Save Draft" on the Edit screen of a saved student just saves.
+        complete = is_draft and draft is False
         vals, contact, documents, error = _student_vals(payload, student)
         if error:
             return error
         if vals.get('email') and _email_taken(vals['email'], student.partner_id):
             return _email_taken_error()
-        status = payload.get('status')
-        if 'status' in payload:
-            error = check_selection(request.env['op.student.course'], 'state', status, key='status')
-            if error:
-                return error
+        error = _admission_number_error(vals.get('gr_no'), student)
+        if error:
+            return error
+        parent, error = _parse_student_parent(payload, student)
+        if error:
+            return error
         blocks, error = _security_blocks(payload)
         if error:
             return error
+        status = None
+        enrollment = None
+        if is_draft:
+            if 'transfer' in payload:
+                return api_error('A draft has no enrolment to transfer: complete it first.', status=400,
+                                 code='student_is_draft')
+            if not complete:
+                error = _check_draft_blocks(blocks)
+                if error:
+                    return error
+            # Completing the draft is what makes it active.
+            vals.pop('active', None)
+            extra, error = _draft_enrollment_vals(payload)
+            if error:
+                return error
+            vals.update(extra)
+        else:
+            if 'transfer' in payload and payload.get('enrollment') is not None:
+                return api_error('Send either enrollment or transfer, not both.', status=400,
+                                 code='invalid_enrollment')
+            if payload.get('enrollment') is not None:
+                enrollment = payload['enrollment']
+            if 'status' in payload or isinstance(enrollment, dict) and 'status' in enrollment:
+                raw = payload['status'] if 'status' in payload else enrollment['status']
+                status, error = _check_status(raw)
+                if error:
+                    return error
+        if complete:
+            blocks['account'] = dict(blocks['account'] or {}, create_login=True)
 
         def apply():
             if vals:
                 student.write(vals)
+            _sync_library_card(student, vals)
             _apply_emergency_contact(student, contact)
             apply_document_sets(student, documents)
-            if 'transfer' in payload:
-                error = _transfer(student, payload['transfer'])
+            _apply_student_parent(student, parent)
+            if complete:
+                _check_complete(student)
+                line, error = _enrollment_line(_draft_enrollment(student), student.bxi_draft_state)
+                if error:
+                    raise PeopleError(None, None, response=error)
+                student.write({
+                    'course_detail_ids': [(0, 0, line)], 'active': True, 'bxi_is_draft': False,
+                    'bxi_draft_course_id': False, 'bxi_draft_batch_id': False, 'bxi_draft_roll_number': False,
+                    'bxi_draft_state': False,
+                })
+            if 'transfer' in payload or enrollment is not None:
+                error = _transfer(student, payload['transfer']) if 'transfer' in payload else \
+                    _change_enrollment(student, enrollment)
                 if error:
                     # Roll back what was already written.
                     raise PeopleError(None, None, response=error)
@@ -757,6 +1231,41 @@ class BxiApiSupportPeopleController(http.Controller):
         if error:
             return error
         return api_response(_with_credentials(_student_admin_dict(student), student, delivery))
+
+    @http.route('/api/v1/students/<int:student_id>/discard', type='http', auth='public', methods=['POST'],
+                csrf=False)
+    @require_auth
+    def discard_student_draft(self, student_id, **kwargs):
+        """Delete a draft saved with "Save Draft", with its files. Students
+        that were completed cannot be deleted here."""
+        if not is_manager(request.env.user):
+            return api_error('Not authorized to edit students.', status=403, code='forbidden')
+        student = _student_record(student_id)
+        if not student:
+            return api_error('Student not found.', status=404, code='not_found')
+        if not student.bxi_is_draft:
+            return api_error('Only a draft can be discarded.', status=400, code='not_a_draft')
+
+        def discard():
+            attachments = request.env['ir.attachment'].sudo()
+            for field in DOCUMENT_SETS['op.student'].values():
+                attachments |= student[field]
+            attachments |= student.id_document_ids
+            partner = student.partner_id
+            attachments.filtered(lambda a: a.res_model == 'op.student' and a.res_id == student.id).unlink()
+            student.unlink()
+            try:
+                with request.env.cr.savepoint():
+                    partner.unlink()
+            except (UserError, IntegrityError):
+                # Still used elsewhere (a message, a log): keep it, archived.
+                partner.active = False
+            return True
+
+        _result, error = transaction(discard)
+        if error:
+            return error
+        return api_response({'id': student_id, 'discarded': True})
 
     @http.route(['/api/v1/<any("students", "parents"):kind>/<int:record_id>/documents/<int:attachment_id>',
                  '/api/v1/<any("teachers"):kind>/<int:record_id>/academic-documents/<int:attachment_id>'],

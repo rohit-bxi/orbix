@@ -39,6 +39,17 @@ class OpStudentCourse(models.Model):
 class OpStudent(models.Model):
     _inherit = 'op.student'
 
+    bxi_is_draft = fields.Boolean(
+        string='Draft', index=True, copy=False, readonly=True,
+        help="Saved with \"Save Draft\" on the app's Add New Student screen: kept archived (so it is left out "
+             "of every list, attendance and fee) with no enrolment and no login until it is completed.")
+    # The class / section / roll number / status chosen on a draft: the
+    # enrolment itself is only created when the draft is completed.
+    bxi_draft_course_id = fields.Many2one('op.course', string='Draft Class', copy=False, readonly=True)
+    bxi_draft_batch_id = fields.Many2one('op.batch', string='Draft Section', copy=False, readonly=True)
+    bxi_draft_roll_number = fields.Char(string='Draft Roll Number', copy=False, readonly=True)
+    bxi_draft_state = fields.Selection(ENROLMENT_STATES, string='Draft Enrolment Status', copy=False, readonly=True)
+
     bxi_current_course_id = fields.Many2one(
         'op.course', string='Current Class', compute='_compute_bxi_current_enrolment')
     bxi_current_batch_id = fields.Many2one(
