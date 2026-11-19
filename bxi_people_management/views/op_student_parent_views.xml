@@ -48,10 +48,42 @@
         <field name="inherit_id" ref="openeducat_parent.view_op_parent_form"/>
         <field name="arch" type="xml">
             <field name="relationship_id" position="after">
-                <field name="active" string="Status" widget="boolean_toggle"/>
+                <field name="active" string="Status" widget="boolean_toggle" invisible="bxi_is_draft"/>
                 <field name="bxi_child_department_ids" widget="many2many_tags" invisible="not id"/>
                 <field name="bxi_child_batch_ids" widget="many2many_tags" invisible="not id"/>
             </field>
+            <field name="additional_document_ids" position="before">
+                <field name="bxi_aadhaar_card_ids" widget="many2many_binary"/>
+                <field name="bxi_pan_card_ids" widget="many2many_binary"/>
+                <field name="bxi_id_proof_ids" widget="many2many_binary"/>
+            </field>
+            <field name="student_ids" position="attributes">
+                <attribute name="required">not bxi_is_draft</attribute>
+            </field>
+            <field name="relationship_id" position="attributes">
+                <attribute name="required">not bxi_is_draft</attribute>
+            </field>
+            <xpath expr="//field[@name='active']/following-sibling::widget[@name='web_ribbon'][1]" position="attributes">
+                <attribute name="invisible">active or bxi_is_draft</attribute>
+            </xpath>
+            <xpath expr="//field[@name='active']/following-sibling::widget[@name='web_ribbon'][1]" position="after">
+                <field name="bxi_is_draft" invisible="1"/>
+                <widget name="web_ribbon" title="Draft" bg_color="text-bg-warning" invisible="not bxi_is_draft"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_op_parent_search_people_management" model="ir.ui.view">
+        <field name="name">op.parent.search.people.management</field>
+        <field name="model">op.parent</field>
+        <field name="inherit_id" ref="openeducat_parent.view_op_parent_search"/>
+        <field name="arch" type="xml">
+            <filter name="inactive" position="attributes">
+                <attribute name="domain">[('active', '=', False), ('bxi_is_draft', '=', False)]</attribute>
+            </filter>
+            <filter name="inactive" position="after">
+                <filter string="Drafts" name="bxi_drafts" domain="[('bxi_is_draft', '=', True), ('active', '=', False)]"/>
+            </filter>
         </field>
     </record>
 </odoo>

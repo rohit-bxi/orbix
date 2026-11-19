@@ -2,7 +2,7 @@
 
 {
     'name': 'Orbix People Management',
-    'version': '19.0.1.4.0',
+    'version': '19.0.1.5.0',
     'category': 'Education',
     'summary': 'Teacher profile, assignment and workload details for the user-management screens',
     'description': """
@@ -22,7 +22,8 @@
         - Student: current class, section, department and enrolment status
           (read-only, from the running enrolment), and the Draft flag of
           students saved with the app's "Save Draft".
-        - Parent: status, and department / class from the children.
+        - Parent: status, department / class from the children, Aadhaar
+          Card / PAN Card / ID Proof documents and the Draft flag.
 
         The REST endpoints that use these fields live in bxi_api_support.
     """,

@@ -128,6 +128,13 @@ class ApiSupportHttpCase(HttpCase):
                        'mobile': '+91 97%08d' % n},
         }
 
+    def _parent_screen_fields(self):
+        """The Add Parent screen's starred fields besides name, mobile,
+        relationship and students; the email is unique per call."""
+        n = next(_STUDENT_SEQ)
+        return {'gender': 'f', 'birth_date': '1984-03-04', 'email': 'test.parent%s@parents.test' % n,
+                'address': '%s Parent Lane, Pune' % n}
+
     def _headers(self, login, password):
         resp = self.url_open('/api/v1/auth/login', json={'login': login, 'password': password})
         return {'Authorization': f'Bearer {resp.json()["data"]["token"]}'}

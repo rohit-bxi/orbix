@@ -213,7 +213,7 @@ class TestBxiApiSupportPeopleManagement(ApiSupportHttpCase):
     def test_parent_profile_status_and_derived_classes(self):
         student = self._create_student('UM-P1')
         self._enroll(student, self.course, self.batch)
-        resp = self._post('/api/v1/parents', {
+        resp = self._post('/api/v1/parents', {**self._parent_screen_fields(),
             'name': 'Pia Parent', 'mobile': '9800099911', 'relationship_id': self.relationship.id,
             'student_ids': [student.id], 'image': PIXEL,
             'account': {'username': 'pia.parent', 'password': 'PiaParent99'}})
@@ -236,7 +236,7 @@ class TestBxiApiSupportPeopleManagement(ApiSupportHttpCase):
     def test_parent_create_login_failure_rolls_back(self):
         student = self._create_student('UM-P2')
         before = self.env['op.parent'].search_count([])
-        resp = self._post('/api/v1/parents', {
+        resp = self._post('/api/v1/parents', {**self._parent_screen_fields(),
             'name': 'No Email', 'mobile': '9800099922', 'relationship_id': self.relationship.id,
             'student_ids': [student.id], 'account': {'username': 'admin', 'password': 'TakenLogin99'}})
         self.assertEqual(resp.status_code, 409, 'The username is taken: nothing is created.')
@@ -257,7 +257,7 @@ class TestBxiApiSupportPeopleManagement(ApiSupportHttpCase):
     def test_parent_detail(self):
         student = self._create_student('UM-P2')
         self._enroll(student, self.course, self.batch)
-        parent_id = self._post('/api/v1/parents', {
+        parent_id = self._post('/api/v1/parents', {**self._parent_screen_fields(),
             'name': 'Dev Parent', 'mobile': '9800099922', 'relationship_id': self.relationship.id,
             'student_ids': [student.id], 'account': {'username': 'dev.parent', 'password': 'DevParent99'},
         }).json()['data']['id']
@@ -441,7 +441,7 @@ class TestBxiApiSupportPeopleManagement(ApiSupportHttpCase):
         student = self._create_student('UM-P3')
         other = self._create_student('UM-P4')
         state = self.env.ref('base.state_in_mh')
-        created = self._post('/api/v1/parents', {
+        created = self._post('/api/v1/parents', {**self._parent_screen_fields(),
             'name': 'Asha Parent', 'mobile': '9800099933', 'email': 'asha@um.test',
             'relationship_id': self.relationship.id, 'student_ids': [student.id], 'gender': 'f',
             'birth_date': '1985-05-06', 'address': {'city': 'Nagpur', 'state_id': state.id},

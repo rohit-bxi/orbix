@@ -141,7 +141,7 @@ class TestBxiApiSupportPeopleAccount(ApiSupportHttpCase):
         self.assertEqual(data['credentials']['reason'], 'sms_not_sent')
         self.assertNotIn('one_time_password', data['credentials'], 'The office typed it; it is not echoed back.')
 
-        parent = self._post('/api/v1/parents', {
+        parent = self._post('/api/v1/parents', {**self._parent_screen_fields(),
             'name': 'Paula Parent', 'mobile': '9800012345', 'relationship_id': self.relationship.id,
             'student_ids': [data['id']], 'account': {'username': 'paula.parent', 'password': 'ParentTyped9'}})
         self.assertEqual(parent.status_code, 201, parent.text)
@@ -150,7 +150,7 @@ class TestBxiApiSupportPeopleAccount(ApiSupportHttpCase):
         self.assertEqual(record.user_id.child_ids, user)
         self.assertEqual(self._login('paula.parent', 'ParentTyped9').status_code, 200)
 
-    def test_student_login_is_automatic_and_parent_needs_username_and_password(self):
+    def test_student_and_parent_logins_are_automatic(self):
         # The Add New Student screen has no username/password: the login is
         # the email with a one-time password, returned once.
         auto = self._student('8', account=None)
@@ -170,15 +170,16 @@ class TestBxiApiSupportPeopleAccount(ApiSupportHttpCase):
         self.assertEqual(created.json()['data']['account']['username'], 'stu.nine',
                          'A student always gets a login.')
 
+        # The Add Parent screen has no username/password either.
         student_id = created.json()['data']['id']
-        parent_body = {'name': 'Pam Parent', 'mobile': '9800012347', 'relationship_id': self.relationship.id,
-                       'student_ids': [student_id], 'email': 'pam.parent@uma.test'}
-        for extra, code in (({'create_login': True}, 'missing_username'),
-                            ({'account': {'username': 'pam.parent'}}, 'missing_password')):
-            resp = self._post('/api/v1/parents', dict(parent_body, **extra))
-            self.assertEqual(resp.status_code, 400, extra)
-            self.assertEqual(resp.json()['error']['code'], code, extra)
-        self.assertFalse(self.env['op.parent'].search([('mobile', '=', '9800012347')]))
+        parent = self._post('/api/v1/parents', dict(
+            self._parent_screen_fields(), name='Pam Parent', mobile='9800012347', email='pam.parent@uma.test',
+            relationship_id=self.relationship.id, student_ids=[student_id]))
+        self.assertEqual(parent.status_code, 201, parent.text)
+        parent_data = parent.json()['data']
+        self.assertEqual(parent_data['account']['username'], 'pam.parent@uma.test')
+        self.assertEqual(self._login('pam.parent@uma.test',
+                                     parent_data['credentials']['one_time_password']).status_code, 200)
         # Teachers may still be added without a login (not required by the sheet).
         self.assertEqual(self._teacher().status_code, 201)
 

@@ -14244,10 +14244,10 @@
                 "parents"
               ]
             },
-            "description": "Required: name, mobile, relationship_id, student_ids, account.username and account.password (400 missing_username / missing_password; the old top-level \"create_login\" flag alone is no longer enough). status: active|inactive. Department and classes in the response come from the children. Account & Security blocks: \"account\" (username and password required; active, send_credentials, channel email|sms optional), \"face\" (enabled, image|images), \"id_verification\" (document|documents image/PDF, doc_type). The password is a one-time password the person must change at first sign-in. Everything is saved together or not at all. Every field of the matching update request is accepted here too.",
+            "description": "The app's Add Parent screen. Required (400 missing_<key>): name, gender (m|f|o), birth_date, email, phone (\"mobile\" still accepted; missing_mobile), address (one line of text, or {street, street2, city, zip, state_id, country_id}), relationship_id (GET /masters/relationships - the app needs a Relationship dropdown), student_ids (Link Student: find them with GET /students?q=<name or admission number>). A phone that is already a parent's answers 409 parent_exists with error.existing_parent_id. Optional: image (JPG/PNG, max 1 MB, 413 photo_too_large), status active|inactive, documents {aadhaar_card, pan_card, id_proof, additional} (image/PDF, max 5 MB each, 413 file_too_large), rte, aadhaar_number, face, id_verification. \"account\" is optional: without username/password the login is the parent's email with a generated one-time password, returned once as data.credentials.one_time_password. Response: students [{id, name, admission_number, class, section, roll_number}] (the Linked Students card), phone, draft, profile_completion {percent, label, missing}. Everything is saved together or not at all.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Neha Patel\",\n  \"mobile\": \"9800011122\",\n  \"email\": \"neha.patel@school.test\",\n  \"relationship_id\": 1,\n  \"student_ids\": [\n    1\n  ],\n  \"image\": \"<base64 photo>\",\n  \"status\": \"active\",\n  \"account\": {\n    \"create_login\": true,\n    \"username\": \"neha.patel\",\n    \"password\": \"Welcome@2026\",\n    \"active\": true,\n    \"send_credentials\": true,\n    \"channel\": \"email\"\n  },\n  \"face\": {\n    \"enabled\": false\n  },\n  \"id_verification\": {\n    \"document\": {\n      \"data\": \"<base64 image or PDF>\",\n      \"filename\": \"aadhaar.pdf\"\n    },\n    \"doc_type\": \"aadhaar\"\n  }\n}"
+              "raw": "{\n  \"name\": \"Sanjay Sharma\",\n  \"gender\": \"m\",\n  \"birth_date\": \"1986-07-02\",\n  \"email\": \"sanjay.sharma@school.test\",\n  \"phone\": \"+91 98765 43210\",\n  \"address\": \"789 Indiranagar, Bangalore, Karnataka\",\n  \"image\": \"<base64 JPG/PNG, max 1 MB>\",\n  \"relationship_id\": 1,\n  \"student_ids\": [\n    1\n  ],\n  \"status\": \"active\",\n  \"documents\": {\n    \"aadhaar_card\": [\n      {\n        \"data\": \"<base64 image or PDF, max 5 MB>\",\n        \"filename\": \"aadhaar.pdf\"\n      }\n    ],\n    \"pan_card\": [\n      {\n        \"data\": \"<base64 image or PDF, max 5 MB>\",\n        \"filename\": \"pan.pdf\"\n      }\n    ],\n    \"id_proof\": [\n      {\n        \"data\": \"<base64 image or PDF, max 5 MB>\",\n        \"filename\": \"id-proof.pdf\"\n      }\n    ],\n    \"additional\": [\n      {\n        \"data\": \"<base64 image or PDF, max 5 MB>\",\n        \"filename\": \"address-proof.pdf\"\n      }\n    ]\n  },\n  \"rte\": {\n    \"category\": \"sc\",\n    \"annual_income\": 95000,\n    \"bpl_number\": \"BPL-1\",\n    \"bpl_list_type\": \"state\",\n    \"income_certificate_financial_year\": \"2025-26\",\n    \"income_certificate\": {\n      \"data\": \"<base64 image or PDF>\",\n      \"filename\": \"income.pdf\"\n    },\n    \"category_certificate\": {\n      \"data\": \"<base64 image or PDF>\",\n      \"filename\": \"caste.pdf\"\n    }\n  },\n  \"aadhaar_number\": \"4567 8901 2341\",\n  \"account\": {\n    \"send_credentials\": true,\n    \"channel\": \"email\"\n  }\n}"
             }
           },
           "response": []
@@ -14281,10 +14281,148 @@
                 }
               ]
             },
-            "description": "Only the keys sent are changed; null or \"\" clears a value (name, mobile, gender, relationship_id and student_ids are required). Profile: name, email, mobile (both also set on the parent's contact, where login credentials go), gender (m|f|o), birth_date, relationship_id, student_ids, status active|inactive, image, address {street, street2, city, zip, state_id, country_id} (top-level street/city/... keys also work), rte {category, annual_income, bpl_number, bpl_list_type, income_certificate_financial_year, income_certificate, category_certificate (file or null)}, documents {additional: [file | existing id]}, plus the Account & Security blocks. The example body sends every accepted key; send only the ones you want to change.",
+            "description": "The Edit Parent screen. Only the keys sent are changed; null or \"\" clears a value (name, phone/mobile, gender, relationship_id and student_ids cannot be cleared). Keys: name, email, phone (or mobile; both also set on the parent's contact, where login credentials go; another parent's number answers 409 parent_exists), gender, birth_date, relationship_id, student_ids (the whole list - Link New Student = the current ids plus the new one), status active|inactive, image (JPG/PNG max 1 MB), address (text or object), rte {...}, documents {aadhaar_card, pan_card, id_proof, additional}: each a list of files (base64 or {data, filename}, max 5 MB) and/or ids of files already there - the list becomes the whole set, files left out are deleted - plus the Account & Security blocks. \"draft\": true on a saved parent is an ordinary save (the Edit screen's Save Draft). The example sends every accepted key.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Sunita Patel\",\n  \"email\": \"sunita.p@school.test\",\n  \"mobile\": \"9800099944\",\n  \"gender\": \"f\",\n  \"birth_date\": \"1985-05-06\",\n  \"relationship_id\": 1,\n  \"student_ids\": [\n    12,\n    15\n  ],\n  \"status\": \"active\",\n  \"image\": \"<base64 JPG/PNG>\",\n  \"address\": {\n    \"street\": \"12 MG Road\",\n    \"street2\": \"Near City Park\",\n    \"city\": \"Pune\",\n    \"zip\": \"411001\",\n    \"state_id\": 596,\n    \"country_id\": 104\n  },\n  \"rte\": {\n    \"category\": \"sc\",\n    \"annual_income\": 95000,\n    \"bpl_number\": \"BPL-1\",\n    \"bpl_list_type\": \"state\",\n    \"income_certificate_financial_year\": \"2025-26\",\n    \"income_certificate\": {\n      \"data\": \"<base64 image or PDF>\",\n      \"filename\": \"income.pdf\"\n    },\n    \"category_certificate\": {\n      \"data\": \"<base64 image or PDF>\",\n      \"filename\": \"caste.pdf\"\n    }\n  },\n  \"documents\": {\n    \"additional\": [\n      {\n        \"data\": \"<base64 image or PDF>\",\n        \"filename\": \"address-proof.pdf\"\n      }\n    ]\n  },\n  \"account\": {\n    \"active\": true\n  }\n}"
+              "raw": "{\n  \"name\": \"Sunita Patel\",\n  \"email\": \"sunita.p@school.test\",\n  \"phone\": \"+91 98765 43210\",\n  \"gender\": \"f\",\n  \"birth_date\": \"1985-05-06\",\n  \"relationship_id\": 1,\n  \"student_ids\": [\n    12,\n    15\n  ],\n  \"status\": \"active\",\n  \"image\": \"<base64 JPG/PNG>\",\n  \"address\": \"789 Indiranagar, Bangalore, Karnataka\",\n  \"rte\": {\n    \"category\": \"sc\",\n    \"annual_income\": 95000,\n    \"bpl_number\": \"BPL-1\",\n    \"bpl_list_type\": \"state\",\n    \"income_certificate_financial_year\": \"2025-26\",\n    \"income_certificate\": {\n      \"data\": \"<base64 image or PDF>\",\n      \"filename\": \"income.pdf\"\n    },\n    \"category_certificate\": {\n      \"data\": \"<base64 image or PDF>\",\n      \"filename\": \"caste.pdf\"\n    }\n  },\n  \"documents\": {\n    \"aadhaar_card\": [\n      51\n    ],\n    \"pan_card\": [\n      {\n        \"data\": \"<base64 image or PDF, max 5 MB>\",\n        \"filename\": \"pan.pdf\"\n      }\n    ],\n    \"id_proof\": [],\n    \"additional\": [\n      52\n    ]\n  },\n  \"account\": {\n    \"active\": true\n  },\n  \"draft\": true\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Parent - Save Draft",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/parents",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "parents"
+              ]
+            },
+            "description": "\"Save Draft\" on the Add Parent screen: only name is required; every other key is checked if sent. A draft is kept archived with no login (out of List Parents), may have no linked student or relationship yet; account, face and id_verification answer 400 not_allowed_in_draft. Continue with Update Parent, finish with Complete Parent Draft or delete with Discard Parent Draft.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"draft\": true,\n  \"name\": \"Sanjay Sharma\",\n  \"phone\": \"+91 98765 43210\",\n  \"gender\": \"m\",\n  \"documents\": {\n    \"aadhaar_card\": [\n      {\n        \"data\": \"<base64 image or PDF, max 5 MB>\",\n        \"filename\": \"aadhaar.pdf\"\n      }\n    ]\n  }\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Parent Drafts",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/parents?draft=true&q=",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "parents"
+              ],
+              "query": [
+                {
+                  "key": "draft",
+                  "value": "true"
+                },
+                {
+                  "key": "q",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Office staff only: parent drafts saved with Save Draft."
+          },
+          "response": []
+        },
+        {
+          "name": "Complete Parent Draft",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/parents/:parent_id/update",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "parents",
+                ":parent_id",
+                "update"
+              ],
+              "variable": [
+                {
+                  "key": "parent_id",
+                  "value": "{{parent_id}}"
+                }
+              ]
+            },
+            "description": "\"draft\": false (with any other keys) completes a parent draft: every starred field of Create Parent must then be filled in (400 missing_<key>, nothing changes); the parent becomes active and gets a login (the email with a one-time password unless account says otherwise), returned once as credentials.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"draft\": false,\n  \"birth_date\": \"1986-07-02\",\n  \"email\": \"sanjay.sharma@school.test\",\n  \"address\": \"789 Indiranagar, Bangalore, Karnataka\",\n  \"relationship_id\": 1,\n  \"student_ids\": [\n    1\n  ],\n  \"account\": {\n    \"send_credentials\": true,\n    \"channel\": \"email\"\n  }\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Discard Parent Draft",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/parents/:parent_id/discard",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "parents",
+                ":parent_id",
+                "discard"
+              ],
+              "variable": [
+                {
+                  "key": "parent_id",
+                  "value": "{{parent_id}}"
+                }
+              ]
+            },
+            "description": "Deletes a parent draft and its files (400 not_a_draft for a saved parent).",
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
             }
           },
           "response": []

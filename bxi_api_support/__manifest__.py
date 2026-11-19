@@ -2,7 +2,7 @@
 
 {
     'name': 'Orbix API Support',
-    'version': '19.0.8.0.0',
+    'version': '19.0.9.0.0',
     'category': 'Education',
     'summary': 'REST API for the Orbix mobile app across every Orbix school process',
     'description': """
