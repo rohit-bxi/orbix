@@ -13,7 +13,7 @@ school's classes (op.course), so the app passes the eLearning class or
 section it wants."""
 import base64
 
-from odoo import http
+from odoo import fields, http
 from odoo.exceptions import AccessError, UserError
 from odoo.fields import Domain
 from odoo.http import request
@@ -45,6 +45,37 @@ def _pagination(kwargs):
     return limit, offset, None
 
 
+def _course_lessons(channel):
+    """The course's published lessons (not section headers), in order. sudo
+    keeps the caller's uid, so per-user completion still applies."""
+    return request.env['slide.slide'].sudo().search(
+        [('channel_id', '=', channel.id), ('website_published', '=', True), ('is_category', '=', False)],
+        order='sequence, id')
+
+
+def _reading(slide):
+    """The caller's progress record on a lesson (website_slides keeps one
+    per member and lesson), or an empty recordset."""
+    return request.env['slide.slide.partner'].sudo().search(
+        [('slide_id', '=', slide.id), ('partner_id', '=', request.env.user.partner_id.id)], limit=1)
+
+
+def _progress(channel):
+    """The Smart Books card: which chapter to continue ("Chapter 5 of 12")
+    and how long is left. None for a course the user has not joined."""
+    if not channel.is_member:
+        return None
+    lessons = _course_lessons(channel)
+    pending = lessons.filtered(lambda slide: not slide.user_has_completed)
+    current = pending[:1] or lessons[-1:]
+    return {
+        'chapter_index': list(lessons).index(current) + 1 if current else 0,
+        'chapter_count': len(lessons),
+        'current_lesson': {'id': current.id, 'name': current.name} if current else None,
+        'hours_left': round(sum(pending.mapped('completion_time')), 2),
+    }
+
+
 def _course_dict(channel):
     return {
         'id': channel.id,
@@ -62,6 +93,7 @@ def _course_dict(channel):
         'can_join': not channel.is_member and channel.enroll == 'public',
         'completion': channel.completion if channel.is_member else None,
         'has_image': bool(channel.image_128),
+        'progress': _progress(channel),
         'website_url': channel.website_url or None,
     }
 
@@ -80,7 +112,17 @@ def _lesson_dict(slide, content=False):
         'has_quiz': bool(slide.question_ids),
     }
     if content:
+        reading = _reading(slide)
+        lessons = _course_lessons(slide.channel_id)
+        index = list(lessons).index(slide) if slide in lessons else -1
         data.update({
+            'position': {
+                'page': reading.bxi_page or 0, 'total_pages': reading.bxi_total_pages or 0,
+                'percent': reading.bxi_percent or 0.0,
+            } if reading else None,
+            'previous_lesson': _ref(lessons[index - 1]) if index > 0 else None,
+            'next_lesson': _ref(lessons[index + 1]) if 0 <= index < len(lessons) - 1 else None,
+            'quiz_question_count': len(slide.question_ids),
             'description': slide.description or None,
             'url': slide.url or None,
             'html_content': slide.html_content or None if slide.slide_category == 'article' else None,
@@ -139,9 +181,13 @@ class BxiElearningApiController(http.Controller):
 
     @http.route('/api/v1/elearning/courses', type='http', auth='public', methods=['GET'], csrf=False)
     @require_auth
-    def courses(self, class_id=None, section_id=None, q=None, joined=None, **kwargs):
+    def courses(self, class_id=None, section_id=None, q=None, joined=None, tag_id=None, in_progress=None,
+                **kwargs):
         """?class_id= / ?section_id= (eLearning ids), ?q= (name), ?joined=1
-        (only courses the user has joined)."""
+        (only courses the user has joined), ?tag_id= (the Smart Books
+        subject chips), ?in_progress=1 ("Continue Reading": joined, started,
+        not finished). Joined courses carry `progress`: chapter_index of
+        chapter_count, current_lesson and hours_left."""
         limit, offset, error = _pagination(kwargs)
         if error:
             return error
@@ -156,7 +202,18 @@ class BxiElearningApiController(http.Controller):
             domain &= Domain('name', 'ilike', q)
         if joined in ('1', 'true', 'True'):
             domain &= Domain('is_member', '=', True)
+        if tag_id:
+            value, error = parse_int(tag_id, 'tag_id')
+            if error:
+                return error
+            domain &= Domain('tag_ids', 'in', [value])
         Channel = _visible_courses()
+        if in_progress in ('1', 'true', 'True'):
+            # completion is per user and not stored: filter after the search.
+            started = Channel.search(domain & Domain('is_member', '=', True), order='sequence, name, id').filtered(
+                lambda channel: 0 < channel.completion < 100)
+            return api_response({'courses': [_course_dict(c) for c in started[offset:offset + limit]]},
+                                meta={'total': len(started), 'limit': limit, 'offset': offset})
         channels = Channel.search(domain, limit=limit, offset=offset, order='sequence, name, id')
         return api_response({'courses': [_course_dict(c) for c in channels]},
                             meta={'total': Channel.search_count(domain), 'limit': limit, 'offset': offset})
@@ -253,3 +310,123 @@ class BxiElearningApiController(http.Controller):
         slide.invalidate_recordset()
         slide.channel_id.invalidate_recordset()
         return api_response(dict(_lesson_dict(slide), course=_course_dict(slide.channel_id)))
+
+    @http.route('/api/v1/elearning/lessons/<int:slide_id>/position', type='http', auth='public', methods=['POST'],
+                csrf=False)
+    @require_auth
+    def position(self, slide_id, **kwargs):
+        """Remember where the reader is in a lesson: {"page", "total_pages"}
+        or {"percent"} (0-100). Members only."""
+        slide, error = self._lesson(slide_id)
+        if error:
+            return error
+        if not slide.channel_id.is_member:
+            return api_error('Join the course to track progress.', status=403, code='join_required')
+        payload = request.get_json_data() if request.httprequest.data else {}
+        vals = {}
+        for key, field in (('page', 'bxi_page'), ('total_pages', 'bxi_total_pages')):
+            if key in payload:
+                value, error = parse_int(payload[key], key)
+                if error:
+                    return error
+                if value < 0:
+                    return api_error(f'{key} cannot be negative.', status=400, code=f'invalid_{key}')
+                vals[field] = value
+        if 'percent' in payload:
+            try:
+                percent = float(payload['percent'])
+            except (TypeError, ValueError):
+                return api_error('percent must be a number.', status=400, code='invalid_percent')
+            vals['bxi_percent'] = percent
+        elif vals.get('bxi_total_pages'):
+            vals['bxi_percent'] = 100.0 * vals.get('bxi_page', 0) / vals['bxi_total_pages']
+        if not vals:
+            return api_error('Send page and total_pages, or percent.', status=400, code='missing_position')
+        if not 0 <= vals.get('bxi_percent', 0) <= 100 or vals.get('bxi_page', 0) > (
+                vals.get('bxi_total_pages') or vals.get('bxi_page', 0)):
+            return api_error('The position is outside the lesson.', status=400, code='invalid_position')
+        reading = _reading(slide)
+        if not reading:
+            slide._action_set_viewed(request.env.user.partner_id)
+            reading = _reading(slide)
+        vals['bxi_position_date'] = fields.Datetime.now()
+        reading.write(vals)
+        return api_response(dict(_lesson_dict(slide, content=True), course=_ref(slide.channel_id)))
+
+    @http.route('/api/v1/elearning/lessons/<int:slide_id>/quiz', type='http', auth='public', methods=['GET'],
+                csrf=False)
+    @require_auth
+    def quiz(self, slide_id, **kwargs):
+        """The lesson's quiz (the reader's "Quick Check"): questions and
+        their answers. Which answer is correct is only shown once the
+        lesson is completed."""
+        slide, error = self._lesson(slide_id)
+        if error:
+            return error
+        if not slide.question_ids:
+            return api_error('This lesson has no quiz.', status=404, code='no_quiz')
+        done = slide.user_has_completed
+        reading = _reading(slide)
+        return api_response({
+            'lesson': _ref(slide),
+            'completed': done,
+            'attempts': reading.quiz_attempts_count if reading else 0,
+            'questions': [{
+                'id': question.id,
+                'question': question.question,
+                'answers': [{
+                    'id': answer.id, 'text': answer.text_value,
+                    'is_correct': answer.is_correct if done else None,
+                } for answer in question.sudo().answer_ids.sorted(lambda a: (a.sequence, a.id))],
+            } for question in slide.sudo().question_ids.sorted(lambda q: (q.sequence, q.id))],
+        })
+
+    @http.route('/api/v1/elearning/lessons/<int:slide_id>/quiz/submit', type='http', auth='public',
+                methods=['POST'], csrf=False)
+    @require_auth
+    def quiz_submit(self, slide_id, **kwargs):
+        """{"answer_ids": [one answer per question]}: scored as on the
+        eLearning website - all correct completes the lesson; otherwise the
+        student sees which answers were wrong and tries again. Members only."""
+        slide, error = self._lesson(slide_id)
+        if error:
+            return error
+        if not slide.channel_id.is_member:
+            return api_error('Join the course to take its quizzes.', status=403, code='join_required')
+        questions = slide.sudo().question_ids
+        if not questions:
+            return api_error('This lesson has no quiz.', status=404, code='no_quiz')
+        if slide.user_has_completed:
+            return api_error('This quiz is already passed.', status=409, code='quiz_done')
+        payload = request.get_json_data() if request.httprequest.data else {}
+        raw = payload.get('answer_ids')
+        if not isinstance(raw, list):
+            return api_error('answer_ids must be a list.', status=400, code='invalid_answer_ids')
+        ids = []
+        for value in raw:
+            answer_id, error = parse_int(value, 'answer_ids')
+            if error:
+                return error
+            ids.append(answer_id)
+        answers = request.env['slide.answer'].sudo().browse(ids).exists()
+        if len(answers) != len(set(ids)) or answers.question_id - questions:
+            return api_error('Some answers are not part of this quiz.', status=400, code='invalid_answer_ids')
+        if answers.question_id != questions or len(answers) != len(questions):
+            return api_error('Answer every question, once each.', status=400, code='quiz_incomplete')
+        slide._action_set_viewed(request.env.user.partner_id, quiz_attempts_inc=True)
+        wrong = answers.filtered(lambda answer: not answer.is_correct)
+        if not wrong:
+            slide._action_mark_completed()
+        slide.invalidate_recordset()
+        slide.channel_id.invalidate_recordset()
+        return api_response({
+            'passed': not wrong,
+            'score': {'correct': len(answers) - len(wrong), 'total': len(questions)},
+            'answers': [{
+                'question_id': answer.question_id.id, 'answer_id': answer.id,
+                'is_correct': answer.is_correct, 'comment': answer.comment or None,
+            } for answer in answers],
+            'completed': slide.user_has_completed,
+            'attempts': _reading(slide).quiz_attempts_count,
+            'course_completion': slide.channel_id.completion,
+        })
