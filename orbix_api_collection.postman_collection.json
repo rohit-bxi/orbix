@@ -4375,7 +4375,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/api/v1/academic/smart-books?",
+              "raw": "{{base_url}}/api/v1/academic/smart-books",
               "host": [
                 "{{base_url}}"
               ],
