@@ -1045,7 +1045,7 @@
                 }
               ]
             },
-            "description": "Requires auth. date_from/date_to are optional (default range applies if omitted). A student signed in to the app may leave student_id out: it defaults to their own record."
+            "description": "Requires auth. date_from/date_to are optional (default range applies if omitted). A student signed in to the app may leave student_id out: it defaults to their own record. Also subjects [{subject, teacher, present, total, percentage}], previous_period {attendance_percentage, change} and a remark per day (absence reason)."
           },
           "response": []
         },
@@ -1080,7 +1080,7 @@
                 }
               ]
             },
-            "description": "Requires auth. date_from/date_to are optional. A student signed in to the app may leave student_id out: it defaults to their own record."
+            "description": "Requires auth. date_from/date_to are optional. A student signed in to the app may leave student_id out: it defaults to their own record. Each period has is_holiday, and holidays lists the closures."
           },
           "response": []
         },
@@ -1108,6 +1108,45 @@
               ]
             },
             "description": "Requires auth. Combined attendance %, upcoming sessions, latest exam result. A student signed in to the app may leave student_id out: it defaults to their own record."
+          },
+          "response": []
+        },
+        {
+          "name": "Export Timetable (.ics)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/parent/timetable/export",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "parent",
+                "timetable",
+                "export"
+              ],
+              "query": [
+                {
+                  "key": "student_id",
+                  "value": "{{student_id}}",
+                  "disabled": true
+                },
+                {
+                  "key": "date_from",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "date_to",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "The timetable as an iCalendar file for the phone calendar; default the next 7 days, at most 120; holiday periods left out."
           },
           "response": []
         }
@@ -1393,7 +1432,7 @@
                 }
               ]
             },
-            "description": "Requires auth."
+            "description": "Requires auth. ?q= searches questions and answers."
           },
           "response": []
         },
@@ -1511,6 +1550,27 @@
               "mode": "raw",
               "raw": "{\n  \"body\": \"Any update on this?\"\n}"
             }
+          },
+          "response": []
+        },
+        {
+          "name": "Support Contact & Hours",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/support/contact",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "support",
+                "contact"
+              ]
+            },
+            "description": "email, phone, live_chat (opens a ticket), weekly hours and currently_open, from the company form tab \"Help & Support\"."
           },
           "response": []
         }
@@ -10973,7 +11033,7 @@
                 }
               ]
             },
-            "description": "Inbox, newest first; meta.unread has the unread count."
+            "description": "Inbox, newest first; meta.unread has the unread count. ?tab=assignments|exams|announcements|achievements|system; each notification has tab and urgent."
           },
           "response": []
         },
@@ -11064,6 +11124,27 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "Notification Counts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/notifications/counts",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "notifications",
+                "counts"
+              ]
+            },
+            "description": "Tab counts {assignments, exams, announcements, achievements, system}, all, unread and quick_actions {urgent, achievements, assignments_due_soon, completed_tasks}."
+          },
+          "response": []
         }
       ]
     },
@@ -11097,7 +11178,7 @@
                 }
               ]
             },
-            "description": "Published homework for the student, each with my_submission. state=pending: not yet submitted."
+            "description": "Published homework for the student, each with my_submission. state=pending: not yet submitted. Student app: a student login (or one-child parent) may leave student_id out; each task has task_status (overdue, due_today, upcoming, completed) and the response has counts {total, completed, pending, overdue, due_today, upcoming}; filters subject_id, due=today|week, status=."
           },
           "response": []
         },
@@ -13594,7 +13675,7 @@
                 }
               ]
             },
-            "description": "Holidays, exams, events and PTMs on one timeline (default: next 90 days)."
+            "description": "Holidays, exams, events and PTMs on one timeline (default: next 90 days). Also homework deadlines (type assignment) and online tests (type assessment); a student login may leave student_id out."
           },
           "response": []
         },
@@ -18644,7 +18725,7 @@
                 }
               ]
             },
-            "description": "Courses the signed-in user may see. Filters: class_id, section_id (eLearning ids), q, joined=1."
+            "description": "Courses the signed-in user may see. Filters: class_id, section_id (eLearning ids), q, joined=1. ?tag_id= (subject chips), ?in_progress=1 (Continue Reading); joined courses have progress {chapter_index, chapter_count, current_lesson, hours_left}."
           },
           "response": []
         },
@@ -18778,6 +18859,1452 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "Lesson Quiz",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/elearning/lessons/:slide_id/quiz",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "elearning",
+                "lessons",
+                ":slide_id",
+                "quiz"
+              ],
+              "variable": [
+                {
+                  "key": "slide_id",
+                  "value": "{{slide_id}}"
+                }
+              ]
+            },
+            "description": "The lesson's Quick Check: questions and answers; is_correct shown only once passed."
+          },
+          "response": []
+        },
+        {
+          "name": "Submit Lesson Quiz",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/elearning/lessons/:slide_id/quiz/submit",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "elearning",
+                "lessons",
+                ":slide_id",
+                "quiz",
+                "submit"
+              ],
+              "variable": [
+                {
+                  "key": "slide_id",
+                  "value": "{{slide_id}}"
+                }
+              ]
+            },
+            "description": "{\"answer_ids\": [one per question]}: all correct completes the lesson; otherwise shows which answers were wrong (with the teacher's comment). 409 quiz_done once passed.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"answer_ids\": [\n    1\n  ]\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Save Reading Position",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/elearning/lessons/:slide_id/position",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "elearning",
+                "lessons",
+                ":slide_id",
+                "position"
+              ],
+              "variable": [
+                {
+                  "key": "slide_id",
+                  "value": "{{slide_id}}"
+                }
+              ]
+            },
+            "description": "{\"page\", \"total_pages\"} or {\"percent\"}; shown again on the lesson as `position`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"page\": 1,\n  \"total_pages\": 45\n}"
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Student App (bxi_api_support)",
+      "item": [
+        {
+          "name": "Student Home",
+          "item": [
+            {
+              "name": "Student Dashboard",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/student/dashboard",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "student",
+                    "dashboard"
+                  ],
+                  "query": [
+                    {
+                      "key": "student_id",
+                      "value": "{{student_id}}",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "The student home screen in one call: student (class, section, roll, year), attendance this month (percentage, label excellent/good/needs_attention), homework counts, timetable (classes today, next_class with is_live), books (smart books joined, digital library, reading now, completed), careers (top 4), recent_tests (exam marks and graded online tests), doubts (open, solved today, latest question) and the latest 3 community posts. A student login (or a one-child parent) may leave student_id out."
+              },
+              "response": []
+            },
+            {
+              "name": "Career Recommendations",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/student/careers",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "student",
+                    "careers"
+                  ],
+                  "query": [
+                    {
+                      "key": "student_id",
+                      "value": "{{student_id}}",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "Rule-based (no AI service): each career's match % is the weighted average of the student's own results in the subjects it leans on (Student App > Configuration > Careers). Returns careers [{name, description, icon, demand, match, matched_subjects}] and the subject `scores` behind them."
+              },
+              "response": []
+            },
+            {
+              "name": "Study Tips (Work Areas)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/student/study-tips",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "student",
+                    "study-tips"
+                  ],
+                  "query": [
+                    {
+                      "key": "student_id",
+                      "value": "{{student_id}}",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "The Smart Calendar's Work Areas: exam_revision (exams in the next 7 days), weak_area (lowest subject under 75%), homework_due (within 2 days) and study_time (after today's last class). Each tip has a ready-made `text`."
+              },
+              "response": []
+            },
+            {
+              "name": "School Info (About)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/school/info",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "school",
+                    "info"
+                  ]
+                },
+                "description": "The Info page: title, tagline, mission (HTML), image_url, live stats (students, teachers, parents, success_rate), core values and team. Edited on the company form, tab \"App Info Page\"."
+              },
+              "response": []
+            },
+            {
+              "name": "School Info Image",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/school/info/image",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "school",
+                    "info",
+                    "image"
+                  ]
+                },
+                "description": "The About picture (file)."
+              },
+              "response": []
+            },
+            {
+              "name": "Team Member Image",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/school/team/:member_id/image",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "school",
+                    "team",
+                    ":member_id",
+                    "image"
+                  ],
+                  "variable": [
+                    {
+                      "key": "member_id",
+                      "value": "{{member_id}}"
+                    }
+                  ]
+                },
+                "description": "A team member's photo (file)."
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Study Notes",
+          "item": [
+            {
+              "name": "List Notes",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/notes",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "notes"
+                  ],
+                  "query": [
+                    {
+                      "key": "subject_id",
+                      "value": "",
+                      "disabled": true
+                    },
+                    {
+                      "key": "q",
+                      "value": "",
+                      "disabled": true
+                    },
+                    {
+                      "key": "bookmarked",
+                      "value": "1",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "Student / parent: subjects (chips with counts), announcement (latest pinned notice), today (published today) and recent (paginated). Filters: subject_id, q, bookmarked=1. Teacher: own notes (coordinators: all), ?state=draft|published."
+              },
+              "response": []
+            },
+            {
+              "name": "Get Note",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/notes/:note_id",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "notes",
+                    ":note_id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "note_id",
+                      "value": "{{note_id}}"
+                    }
+                  ]
+                },
+                "description": "Note Details: content (HTML), key_points, attachments, related notes, comment_count, bookmarked."
+              },
+              "response": []
+            },
+            {
+              "name": "Download Note PDF",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/notes/:note_id/pdf",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "notes",
+                    ":note_id",
+                    "pdf"
+                  ],
+                  "variable": [
+                    {
+                      "key": "note_id",
+                      "value": "{{note_id}}"
+                    }
+                  ]
+                },
+                "description": "The note as a PDF file."
+              },
+              "response": []
+            },
+            {
+              "name": "Download Note Attachment",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/notes/:note_id/attachments/:attachment_id",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "notes",
+                    ":note_id",
+                    "attachments",
+                    ":attachment_id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "note_id",
+                      "value": "{{note_id}}"
+                    },
+                    {
+                      "key": "attachment_id",
+                      "value": "{{attachment_id}}"
+                    }
+                  ]
+                },
+                "description": "A note file."
+              },
+              "response": []
+            },
+            {
+              "name": "Bookmark Note",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/notes/:note_id/bookmark",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "notes",
+                    ":note_id",
+                    "bookmark"
+                  ],
+                  "variable": [
+                    {
+                      "key": "note_id",
+                      "value": "{{note_id}}"
+                    }
+                  ]
+                },
+                "description": "{\"bookmarked\": true|false}; without it, toggles.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"bookmarked\": true\n}"
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "List Note Comments",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/notes/:note_id/comments",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "notes",
+                    ":note_id",
+                    "comments"
+                  ],
+                  "variable": [
+                    {
+                      "key": "note_id",
+                      "value": "{{note_id}}"
+                    }
+                  ]
+                },
+                "description": "Top-level comments with their replies, likes and whether the caller liked each."
+              },
+              "response": []
+            },
+            {
+              "name": "Add Note Comment",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/notes/:note_id/comments",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "notes",
+                    ":note_id",
+                    "comments"
+                  ],
+                  "variable": [
+                    {
+                      "key": "note_id",
+                      "value": "{{note_id}}"
+                    }
+                  ]
+                },
+                "description": "{\"body\", \"parent_id\"? (reply)}.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"body\": \"This explanation is really helpful!\"\n}"
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Like Note Comment",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/notes/comments/:comment_id/like",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "notes",
+                    "comments",
+                    ":comment_id",
+                    "like"
+                  ],
+                  "variable": [
+                    {
+                      "key": "comment_id",
+                      "value": "{{comment_id}}"
+                    }
+                  ]
+                },
+                "description": "Toggles the caller's like.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{}"
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Create Note (teacher)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/notes",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "notes"
+                  ]
+                },
+                "description": "Teachers (own) and coordinators: title, subject_id, class_id required; section_ids (empty = whole class), chapter, priority normal|high, tags (names), summary, key_points (list), content (HTML), attachments [base64 | {data, filename}], publish (default true: the class is notified).",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Quadratic Equations\",\n  \"subject_id\": \"{{subject_id}}\",\n  \"class_id\": \"{{course_id}}\",\n  \"section_ids\": [],\n  \"chapter\": \"Chapter 8\",\n  \"priority\": \"high\",\n  \"tags\": [\n    \"Exam Topic\"\n  ],\n  \"summary\": \"Standard form and the quadratic formula\",\n  \"key_points\": [\n    \"Standard form: ax2 + bx + c = 0\",\n    \"Discriminant: b2 - 4ac\"\n  ],\n  \"content\": \"<p>A quadratic equation is...</p>\",\n  \"publish\": true\n}"
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Update Note (teacher)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/notes/:note_id/update",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "notes",
+                    ":note_id",
+                    "update"
+                  ],
+                  "variable": [
+                    {
+                      "key": "note_id",
+                      "value": "{{note_id}}"
+                    }
+                  ]
+                },
+                "description": "Any create key; attachments is the whole list (ids to keep plus new files); publish true/false.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"priority\": \"normal\",\n  \"publish\": true\n}"
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Delete Note (teacher)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/notes/:note_id/delete",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "notes",
+                    ":note_id",
+                    "delete"
+                  ],
+                  "variable": [
+                    {
+                      "key": "note_id",
+                      "value": "{{note_id}}"
+                    }
+                  ]
+                },
+                "description": "Archives the note.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{}"
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Doubts (Ask Your Tutor)",
+          "item": [
+            {
+              "name": "List Doubts",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/doubts",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "doubts"
+                  ],
+                  "query": [
+                    {
+                      "key": "state",
+                      "value": "open",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "Student / parent: their doubts with counts {open, answered, solved_today}. Teacher: doubts assigned to them (coordinators: all). ?state=open|answered|closed."
+              },
+              "response": []
+            },
+            {
+              "name": "Ask a Doubt",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/doubts",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "doubts"
+                  ]
+                },
+                "description": "Student login only: {\"question\", \"subject_id\"?, \"attachments\"?}. Routed to the subject teacher of the class (Subject Mapping), else the class teacher, who is notified. No external AI.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"question\": \"How to solve quadratic equations?\",\n  \"subject_id\": \"{{subject_id}}\"\n}"
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Doubt",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/doubts/:doubt_id",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "doubts",
+                    ":doubt_id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "doubt_id",
+                      "value": "{{doubt_id}}"
+                    }
+                  ]
+                },
+                "description": "The doubt and its answer."
+              },
+              "response": []
+            },
+            {
+              "name": "Answer Doubt (teacher)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/doubts/:doubt_id/answer",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "doubts",
+                    ":doubt_id",
+                    "answer"
+                  ],
+                  "variable": [
+                    {
+                      "key": "doubt_id",
+                      "value": "{{doubt_id}}"
+                    }
+                  ]
+                },
+                "description": "The assigned teacher or a coordinator: {\"answer\"}. The student and parents are notified.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"answer\": \"Use the quadratic formula: x = (-b +/- sqrt(b2 - 4ac)) / 2a.\"\n}"
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Student Community",
+          "item": [
+            {
+              "name": "List Community Posts",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/community/posts",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "community",
+                    "posts"
+                  ],
+                  "query": [
+                    {
+                      "key": "section_id",
+                      "value": "",
+                      "disabled": true
+                    },
+                    {
+                      "key": "kind",
+                      "value": "",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "The student's own section only, newest first. Teachers: their sections (?section_id=), coordinators: all; moderators also see hidden posts. ?kind=discussion|notes|question."
+              },
+              "response": []
+            },
+            {
+              "name": "Create Community Post",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/community/posts",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "community",
+                    "posts"
+                  ]
+                },
+                "description": "Students only, to their own section: {\"kind\", \"title\", \"body\"?, \"attachments\"?}.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"kind\": \"discussion\",\n  \"title\": \"Math Study Group\",\n  \"body\": \"Who wants to revise chapter 8?\"\n}"
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Community Post",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/community/posts/:post_id",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "community",
+                    "posts",
+                    ":post_id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "post_id",
+                      "value": "{{post_id}}"
+                    }
+                  ]
+                },
+                "description": "The post with its replies."
+              },
+              "response": []
+            },
+            {
+              "name": "Reply to Post",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/community/posts/:post_id/replies",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "community",
+                    "posts",
+                    ":post_id",
+                    "replies"
+                  ],
+                  "variable": [
+                    {
+                      "key": "post_id",
+                      "value": "{{post_id}}"
+                    }
+                  ]
+                },
+                "description": "Students of the section and its teachers: {\"body\"}. The author is notified.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"body\": \"Count me in!\"\n}"
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Like Post",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/community/posts/:post_id/like",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "community",
+                    "posts",
+                    ":post_id",
+                    "like"
+                  ],
+                  "variable": [
+                    {
+                      "key": "post_id",
+                      "value": "{{post_id}}"
+                    }
+                  ]
+                },
+                "description": "Toggles the caller's like.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{}"
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Report Post",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/community/posts/:post_id/report",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "community",
+                    "posts",
+                    ":post_id",
+                    "report"
+                  ],
+                  "variable": [
+                    {
+                      "key": "post_id",
+                      "value": "{{post_id}}"
+                    }
+                  ]
+                },
+                "description": "{\"reason\"?}: once per person; 3 reports hide the post until a teacher reviews it.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"reason\": \"Off-topic\"\n}"
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Hide Post (teacher)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/community/posts/:post_id/hide",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "community",
+                    "posts",
+                    ":post_id",
+                    "hide"
+                  ],
+                  "variable": [
+                    {
+                      "key": "post_id",
+                      "value": "{{post_id}}"
+                    }
+                  ]
+                },
+                "description": "The section's teachers (timetable, class teacher or Subject Mapping) and coordinators: {\"reason\"?}.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"reason\": \"Not appropriate\"\n}"
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Unhide Post (teacher)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/community/posts/:post_id/unhide",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "community",
+                    "posts",
+                    ":post_id",
+                    "unhide"
+                  ],
+                  "variable": [
+                    {
+                      "key": "post_id",
+                      "value": "{{post_id}}"
+                    }
+                  ]
+                },
+                "description": "Shows the post again and clears its reports.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{}"
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Digital Library",
+          "item": [
+            {
+              "name": "Digital Library Home",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/library/digital",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "library",
+                    "digital"
+                  ],
+                  "query": [
+                    {
+                      "key": "student_id",
+                      "value": "{{student_id}}",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "stats {total_books, completed, reading_now, day_streak}, categories (books per genre), continue_reading (with progress), trending (most issued and read in 7 days) and recommendations (class-subject or favourite-genre books not started, with a reason)."
+              },
+              "response": []
+            },
+            {
+              "name": "Save Reading Progress",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/library/catalog/:media_id/progress",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "library",
+                    "catalog",
+                    ":media_id",
+                    "progress"
+                  ],
+                  "variable": [
+                    {
+                      "key": "media_id",
+                      "value": "{{media_id}}"
+                    }
+                  ]
+                },
+                "description": "{\"percent\"} or {\"current_page\", \"total_pages\"}, plus \"chapter\"?. Counts today for the streak.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"current_page\": 13,\n  \"total_pages\": 20,\n  \"chapter\": \"Chapter 5: Quadratic Equations\"\n}"
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "My Reading List",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/library/reading-list",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "library",
+                    "reading-list"
+                  ]
+                },
+                "description": "Books on the reading list, with progress."
+              },
+              "response": []
+            },
+            {
+              "name": "Add / Remove Reading List",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/library/reading-list/:media_id",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "library",
+                    "reading-list",
+                    ":media_id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "media_id",
+                      "value": "{{media_id}}"
+                    }
+                  ]
+                },
+                "description": "{\"add\": true|false}; without it, toggles.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"add\": true\n}"
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Download Book File",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/library/catalog/:media_id/file",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "library",
+                    "catalog",
+                    ":media_id",
+                    "file"
+                  ],
+                  "variable": [
+                    {
+                      "key": "media_id",
+                      "value": "{{media_id}}"
+                    }
+                  ]
+                },
+                "description": "The digital copy (first PDF file of the catalogue entry); 404 no_file when there is none."
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Admission Application",
+          "item": [
+            {
+              "name": "My Applications",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/admissions/applications",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admissions",
+                    "applications"
+                  ]
+                },
+                "description": "The caller's applications, drafts included, with steps, percent_complete, documents, missing and can_submit."
+              },
+              "response": []
+            },
+            {
+              "name": "Start Application (Personal)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/admissions/applications",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admissions",
+                    "applications"
+                  ]
+                },
+                "description": "A draft from step 1: register_id (an open intake), first_name, last_name, birth_date, email, gender (m/f/o) required; middle_name, mobile, phone, street, street2, city, zip, state_id, country_id optional.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"register_id\": \"{{register_id}}\",\n  \"first_name\": \"Alex\",\n  \"last_name\": \"Johnson\",\n  \"birth_date\": \"2012-04-05\",\n  \"email\": \"alex@example.com\",\n  \"gender\": \"m\",\n  \"mobile\": \"9800000001\"\n}"
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Application",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/admissions/applications/:admission_id",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admissions",
+                    "applications",
+                    ":admission_id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "admission_id",
+                      "value": "{{admission_id}}"
+                    }
+                  ]
+                },
+                "description": "One application."
+              },
+              "response": []
+            },
+            {
+              "name": "Save Application Step",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/admissions/applications/:admission_id/update",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admissions",
+                    "applications",
+                    ":admission_id",
+                    "update"
+                  ],
+                  "variable": [
+                    {
+                      "key": "admission_id",
+                      "value": "{{admission_id}}"
+                    }
+                  ]
+                },
+                "description": "Save Draft / Continue: personal and academic fields (prev_institute_id, prev_course_id, prev_result, family_business, family_income), documents {transcripts, test_scores, recommendations (2 needed), id_proof, additional: [ids to keep | base64 | {data, filename}]} (PDF/JPG/PNG, 5 MB each), statement, step. Drafts only.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"prev_institute_id\": \"Green Valley School\",\n  \"prev_course_id\": \"Class 8\",\n  \"prev_result\": \"A\",\n  \"documents\": {\n    \"transcripts\": [\n      {\n        \"data\": \"JVBERi0xLjQK...base64...\",\n        \"filename\": \"transcript.pdf\"\n      }\n    ]\n  },\n  \"statement\": \"Why I want to join...\",\n  \"step\": \"documents\"\n}"
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Submit Application",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/admissions/applications/:admission_id/submit",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admissions",
+                    "applications",
+                    ":admission_id",
+                    "submit"
+                  ],
+                  "variable": [
+                    {
+                      "key": "admission_id",
+                      "value": "{{admission_id}}"
+                    }
+                  ]
+                },
+                "description": "Review > Submit; 400 incomplete with the missing steps and fields.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{}"
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Discard Application",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/admissions/applications/:admission_id/discard",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admissions",
+                    "applications",
+                    ":admission_id",
+                    "discard"
+                  ],
+                  "variable": [
+                    {
+                      "key": "admission_id",
+                      "value": "{{admission_id}}"
+                    }
+                  ]
+                },
+                "description": "Deletes a draft and its files.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{}"
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Download Application Document",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/admissions/applications/:admission_id/documents/:attachment_id",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admissions",
+                    "applications",
+                    ":admission_id",
+                    "documents",
+                    ":attachment_id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "admission_id",
+                      "value": "{{admission_id}}"
+                    },
+                    {
+                      "key": "attachment_id",
+                      "value": "{{attachment_id}}"
+                    }
+                  ]
+                },
+                "description": "One uploaded document."
+              },
+              "response": []
+            }
+          ]
         }
       ]
     }
@@ -19159,6 +20686,30 @@
     },
     {
       "key": "exam_schedule_id",
+      "value": "1"
+    },
+    {
+      "key": "note_id",
+      "value": "1"
+    },
+    {
+      "key": "comment_id",
+      "value": "1"
+    },
+    {
+      "key": "doubt_id",
+      "value": "1"
+    },
+    {
+      "key": "post_id",
+      "value": "1"
+    },
+    {
+      "key": "member_id",
+      "value": "1"
+    },
+    {
+      "key": "slide_id",
       "value": "1"
     }
   ]

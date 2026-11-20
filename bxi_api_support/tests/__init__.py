@@ -50,3 +50,4 @@ from . import test_exam_schedule_api
 from . import test_ptm_screen_api
 from . import test_holiday_screen_api
 from . import test_lesson_plan_screen_api
+from . import test_student_app_api

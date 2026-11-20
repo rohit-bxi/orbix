@@ -3,8 +3,11 @@
 # License OPL-1 (Odoo Proprietary License v1.0, see LICENSE file for full text).
 """School calendar: public holidays (resource.calendar.leaves without a
 resource - the school-wide closures bxi_academic_management manages) and,
-per student, holidays + exams + events + PTMs on one timeline."""
+per student, holidays + exams + events + PTMs + homework deadlines +
+online tests on one timeline."""
 from datetime import datetime, time, timedelta
+
+import pytz
 
 from odoo import fields, http
 from odoo.fields import Domain
@@ -13,7 +16,7 @@ from odoo.http import request
 from odoo.addons.bxi_api.controllers.auth import api_error, api_response, require_auth
 
 from .academic_admin import _holiday_dict
-from .common import date_str, get_viewable_student, running_enrollment
+from .common import date_str, get_app_student, running_enrollment
 from .event import _visible_domain as visible_events_domain
 
 DEFAULT_RANGE_DAYS = 90
@@ -56,8 +59,10 @@ class BxiApiSupportCalendarController(http.Controller):
     @require_auth
     def calendar(self, student_id=None, date_from=None, date_to=None, **kwargs):
         """Everything on the student's calendar between date_from and
-        date_to (default: the next 90 days), sorted by start."""
-        student, error = get_viewable_student(request.env, student_id)
+        date_to (default: the next 90 days), sorted by start: holiday, exam,
+        ptm, event, assignment (homework due) and assessment (online test).
+        A student's own login may leave student_id out."""
+        student, error = get_app_student(request.env, student_id)
         if error:
             return error
         try:
@@ -84,6 +89,28 @@ class BxiApiSupportCalendarController(http.Controller):
             meetings = meetings.filtered(lambda m: m._bxi_covers(enrollment.course_id, enrollment.batch_id))
             items += [_item('ptm', m.id, m.name, m.start_datetime, m.end_datetime, venue=m.venue)
                       for m in meetings]
+
+        # Homework due in the range (the Smart Calendar's "History Essay").
+        assignments = request.env['op.assignment'].sudo().search([
+            ('allocation_ids', 'in', student.id), ('state', 'in', ('publish', 'finish')),
+            ('submission_date', '>=', start), ('submission_date', '<=', end)])
+        items += [_item('assignment', a.id, a.name, a.submission_date, a.submission_date,
+                        subject=a.subject_id.name or None) for a in assignments]
+
+        # Online tests (bxi_assessment_hub) the student is assigned to.
+        if 'bxi.assessment.session' in request.env:
+            tz = pytz.timezone(request.env.user.tz or request.env.company.sudo().resource_calendar_id.tz or 'UTC')
+            sessions = request.env['bxi.assessment.session'].sudo().search([
+                ('student_ids', 'in', student.id), ('state', '!=', 'cancelled'),
+                ('exam_date', '>=', start.date()), ('exam_date', '<=', end.date())])
+            for session in sessions:
+                hours = int(session.exam_time)
+                local = tz.localize(datetime.combine(
+                    session.exam_date, time(hours, int(round((session.exam_time - hours) * 60)) % 60)))
+                begin = local.astimezone(pytz.utc).replace(tzinfo=None)
+                items.append(_item('assessment', session.id, session.exam_id.name, begin,
+                                   begin + timedelta(minutes=session.exam_id.duration or 60),
+                                   subject=session.exam_id.subject_id.name or None))
 
         events = request.env['event.event'].sudo().search(Domain.AND([
             visible_events_domain(request.env),
