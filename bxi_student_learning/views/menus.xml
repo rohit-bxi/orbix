@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_student_app_root" name="Student App"
+              parent="openeducat_core.menu_op_school_root" sequence="7"
+              groups="openeducat_core.group_op_faculty,openeducat_core.group_op_back_office_admin,bxi_academic_management.group_academic_coordinator,bxi_academic_management.group_academic_manager"/>
+
+    <menuitem id="menu_study_note" name="Study Notes" parent="menu_student_app_root"
+              action="action_study_note" sequence="10"/>
+    <menuitem id="menu_student_doubt" name="Student Doubts" parent="menu_student_app_root"
+              action="action_student_doubt" sequence="20"/>
+    <menuitem id="menu_community_post" name="Student Community" parent="menu_student_app_root"
+              action="action_community_post" sequence="30"/>
+    <menuitem id="menu_student_app_config" name="Configuration" parent="menu_student_app_root" sequence="90"
+              groups="openeducat_core.group_op_back_office_admin,bxi_academic_management.group_academic_manager"/>
+    <menuitem id="menu_career" name="Careers" parent="menu_student_app_config" action="action_career"
+              sequence="10"/>
+    <menuitem id="menu_study_note_tag" name="Note Tags" parent="menu_student_app_config"
+              action="action_study_note_tag" sequence="20"/>
+</odoo>

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- The online application's statement and documents, for the office. -->
+    <record id="view_op_admission_form_bxi_application" model="ir.ui.view">
+        <field name="name">op.admission.form.bxi.application</field>
+        <field name="model">op.admission</field>
+        <field name="inherit_id" ref="openeducat_admission.view_op_admission_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='admission_detail']" position="after">
+                <page name="bxi_online_application" string="Online Application">
+                    <group>
+                        <group>
+                            <field name="bxi_applicant_user_id"/>
+                            <field name="bxi_step"/>
+                        </group>
+                    </group>
+                    <label for="bxi_statement"/>
+                    <field name="bxi_statement"/>
+                    <group string="Documents">
+                        <field name="bxi_transcript_ids" widget="many2many_binary"/>
+                        <field name="bxi_test_score_ids" widget="many2many_binary"/>
+                        <field name="bxi_recommendation_ids" widget="many2many_binary"/>
+                        <field name="bxi_id_proof_ids" widget="many2many_binary"/>
+                        <field name="bxi_additional_ids" widget="many2many_binary"/>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- Starter careers for the dashboard's Career Recommendations. Each
+         subject keyword is matched in the school's subject names; the
+         school edits, adds or archives careers in Student App > Careers. -->
+    <record id="career_design" model="bxi.career">
+        <field name="name">Design / Multimedia</field>
+        <field name="icon">palette</field>
+        <field name="demand">growing</field>
+        <field name="sequence">10</field>
+        <field name="description">Graphic, product and digital design, animation and media.</field>
+        <field name="subject_line_ids" eval="[(0, 0, {'keyword': 'Art', 'weight': 3}),
+                                              (0, 0, {'keyword': 'Computer', 'weight': 2}),
+                                              (0, 0, {'keyword': 'English', 'weight': 1})]"/>
+    </record>
+    <record id="career_lawyer" model="bxi.career">
+        <field name="name">Lawyer</field>
+        <field name="icon">scale</field>
+        <field name="demand">growing</field>
+        <field name="sequence">20</field>
+        <field name="description">Law, policy and public service; strong reading, writing and argument.</field>
+        <field name="subject_line_ids" eval="[(0, 0, {'keyword': 'English', 'weight': 3}),
+                                              (0, 0, {'keyword': 'History', 'weight': 2}),
+                                              (0, 0, {'keyword': 'Civics', 'weight': 2}),
+                                              (0, 0, {'keyword': 'Political', 'weight': 2})]"/>
+    </record>
+    <record id="career_healthcare" model="bxi.career">
+        <field name="name">Healthcare / Doctor</field>
+        <field name="icon">heart</field>
+        <field name="demand">high</field>
+        <field name="sequence">30</field>
+        <field name="description">Medicine, nursing, pharmacy and allied health.</field>
+        <field name="subject_line_ids" eval="[(0, 0, {'keyword': 'Biology', 'weight': 3}),
+                                              (0, 0, {'keyword': 'Chemistry', 'weight': 3}),
+                                              (0, 0, {'keyword': 'Science', 'weight': 2}),
+                                              (0, 0, {'keyword': 'Physics', 'weight': 1})]"/>
+    </record>
+    <record id="career_technical" model="bxi.career">
+        <field name="name">Technical / Engineering</field>
+        <field name="icon">code</field>
+        <field name="demand">high</field>
+        <field name="sequence">40</field>
+        <field name="description">Engineering, software and technology.</field>
+        <field name="subject_line_ids" eval="[(0, 0, {'keyword': 'Math', 'weight': 3}),
+                                              (0, 0, {'keyword': 'Physics', 'weight': 3}),
+                                              (0, 0, {'keyword': 'Computer', 'weight': 2}),
+                                              (0, 0, {'keyword': 'Science', 'weight': 1})]"/>
+    </record>
+    <record id="career_ca" model="bxi.career">
+        <field name="name">Chartered Accountant</field>
+        <field name="icon">bank</field>
+        <field name="demand">high</field>
+        <field name="sequence">50</field>
+        <field name="description">Accounting, audit, tax and finance.</field>
+        <field name="subject_line_ids" eval="[(0, 0, {'keyword': 'Account', 'weight': 3}),
+                                              (0, 0, {'keyword': 'Math', 'weight': 2}),
+                                              (0, 0, {'keyword': 'Economics', 'weight': 2}),
+                                              (0, 0, {'keyword': 'Commerce', 'weight': 2})]"/>
+    </record>
+    <record id="career_research" model="bxi.career">
+        <field name="name">Scientist / Researcher</field>
+        <field name="icon">flask</field>
+        <field name="demand">stable</field>
+        <field name="sequence">60</field>
+        <field name="description">Research in the natural sciences.</field>
+        <field name="subject_line_ids" eval="[(0, 0, {'keyword': 'Physics', 'weight': 2}),
+                                              (0, 0, {'keyword': 'Chemistry', 'weight': 2}),
+                                              (0, 0, {'keyword': 'Biology', 'weight': 2}),
+                                              (0, 0, {'keyword': 'Math', 'weight': 1})]"/>
+    </record>
+    <record id="career_teaching" model="bxi.career">
+        <field name="name">Teaching / Education</field>
+        <field name="icon">book</field>
+        <field name="demand">stable</field>
+        <field name="sequence">70</field>
+        <field name="description">Teaching, training and education.</field>
+        <field name="subject_line_ids" eval="[(0, 0, {'keyword': 'English', 'weight': 2}),
+                                              (0, 0, {'keyword': 'Hindi', 'weight': 1}),
+                                              (0, 0, {'keyword': 'History', 'weight': 1}),
+                                              (0, 0, {'keyword': 'Geography', 'weight': 1})]"/>
+    </record>
+</odoo>

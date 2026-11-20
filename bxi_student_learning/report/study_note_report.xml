@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- The Note Details screen's "Download PDF". -->
+    <record id="action_report_study_note" model="ir.actions.report">
+        <field name="name">Study Note</field>
+        <field name="model">bxi.study.note</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">bxi_student_learning.report_study_note</field>
+        <field name="report_file">bxi_student_learning.report_study_note</field>
+        <field name="print_report_name">'Note - %s' % object.name</field>
+        <field name="binding_model_id" ref="model_bxi_study_note"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_study_note">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="note">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2 t-field="note.name"/>
+                        <p class="text-muted">
+                            <span t-field="note.subject_id"/> ·
+                            <span t-field="note.course_id"/> ·
+                            <span t-field="note.faculty_id"/>
+                            <t t-if="note.chapter"> · <span t-field="note.chapter"/></t>
+                        </p>
+                        <p>
+                            <strong>Priority:</strong> <span t-field="note.priority"/>
+                            <t t-if="note.tag_ids">
+                                · <strong>Tags:</strong>
+                                <t t-esc="', '.join(note.tag_ids.mapped('name'))"/>
+                            </t>
+                            <t t-if="note.read_minutes">
+                                · <t t-esc="note.read_minutes"/> min read
+                            </t>
+                        </p>
+                        <p t-if="note.summary" t-field="note.summary"/>
+                        <t t-if="note.key_points">
+                            <h4>Key Points</h4>
+                            <ul>
+                                <t t-foreach="note.key_points.splitlines()" t-as="point">
+                                    <li t-if="point.strip()" t-esc="point.strip()"/>
+                                </t>
+                            </ul>
+                        </t>
+                        <div t-field="note.content"/>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

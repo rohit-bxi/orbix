@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- The app's Info page, edited on the company form. -->
+    <record id="view_company_form_bxi_about" model="ir.ui.view">
+        <field name="name">res.company.form.bxi.about</field>
+        <field name="model">res.company</field>
+        <field name="inherit_id" ref="base.view_company_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="App Info Page" name="bxi_about">
+                    <group>
+                        <group>
+                            <field name="bxi_about_title" placeholder="About Orbix"/>
+                            <field name="bxi_about_tagline"/>
+                            <field name="bxi_about_success_rate"/>
+                        </group>
+                        <group>
+                            <field name="bxi_about_image" widget="image" class="oe_avatar"/>
+                        </group>
+                    </group>
+                    <label for="bxi_about_mission"/>
+                    <field name="bxi_about_mission"/>
+                    <separator string="Core Values"/>
+                    <field name="bxi_value_ids">
+                        <list editable="bottom">
+                            <field name="sequence" widget="handle"/>
+                            <field name="name"/>
+                            <field name="description"/>
+                            <field name="icon"/>
+                        </list>
+                    </field>
+                    <separator string="Team"/>
+                    <field name="bxi_team_member_ids">
+                        <list editable="bottom">
+                            <field name="sequence" widget="handle"/>
+                            <field name="image" widget="image" options="{'size': [32, 32]}"/>
+                            <field name="name"/>
+                            <field name="role"/>
+                            <field name="bio"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>
