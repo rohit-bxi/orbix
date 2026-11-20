@@ -67,6 +67,28 @@ class TestBxiApiSupportFoundation(ApiSupportHttpCase):
             f'/api/v1/masters/subjects?course_id={self.class_a.id}', headers=self._parent_headers()).json()['data']['items']
         self.assertEqual([i['id'] for i in items], subject.ids)
 
+    def test_countries_with_states(self):
+        india = self.env.ref('base.in')
+        url = '/api/v1/masters/countries-with-states'
+        resp = self.url_open(url, headers=self._parent_headers())
+        self.assertEqual(resp.status_code, 200, resp.text)
+        body = resp.json()
+        countries = {c['code']: c for c in body['data']['countries']}
+        self.assertEqual(len(countries), self.env['res.country'].search_count([]), 'Every country is listed.')
+        self.assertEqual((countries['IN']['id'], countries['IN']['name'], countries['IN']['phone_code']),
+                         (india.id, india.name, 91))
+        states = {s['code']: s for s in countries['IN']['states']}
+        maharashtra = self.env.ref('base.state_in_mh')
+        self.assertEqual(states['MH'], {'id': maharashtra.id, 'name': maharashtra.name, 'code': 'MH'})
+        self.assertEqual(body['meta']['states'], sum(len(c['states']) for c in body['data']['countries']))
+
+        narrowed = self.url_open(url + '?country_code=in, ae', headers=self._parent_headers()).json()['data']
+        self.assertEqual(sorted(c['code'] for c in narrowed['countries']), ['AE', 'IN'])
+        by_id = self.url_open(url + '?country_id=%s' % india.id, headers=self._parent_headers()).json()['data']
+        self.assertEqual([c['code'] for c in by_id['countries']], ['IN'])
+        self.assertEqual(self.url_open(url + '?country_id=x', headers=self._parent_headers()).status_code, 400)
+        self.assertEqual(self.url_open(url).status_code, 401)
+
     def test_unknown_master_404(self):
         self.assertEqual(self.url_open('/api/v1/masters/nope', headers=self._parent_headers()).status_code, 404)
 

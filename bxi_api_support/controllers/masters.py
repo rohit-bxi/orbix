@@ -128,6 +128,37 @@ class BxiApiSupportMastersController(http.Controller):
             if spec['model'] in request.env and (staff or not spec.get('staff'))
         )})
 
+    @http.route('/api/v1/masters/countries-with-states', type='http', auth='public', methods=['GET'],
+                csrf=False)
+    @require_auth
+    def countries_with_states(self, country_id=None, country_code=None, **kwargs):
+        """Every country with its states in one call, for the address
+        dropdowns (Country, then State): {"countries": [{id, name, code,
+        phone_code, states: [{id, name, code}]}]}, by name. Narrow it with
+        ?country_id=<id> or ?country_code=IN (or IN,AE)."""
+        domain = []
+        if country_id:
+            value, error = parse_int(country_id, 'country_id')
+            if error:
+                return error
+            domain.append(('id', '=', value))
+        if country_code:
+            codes = [code.strip().upper() for code in str(country_code).split(',') if code.strip()]
+            domain.append(('code', 'in', codes))
+        countries = request.env['res.country'].sudo().search(domain, order='name')
+        states = request.env['res.country.state'].sudo().search(
+            [('country_id', 'in', countries.ids)], order='name')
+        by_country = {}
+        for state in states:
+            by_country.setdefault(state.country_id.id, []).append(
+                {'id': state.id, 'name': state.name, 'code': state.code or None})
+        return api_response(
+            {'countries': [{
+                'id': country.id, 'name': country.name, 'code': country.code or None,
+                'phone_code': country.phone_code or None, 'states': by_country.get(country.id, []),
+            } for country in countries]},
+            meta={'countries': len(countries), 'states': len(states)})
+
     @http.route('/api/v1/masters/<string:name>', type='http', auth='public', methods=['GET'], csrf=False)
     @require_auth
     def get_master(self, name, **kwargs):

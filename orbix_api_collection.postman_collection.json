@@ -10851,6 +10851,39 @@
             "description": "e.g. classes, sections (?course_id=), subjects (?course_id=), timings, academic-years, payment-journals (staff), certificate-types, canteen-menu, transport-stops (?route_id=), visit-hosts (staff), designations (staff), staff-responsibilities (staff)."
           },
           "response": []
+        },
+        {
+          "name": "Countries with States",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/masters/countries-with-states",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "masters",
+                "countries-with-states"
+              ],
+              "query": [
+                {
+                  "key": "country_code",
+                  "value": "IN",
+                  "disabled": true
+                },
+                {
+                  "key": "country_id",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Every country with its states in one call, for the address dropdowns: {\"countries\": [{id, name, code, phone_code, states: [{id, name, code}]}]}, sorted by name; meta gives the country and state counts. Narrow with ?country_code=IN (or IN,AE) or ?country_id=<id>. Any signed-in user. Send the chosen ids as country_id / state_id in the address of the student, parent and teacher APIs."
+          },
+          "response": []
         }
       ]
     },
