@@ -6,7 +6,7 @@ from odoo import http
 from odoo.exceptions import UserError
 from odoo.http import request
 
-from odoo.addons.bxi_api.controllers.auth import api_error, api_response, rate_limit, require_auth
+from odoo.addons.bxi_api.controllers.auth import api_error, api_response, json_field, rate_limit, require_auth
 from odoo.addons.bxi_api.controllers.main import BxiApiAuthController
 
 
@@ -37,6 +37,9 @@ class BxiOtpController(http.Controller):
         return api_response({'sent': sent})
 
     @http.route('/api/v1/otp/verify', type='http', auth='public', methods=['POST'], csrf=False)
+    # Each code already allows only a few attempts; this also caps how
+    # fast one IP can try codes for a phone number.
+    @rate_limit('otp_verify', limit=10, key=json_field('phone'))
     def verify_otp(self, **kwargs):
         payload = request.get_json_data()
         phone = (payload.get('phone') or '').strip()

@@ -23,7 +23,9 @@ class TestBxiLibraryBookRequest(HttpCase):
 
         author = cls.env['op.author'].create({'name': 'Test Author'})
         publisher = cls.env['op.publisher'].create({'name': 'Test Pub'})
-        genre = cls.env['op.media.genre'].create({'name': 'Fiction'})
+        # Genre names are unique and the database may already hold common
+        # ones (e.g. "Fiction" in the OpenEduCat demo data).
+        genre = cls.env['op.media.genre'].create({'name': 'Book Request Test Genre'})
         cls.media = cls.env['op.media'].create({
             'name': 'Sample Book', 'author_ids': [(6, 0, [author.id])],
             'publisher_ids': [(6, 0, [publisher.id])], 'genre_id': genre.id,

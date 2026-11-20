@@ -6,7 +6,7 @@ from odoo import fields, http
 from odoo.exceptions import AccessDenied, UserError
 from odoo.http import request
 
-from .auth import api_error, api_response, get_current_token, rate_limit, require_auth, require_step_up
+from .auth import api_error, api_response, get_current_token, json_field, rate_limit, require_auth, require_step_up
 
 
 def _token_dict(token, current):
@@ -25,6 +25,9 @@ def _token_dict(token, current):
 class BxiApiAuthController(http.Controller):
 
     @http.route('/api/v1/auth/login', type='http', auth='public', methods=['POST'], csrf=False)
+    # Per IP and login: password guessing on one account is capped, while
+    # a classroom signing in from one school IP is not held up.
+    @rate_limit('login', limit=10, key=json_field('login'))
     def login(self, **kwargs):
         payload = request.get_json_data()
         login = (payload.get('login') or '').strip()

@@ -126,3 +126,55 @@ class TestBxiApiHelpers(HttpCase):
         self.assertEqual(status, 429)
         self.assertEqual(body['error']['code'], 'rate_limited')
         self.assertEqual(len(calls), 2)
+
+    def test_rate_limit_key_counts_each_value_apart(self):
+        """With key=json_field(...), one IP's calls for different logins are
+        counted apart: a classroom behind one school IP is not throttled
+        together, while one login is still capped."""
+        calls = []
+
+        @auth_module.rate_limit('unit_test_keyed_bucket', limit=2, key=auth_module.json_field('login'))
+        def route():
+            calls.append(1)
+            return 'ok'
+
+        bodies = []
+        fake_request = type('R', (), {})()
+        fake_request.httprequest = type('H', (), {'remote_addr': '10.9.9.8'})()
+        fake_request.make_json_response = lambda body, status=200: (status, body)
+        fake_request.get_json_data = lambda: bodies[-1]
+        with patch.object(auth_module, 'request', fake_request), \
+                patch.object(auth_module, 'RATE_LIMIT_DURING_TESTS', True):
+            for login in ('asha', 'ASHA ', 'ravi', 'meena'):
+                bodies.append({'login': login})
+                self.assertEqual(route(), 'ok', login)
+            bodies.append({'login': 'asha'})
+            status, body = route()
+            self.assertEqual((status, body['error']['code']), (429, 'rate_limited'),
+                             'The same login (case and spaces ignored) is capped.')
+            bodies.append('not json')
+            self.assertEqual(route(), 'ok', 'A malformed body is left for the route to refuse.')
+        self.assertEqual(len(calls), 5)
+
+    def test_login_is_rate_limited_per_account(self):
+        """/auth/login allows 10 calls a minute per IP and login: the 11th for
+        one account is refused, another account from the same IP is not."""
+        users = self.env['res.users'].create([{
+            'name': name, 'login': name, 'password': 'Str0ngPassw0rd!',
+            'group_ids': [(6, 0, [self.env.ref('base.group_user').id])],
+        } for name in ('rl_login_asha', 'rl_login_ravi')])
+        auth_module._rate_buckets.clear()
+        try:
+            with patch.object(auth_module, 'RATE_LIMIT_DURING_TESTS', True):
+                for _ in range(10):
+                    resp = self.url_open('/api/v1/auth/login', json={'login': users[0].login,
+                                                                     'password': 'Str0ngPassw0rd!'})
+                    self.assertEqual(resp.status_code, 200, resp.text)
+                resp = self.url_open('/api/v1/auth/login', json={'login': users[0].login,
+                                                                 'password': 'Str0ngPassw0rd!'})
+                self.assertEqual((resp.status_code, resp.json()['error']['code']), (429, 'rate_limited'))
+                other = self.url_open('/api/v1/auth/login', json={'login': users[1].login,
+                                                                  'password': 'Str0ngPassw0rd!'})
+                self.assertEqual(other.status_code, 200, 'Another account from the same IP still signs in.')
+        finally:
+            auth_module._rate_buckets.clear()
