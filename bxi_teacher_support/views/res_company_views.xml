@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <!-- The app's Help & Support screen: Contact Support and Support Hours. -->
+    <record id="view_company_form_bxi_support" model="ir.ui.view">
+        <field name="name">res.company.form.bxi.support</field>
+        <field name="model">res.company</field>
+        <field name="inherit_id" ref="base.view_company_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Help &amp; Support" name="bxi_support">
+                    <group>
+                        <group string="Contact Support">
+                            <field name="bxi_support_email" widget="email"/>
+                            <field name="bxi_support_phone" widget="phone"/>
+                            <field name="bxi_support_chat_enabled"/>
+                        </group>
+                        <group string="Support Hours (school time zone; same open and close = closed)">
+                            <label for="bxi_support_weekday_open" string="Monday - Friday"/>
+                            <div class="o_row">
+                                <field name="bxi_support_weekday_open" widget="float_time" nolabel="1"/> to
+                                <field name="bxi_support_weekday_close" widget="float_time" nolabel="1"/>
+                            </div>
+                            <label for="bxi_support_saturday_open" string="Saturday"/>
+                            <div class="o_row">
+                                <field name="bxi_support_saturday_open" widget="float_time" nolabel="1"/> to
+                                <field name="bxi_support_saturday_close" widget="float_time" nolabel="1"/>
+                            </div>
+                            <label for="bxi_support_sunday_open" string="Sunday"/>
+                            <div class="o_row">
+                                <field name="bxi_support_sunday_open" widget="float_time" nolabel="1"/> to
+                                <field name="bxi_support_sunday_close" widget="float_time" nolabel="1"/>
+                            </div>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

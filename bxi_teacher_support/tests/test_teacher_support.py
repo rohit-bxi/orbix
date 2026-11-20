@@ -236,3 +236,27 @@ class TestBxiTeacherSupport(HttpCase):
 
         resp = self.url_open(f'/api/v1/support/tickets/{ticket_id}/reply', headers=headers, json={'body': ''})
         self.assertEqual(resp.status_code, 400)
+
+    def test_faq_search_and_support_contact(self):
+        headers = self._headers('support_student', 'StudentPass1!')
+        found = self.url_open('/api/v1/support/faqs?q=password', headers=headers).json()['data']['faqs']
+        self.assertEqual([f['question'] for f in found], ['How do I reset my password?'])
+        by_answer = self.url_open('/api/v1/support/faqs?q=attendance%20tab', headers=headers).json()['data']['faqs']
+        self.assertEqual(len(by_answer), 1)
+
+        self.env.company.write({
+            'bxi_support_email': 'help@school.test', 'bxi_support_phone': '+91 80000 00000',
+            'bxi_support_weekday_open': 9.0, 'bxi_support_weekday_close': 18.0,
+            'bxi_support_sunday_open': 0.0, 'bxi_support_sunday_close': 0.0})
+        contact = self.url_open('/api/v1/support/contact', headers=headers).json()['data']
+        self.assertEqual((contact['email'], contact['phone'], contact['live_chat']),
+                         ('help@school.test', '+91 80000 00000', True))
+        self.assertEqual(contact['hours'][0], {'days': 'Monday - Friday', 'opens': '09:00', 'closes': '18:00',
+                                               'closed': False})
+        self.assertTrue(contact['hours'][2]['closed'], 'Sunday is closed.')
+        self.assertIn('currently_open', contact)
+
+    def test_support_hours_validated(self):
+        from odoo.exceptions import ValidationError
+        with self.assertRaises(ValidationError):
+            self.env.company.write({'bxi_support_weekday_open': 18.0, 'bxi_support_weekday_close': 9.0})
