@@ -45,6 +45,23 @@ class TestBxiOtp(HttpCase):
         self.assertEqual(CAPTURED['phone'], '+919876543210')
         self.assertEqual(len(CAPTURED['code']), 6)
 
+    def test_verify_is_rate_limited_per_phone(self):
+        """10 tries a minute per IP and phone: the 11th for one number is
+        refused before it is checked, another number is not affected."""
+        from odoo.addons.bxi_api.controllers import auth as auth_module
+        auth_module._rate_buckets.clear()
+        try:
+            with patch.object(auth_module, 'RATE_LIMIT_DURING_TESTS', True):
+                for _ in range(10):
+                    resp = self.url_open('/api/v1/otp/verify', json={'phone': TEST_PHONES[1], 'otp': '123456'})
+                    self.assertEqual(resp.status_code, 400, resp.text)
+                resp = self.url_open('/api/v1/otp/verify', json={'phone': TEST_PHONES[1], 'otp': '123456'})
+                self.assertEqual((resp.status_code, resp.json()['error']['code']), (429, 'rate_limited'))
+                other = self.url_open('/api/v1/otp/verify', json={'phone': TEST_PHONES[0], 'otp': '123456'})
+                self.assertEqual(other.status_code, 400, 'Another number is still checked.')
+        finally:
+            auth_module._rate_buckets.clear()
+
     def test_request_otp_missing_phone_rejected(self):
         resp = self.url_open('/api/v1/otp/request', method='POST', json={})
         self.assertEqual(resp.status_code, 400)

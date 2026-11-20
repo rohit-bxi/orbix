@@ -58,7 +58,7 @@
                 "login"
               ]
             },
-            "description": "Public. Returns a bearer token and the user profile on success, plus auth_method \"password\" (401 invalid_credentials, 400 missing_credentials). A password session counts as recently confirmed for 10 minutes, which is what Face Enroll needs."
+            "description": "Public. Returns a bearer token and the user profile on success, plus auth_method \"password\" (401 invalid_credentials, 400 missing_credentials). A password session counts as recently confirmed for 10 minutes, which is what Face Enroll needs.\n\nRate limited: 10 calls a minute per client IP and login (429 rate_limited); other accounts from the same IP are not affected."
           },
           "response": []
         },
@@ -637,7 +637,7 @@
                 "verify"
               ]
             },
-            "description": "Public."
+            "description": "Public.\n\nRate limited: 10 calls a minute per client IP and phone number (429 rate_limited), on top of the few attempts each code allows."
           },
           "response": []
         },
@@ -15358,6 +15358,39 @@
           "response": []
         },
         {
+          "name": "Download Teacher Academic Document",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/teachers/:teacher_id/academic-documents/:attachment_id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "teachers",
+                ":teacher_id",
+                "academic-documents",
+                ":attachment_id"
+              ],
+              "variable": [
+                {
+                  "key": "teacher_id",
+                  "value": "{{teacher_id}}"
+                },
+                {
+                  "key": "attachment_id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Download one file of a teacher's academic documents (the ids listed in the teacher's \"academic_documents\" on GET /api/v1/teachers/<id>). Returns the file itself, not JSON. Staff who may list people only; 404 not_found for an unknown teacher or a file that is not one of their academic documents."
+          },
+          "response": []
+        },
+        {
           "name": "Teacher Photo",
           "request": {
             "method": "GET",
@@ -18349,7 +18382,7 @@
                 "login"
               ]
             },
-            "description": "Public. Same route as the normal login with \"login_type\": \"aadhaar\" (a valid Aadhaar number without login_type is also detected). Spaces/dashes allowed. Same response as a normal login, plus \"login_identifier\": \"aadhaar\". Errors: 400 invalid_aadhaar, 401 invalid_credentials (unknown number and wrong password look the same), 409 ambiguous_aadhaar.",
+            "description": "Public. Same route as the normal login with \"login_type\": \"aadhaar\" (a valid Aadhaar number without login_type is also detected). Spaces/dashes allowed. Same response as a normal login, plus \"login_identifier\": \"aadhaar\". Errors: 400 invalid_aadhaar, 401 invalid_credentials (unknown number and wrong password look the same), 409 ambiguous_aadhaar.\n\nRate limited: 10 calls a minute per client IP and login (429 rate_limited); other accounts from the same IP are not affected.",
             "auth": {
               "type": "noauth"
             },

@@ -110,17 +110,33 @@ def _rate_limit_active():
     return RATE_LIMIT_DURING_TESTS or not odoo.modules.module.current_test
 
 
-def rate_limit(bucket, limit, window=60):
+def json_field(name):
+    """For rate_limit(key=...): one field of the JSON body, lower-cased
+    ('' when the body is missing or not JSON)."""
+    def read():
+        try:
+            payload = request.get_json_data()
+        except Exception:  # noqa: BLE001 - a malformed body is the route's own 400 to report
+            return ''
+        value = payload.get(name) if isinstance(payload, dict) else None
+        return str(value or '').strip().lower()
+    return read
+
+
+def rate_limit(bucket, limit, window=60, key=None):
     """Allow at most `limit` calls per `window` seconds per client IP to
-    the wrapped route; extra calls get a 429 envelope without running it."""
+    the wrapped route; extra calls get a 429 envelope without running it.
+    `key` (a callable, e.g. json_field('login')) narrows the count to IP
+    plus that value: guessing one account is capped while a classroom
+    behind one school IP can still sign in."""
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
             if not _rate_limit_active():
                 return func(*args, **kwargs)
-            key = (bucket, request.httprequest.remote_addr)
+            bucket_key = (bucket, request.httprequest.remote_addr) + ((key(),) if key else ())
             now = time.monotonic()
-            calls = _rate_buckets[key]
+            calls = _rate_buckets[bucket_key]
             while calls and now - calls[0] > window:
                 calls.popleft()
             if len(calls) >= limit:

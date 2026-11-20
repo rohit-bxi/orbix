@@ -2,7 +2,7 @@
 
 {
     'name': 'Orbix Notification Gateway',
-    'version': '19.0.1.4.2',
+    'version': '19.0.1.4.3',
     'category': 'Education',
     'summary': 'SMS/OTP (MSG91) and push (FCM) notifications for the Orbix mobile app',
     'description': """
