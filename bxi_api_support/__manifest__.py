@@ -2,7 +2,7 @@
 
 {
     'name': 'Orbix API Support',
-    'version': '19.0.9.9.0',
+    'version': '19.0.10.0.0',
     'category': 'Education',
     'summary': 'REST API for the Orbix mobile app across every Orbix school process',
     'description': """
@@ -61,6 +61,7 @@
         'bxi_assessment_hub',
         'bxi_academic_management',
         'bxi_lesson_plan',
+        'bxi_student_learning',
         'bxi_class_timetable_inhencement',
         'bxi_rte_admission',
         # Phase 3

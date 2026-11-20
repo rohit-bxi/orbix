@@ -109,6 +109,21 @@ class OpAssignment(models.Model):
         return res
 
 
+class OpExamSession(models.Model):
+    _inherit = 'op.exam.session'
+
+    def act_schedule(self):
+        """Scheduling an exam session publishes its date sheet: tell the
+        families of the section (the Notifications screen's Exams tab)."""
+        res = super().act_schedule()
+        for session in self.sudo():
+            students = self.env['op.student.course'].sudo().search([
+                ('batch_id', '=', session.batch_id.id), ('state', '=', 'running')]).student_id
+            _notify(self.env, students._bxi_family_users(), _('Exam scheduled: %s', session.name),
+                    _('%(start)s to %(end)s', start=session.start_date, end=session.end_date), 'exam', session)
+        return res
+
+
 class OpMarksheetRegister(models.Model):
     _inherit = 'op.marksheet.register'
 

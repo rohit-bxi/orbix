@@ -1,14 +1,38 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) 2026 BXI Technology Pvt. Ltd. All Rights Reserved.
 # License OPL-1 (Odoo Proprietary License v1.0, see LICENSE file for full text).
+from datetime import timedelta
+
 from odoo import fields, http
 from odoo.http import request
 
 from odoo.addons.bxi_api.controllers.auth import api_error, api_response, require_auth
 
-from .common import date_str, parse_pagination, json_body
+from .common import date_str, get_app_student, parse_pagination, json_body
 
 PLATFORMS = ('android', 'ios', 'web')
+
+# The Notifications screen's tabs, by the category each notification is
+# created with (bxi_api_support/models/push_triggers.py and the student
+# app's notes, doubts and community). Anything else is "system".
+TABS = {
+    'assignments': ('homework', 'doubt', 'note'),
+    'exams': ('exam', 'result'),
+    'announcements': ('announcement', 'event', 'ptm', 'community'),
+    'achievements': ('certificate', 'achievement'),
+}
+TAB_NAMES = tuple(TABS) + ('system',)
+URGENT = ('absence', 'fee_due', 'security')
+
+
+def _tab(category):
+    return next((tab for tab, categories in TABS.items() if category in categories), 'system')
+
+
+def _tab_domain(tab):
+    if tab == 'system':
+        return ['|', ('category', '=', False), ('category', 'not in', [c for cs in TABS.values() for c in cs])]
+    return [('category', 'in', list(TABS[tab]))]
 
 
 def _notification_dict(notification):
@@ -22,6 +46,8 @@ def _notification_dict(notification):
         'created_at': date_str(notification.create_date),
         'read_at': date_str(notification.read_at),
         'is_read': bool(notification.read_at),
+        'tab': _tab(notification.category),
+        'urgent': notification.category in URGENT,
     }
 
 
@@ -59,7 +85,9 @@ class BxiApiSupportNotificationController(http.Controller):
 
     @http.route('/api/v1/notifications', type='http', auth='public', methods=['GET'], csrf=False)
     @require_auth
-    def list_notifications(self, unread=None, category=None, **kwargs):
+    def list_notifications(self, unread=None, category=None, tab=None, **kwargs):
+        """?tab=assignments|exams|announcements|achievements|system (the
+        screen's tabs), ?category=, ?unread=1."""
         limit, offset, error = parse_pagination(kwargs)
         if error:
             return error
@@ -68,6 +96,10 @@ class BxiApiSupportNotificationController(http.Controller):
             domain.append(('read_at', '=', False))
         if category:
             domain.append(('category', '=', category))
+        if tab:
+            if tab not in TAB_NAMES:
+                return api_error('tab must be one of %s.' % ', '.join(TAB_NAMES), status=400, code='invalid_tab')
+            domain += _tab_domain(tab)
         Notification = request.env['bxi.notification'].sudo()
         total = Notification.search_count(domain)
         notifications = Notification.search(domain, limit=limit, offset=offset)
@@ -75,6 +107,37 @@ class BxiApiSupportNotificationController(http.Controller):
             {'notifications': [_notification_dict(n) for n in notifications]},
             meta={'total': total, 'limit': limit, 'offset': offset,
                   'unread': Notification.search_count([('user_id', '=', request.env.user.id), ('read_at', '=', False)])})
+
+    @http.route('/api/v1/notifications/counts', type='http', auth='public', methods=['GET'], csrf=False)
+    @require_auth
+    def counts(self, student_id=None, **kwargs):
+        """The Notifications screen's tab counts and Quick Actions: urgent
+        (unread absence / fee / security), achievements (unread), and - for
+        a student (or a one-child parent) - homework due within two days
+        and homework completed."""
+        Notification = request.env['bxi.notification'].sudo()
+        mine = [('user_id', '=', request.env.user.id)]
+        tabs = {tab: Notification.search_count(mine + _tab_domain(tab)) for tab in TAB_NAMES}
+        unread = mine + [('read_at', '=', False)]
+        quick = {
+            'urgent': Notification.search_count(unread + [('category', 'in', list(URGENT))]),
+            'achievements': Notification.search_count(unread + _tab_domain('achievements')),
+            'assignments_due_soon': 0,
+            'completed_tasks': 0,
+        }
+        student, error = get_app_student(request.env, student_id)
+        if student_id and error:
+            return error
+        if student:
+            from .assignment import _student_tasks
+            soon = fields.Datetime.now() + timedelta(days=2)
+            tasks = _student_tasks(student)
+            quick['assignments_due_soon'] = len([
+                1 for a, _sub, status in tasks
+                if status in ('due_today', 'upcoming') and a.submission_date and a.submission_date <= soon])
+            quick['completed_tasks'] = len([1 for _a, _sub, status in tasks if status == 'completed'])
+        return api_response({'all': Notification.search_count(mine), 'unread': Notification.search_count(unread),
+                             'tabs': tabs, 'quick_actions': quick})
 
     @http.route('/api/v1/notifications/unread-count', type='http', auth='public', methods=['GET'], csrf=False)
     @require_auth

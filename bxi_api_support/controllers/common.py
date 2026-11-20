@@ -198,6 +198,21 @@ def date_str(value):
     return fields.Date.to_string(value)
 
 
+def get_app_student(env, student_id=None, allow=None):
+    """The student a student-app screen is about: `student_id` when sent
+    (checked like get_viewable_student), else the caller's own student -
+    the student login itself, or a parent's only child. Returns (student,
+    None) or (None, api_error(...))."""
+    if student_id:
+        return get_viewable_student(env, student_id, allow)
+    students = school_context(env)['students']
+    if len(students) == 1:
+        return students.sudo(), None
+    if students:
+        return None, api_error('More than one child: send student_id.', status=400, code='missing_student_id')
+    return None, api_error('student_id is required.', status=400, code='missing_student_id')
+
+
 def get_own_student_ids(env):
     """Student ids the calling user may act on as "self": their own student
     account, or the children linked to their parent account.

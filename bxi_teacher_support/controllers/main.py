@@ -39,18 +39,39 @@ class BxiTeacherSupportController(http.Controller):
 
     @http.route('/api/v1/support/faqs', type='http', auth='public', methods=['GET'], csrf=False)
     @require_auth
-    def list_faqs(self, category=None, audience=None, **kwargs):
+    def list_faqs(self, category=None, audience=None, q=None, **kwargs):
+        """?q= searches questions and answers (the Help screen's search box)."""
         domain = [('active', '=', True)]
         if category:
             domain.append(('category', '=', category))
         if audience:
             domain.append(('audience', 'in', ['all', audience]))
+        if q and q.strip():
+            domain += ['|', ('question', 'ilike', q.strip()), ('answer', 'ilike', q.strip())]
         faqs = request.env['bxi.faq'].sudo().search(domain, order='sequence, id')
         return api_response({
             'faqs': [{
                 'id': f.id, 'question': f.question, 'answer': f.answer,
                 'category': f.category, 'audience': f.audience,
             } for f in faqs],
+        })
+
+    @http.route('/api/v1/support/contact', type='http', auth='public', methods=['GET'], csrf=False)
+    @require_auth
+    def support_contact(self, **kwargs):
+        """The Help screen's Contact Support and Support Hours, from the
+        school's settings: email, phone, whether live chat is offered (it
+        opens a ticket via POST /support/tickets), the weekly hours and
+        whether the desk is open now (school time zone)."""
+        company = request.env.company.sudo()
+        hours, currently_open = company._bxi_support_hours()
+        return api_response({
+            'email': company.bxi_support_email or company.email or None,
+            'phone': company.bxi_support_phone or company.phone or None,
+            'live_chat': company.bxi_support_chat_enabled,
+            'hours': hours,
+            'currently_open': currently_open,
+            'timezone': company.resource_calendar_id.tz or 'UTC',
         })
 
     @http.route('/api/v1/support/tickets', type='http', auth='public', methods=['GET'], csrf=False)

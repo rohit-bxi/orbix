@@ -329,3 +329,52 @@ class TestBxiParentDataApi(HttpCase):
         for path in ('exam-results', 'attendance', 'timetable', 'dashboard'):
             resp = self.url_open(f'/api/v1/parent/{path}?student_id={classmate.id}', headers=headers)
             self.assertEqual(resp.status_code, 403, path)
+
+    # -- student app: subject-wise attendance, holidays, export -----------------------
+
+    def test_attendance_by_subject_previous_period_and_reason(self):
+        science = self.env['op.subject'].create({'name': 'Dash Science', 'code': 'SCIDASH'})
+        now = fields.Datetime.now()
+        for days_ago, subject, status, remark in ((3, self.subject, 'present', False),
+                                                  (4, science, 'absent', 'Medical leave'),
+                                                  (5, science, 'present', False)):
+            start = now - timedelta(days=days_ago, hours=1)
+            session = self.env['op.session'].create({
+                'start_datetime': start, 'end_datetime': start + timedelta(minutes=50),
+                'course_id': self.course.id, 'batch_id': self.batch.id, 'subject_id': subject.id,
+                'faculty_id': self.faculty.id, 'student_ids': [(6, 0, self.student.ids)], 'state': 'done'})
+            self.env['hr.attendance'].create({
+                'employee_id': self.student.employee_id.id, 'session_id': session.id, 'status': status,
+                'remark': remark, 'check_in': start, 'check_out': start})
+        data = self.url_open(f'/api/v1/parent/attendance?student_id={self.student.id}',
+                             headers=self._headers('dash_parent', 'ParentPass1!')).json()['data']
+        subjects = {s['subject']: s for s in data['subjects']}
+        self.assertEqual((subjects['Dash Science']['present'], subjects['Dash Science']['total'],
+                          subjects['Dash Science']['percentage']), (1, 2, 50.0))
+        self.assertEqual(subjects['Dash Science']['teacher']['id'], self.faculty.id)
+        self.assertIn('change', data['previous_period'])
+        reasons = [d['remark'] for d in data['days'] if d['remark']]
+        self.assertEqual(reasons, ['Medical leave'])
+
+    def test_timetable_marks_holidays_and_exports_ics(self):
+        holiday = self.env['resource.calendar.leaves'].create({
+            'name': 'Dash Holiday', 'date_from': self.session_soon.start_datetime - timedelta(minutes=30),
+            'date_to': self.session_soon.end_datetime + timedelta(minutes=30), 'resource_id': False,
+            'calendar_id': False, 'company_id': self.env.company.id})
+        headers = self._headers('dash_parent', 'ParentPass1!')
+        data = self.url_open(f'/api/v1/parent/timetable?student_id={self.student.id}', headers=headers).json()['data']
+        session = next(s for s in data['sessions'] if s['id'] == self.session_soon.id)
+        self.assertTrue(session['is_holiday'])
+        self.assertEqual([h['id'] for h in data['holidays']], holiday.ids)
+
+        holiday.unlink()
+        resp = self.url_open(f'/api/v1/parent/timetable/export?student_id={self.student.id}', headers=headers)
+        self.assertEqual(resp.status_code, 200, resp.text)
+        self.assertIn('text/calendar', resp.headers['Content-Type'])
+        body = resp.text
+        self.assertTrue(body.startswith('BEGIN:VCALENDAR'))
+        self.assertIn('UID:orbix-session-%s@' % self.session_soon.id, body)
+        self.assertIn('SUMMARY:Mathematics', body)
+        too_long = self.url_open(f'/api/v1/parent/timetable/export?student_id={self.student.id}'
+                                 '&date_from=2026-01-01&date_to=2026-12-31', headers=headers)
+        self.assertEqual(too_long.json()['error']['code'], 'range_too_long')

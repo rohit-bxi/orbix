@@ -2,7 +2,7 @@
 
 {
     'name': 'Orbix Help & Support',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.1.0',
     'category': 'Education',
     'summary': 'Student/Parent/Teacher support tickets (via the generic helpdesk app) and a simple FAQ list, via the Orbix API',
     'description': """
@@ -21,7 +21,9 @@
           role (student/parent/teacher) is auto-resolved from the
           logged-in user.
         - A small `bxi.faq` model (question, answer, category, audience,
-          order) with a list endpoint filterable by audience.
+          order) with a list endpoint filterable by audience and searchable.
+        - The support desk's contact details and opening hours (company
+          settings) for the app's Contact Support / Support Hours.
     """,
     'author': 'BXI Technology Pvt. Ltd.',
     'maintainer': 'BXI Technology Pvt. Ltd.',
@@ -37,6 +39,7 @@
         'security/ir.model.access.csv',
         'data/helpdesk_team_data.xml',
         'views/faq_views.xml',
+        'views/res_company_views.xml',
     ],
     'installable': True,
     'application': False,

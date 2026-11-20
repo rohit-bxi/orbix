@@ -112,3 +112,77 @@ class TestBxiElearningApi(HttpCase):
         joined = self._post(f'/api/v1/elearning/courses/{self.invite_only.id}/join', headers)
         self.assertEqual(joined.status_code, 200, joined.text)
         self.assertTrue(joined.json()['data']['is_member'])
+
+
+@tagged('post_install', '-at_install')
+class TestBxiElearningSmartBook(HttpCase):
+    """The Smart Books list and reader: chapter progress, the lesson quiz
+    ("Quick Check") and the saved reading position."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        mail_new_test_user(cls.env, login='elsb_student', password='StudentPass1!', groups='base.group_portal')
+        grade = cls.env['elearning.class'].create({'name': 'ElSb Grade 9'})
+        cls.tag = cls.env['slide.channel.tag'].create({
+            'name': 'ElSb Algebra', 'group_id': cls.env['slide.channel.tag.group'].create({'name': 'ElSb'}).id})
+        cls.course = cls.env['slide.channel'].create({
+            'name': 'ElSb Algebra Book', 'class_id': grade.id, 'enroll': 'public', 'visibility': 'connected',
+            'is_published': True, 'tag_ids': [(6, 0, cls.tag.ids)]})
+        Slide = cls.env['slide.slide']
+        cls.ch1 = Slide.create({'name': 'ElSb Chapter 1', 'channel_id': cls.course.id, 'slide_category': 'article',
+                                'html_content': '<p>Algebra</p>', 'is_published': True, 'sequence': 1,
+                                'completion_time': 0.25})
+        cls.ch2 = Slide.create({'name': 'ElSb Chapter 2', 'channel_id': cls.course.id, 'slide_category': 'article',
+                                'html_content': '<p>More</p>', 'is_published': True, 'sequence': 2,
+                                'completion_time': 0.5})
+        question = cls.env['slide.question'].create({'question': 'Coefficient of x in 5x + 3?', 'slide_id': cls.ch1.id})
+        cls.right = cls.env['slide.answer'].create({'question_id': question.id, 'text_value': '5', 'is_correct': True})
+        cls.wrong = cls.env['slide.answer'].create({'question_id': question.id, 'text_value': '3',
+                                                    'is_correct': False, 'comment': 'That is the constant.'})
+
+    def _headers(self):
+        resp = self.url_open('/api/v1/auth/login', json={'login': 'elsb_student', 'password': 'StudentPass1!'})
+        return {'Authorization': f'Bearer {resp.json()["data"]["token"]}'}
+
+    def _post(self, path, body, headers):
+        return self.url_open(path, headers=headers, json=body, method='POST')
+
+    def test_progress_quiz_and_position(self):
+        headers = self._headers()
+        self.assertEqual(self._post(f'/api/v1/elearning/lessons/{self.ch1.id}/quiz/submit',
+                                    {'answer_ids': [self.right.id]}, headers).json()['error']['code'], 'join_required')
+        self._post(f'/api/v1/elearning/courses/{self.course.id}/join', {}, headers)
+
+        listing = self.url_open(f'/api/v1/elearning/courses?tag_id={self.tag.id}', headers=headers).json()['data']
+        progress = listing['courses'][0]['progress']
+        self.assertEqual((progress['chapter_index'], progress['chapter_count'], progress['current_lesson']['id'],
+                          progress['hours_left']), (1, 2, self.ch1.id, 0.75))
+
+        quiz = self.url_open(f'/api/v1/elearning/lessons/{self.ch1.id}/quiz', headers=headers).json()['data']
+        self.assertEqual(len(quiz['questions']), 1)
+        self.assertIsNone(quiz['questions'][0]['answers'][0]['is_correct'], 'Not revealed before passing.')
+        failed = self._post(f'/api/v1/elearning/lessons/{self.ch1.id}/quiz/submit',
+                            {'answer_ids': [self.wrong.id]}, headers).json()['data']
+        self.assertFalse(failed['passed'])
+        self.assertEqual(failed['answers'][0]['comment'], 'That is the constant.')
+        self.assertEqual(self._post(f'/api/v1/elearning/lessons/{self.ch1.id}/quiz/submit', {'answer_ids': []},
+                                    headers).json()['error']['code'], 'quiz_incomplete')
+        passed = self._post(f'/api/v1/elearning/lessons/{self.ch1.id}/quiz/submit',
+                            {'answer_ids': [self.right.id]}, headers).json()['data']
+        self.assertTrue(passed['passed'] and passed['completed'])
+        self.assertEqual(passed['attempts'], 2)
+        self.assertEqual(self._post(f'/api/v1/elearning/lessons/{self.ch1.id}/quiz/submit',
+                                    {'answer_ids': [self.right.id]}, headers).json()['error']['code'], 'quiz_done')
+
+        in_progress = self.url_open('/api/v1/elearning/courses?in_progress=1', headers=headers).json()['data']
+        self.assertEqual(in_progress['courses'][0]['progress']['chapter_index'], 2, 'Continue from chapter 2.')
+
+        saved = self._post(f'/api/v1/elearning/lessons/{self.ch2.id}/position', {'page': 9, 'total_pages': 45},
+                           headers)
+        self.assertEqual(saved.status_code, 200, saved.text)
+        lesson = self.url_open(f'/api/v1/elearning/lessons/{self.ch2.id}', headers=headers).json()['data']
+        self.assertEqual((lesson['position']['page'], lesson['position']['percent']), (9, 20.0))
+        self.assertEqual((lesson['previous_lesson']['id'], lesson['next_lesson']), (self.ch1.id, None))
+        self.assertEqual(self._post(f'/api/v1/elearning/lessons/{self.ch2.id}/position', {'page': 50,
+                                    'total_pages': 45}, headers).json()['error']['code'], 'invalid_position')

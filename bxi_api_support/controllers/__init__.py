@@ -48,3 +48,8 @@ from . import lab_records
 from . import library_admin
 from . import transport_admin
 from . import academic_admin
+from . import study_notes
+from . import student_social
+from . import student_app
+from . import digital_library
+from . import admission_application

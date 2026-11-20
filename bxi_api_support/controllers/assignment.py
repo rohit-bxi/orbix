@@ -4,6 +4,7 @@
 """Homework (openeducat_assignment): families read and students submit;
 teachers create, publish, close and review."""
 import base64
+from datetime import timedelta
 
 from odoo import fields, http
 from odoo.http import request
@@ -14,7 +15,7 @@ from odoo.addons.bxi_api.controllers.auth import (
 
 from .common import (
     teacher_permission,
-    date_str, get_viewable_student, parse_ids, parse_pagination, ref, running_enrollment, safe_create,
+    date_str, get_app_student, get_viewable_student, parse_ids, parse_pagination, ref, running_enrollment, safe_create,
     school_context, json_body,
 )
 
@@ -83,6 +84,7 @@ def _assignment_dict(assignment, submission=None, detail=False):
         'issued_date': date_str(assignment.issued_date),
         'submission_date': date_str(assignment.submission_date),
         'marks': assignment.marks,
+        'points': assignment.point or None,
         'state': assignment.state,
         'is_overdue': bool(assignment.submission_date and assignment.submission_date < fields.Datetime.now()),
     }
@@ -91,7 +93,56 @@ def _assignment_dict(assignment, submission=None, detail=False):
     if detail:
         data['description'] = assignment.description
         data['attachments'] = _attachment_list(assignment)
+        # Task Details (bxi_student_learning).
+        data.update({
+            'chapter': assignment.bxi_chapter or None,
+            'difficulty': assignment.bxi_difficulty or None,
+            'learning_objectives': [line.strip() for line in (assignment.bxi_learning_objectives or '').splitlines()
+                                    if line.strip()],
+            'requirements': [line.strip() for line in (assignment.bxi_requirements or '').splitlines()
+                             if line.strip()],
+        })
     return data
+
+
+TASK_STATUSES = ('overdue', 'due_today', 'upcoming', 'completed')
+DONE_SUBMISSION_STATES = ('submit', 'accept')
+
+
+def _task_status(assignment, submission, now, today):
+    """The Tasks screen's badge: completed (handed in), else overdue, due
+    today or upcoming by the due date in the caller's time zone."""
+    if submission and submission.state in DONE_SUBMISSION_STATES:
+        return 'completed'
+    due = assignment.submission_date
+    if not due:
+        return 'upcoming'
+    if due < now:
+        return 'overdue'
+    if fields.Datetime.context_timestamp(assignment, due).date() == today:
+        return 'due_today'
+    return 'upcoming'
+
+
+def _student_tasks(student, extra_domain=None):
+    """[(assignment, submission, status)] of a student's published homework,
+    newest due first."""
+    Assignment = request.env['op.assignment'].sudo()
+    assignments = Assignment.search([('allocation_ids', 'in', student.id), ('state', 'in', FAMILY_VISIBLE_STATES)]
+                                    + list(extra_domain or []), order='submission_date desc, id desc')
+    submissions = {sub.assignment_id.id: sub for sub in request.env['op.assignment.sub.line'].sudo().search([
+        ('assignment_id', 'in', assignments.ids), ('student_id', '=', student.id)], order='id desc')}
+    now, today = fields.Datetime.now(), fields.Date.context_today(Assignment)
+    return [(a, submissions.get(a.id), _task_status(a, submissions.get(a.id), now, today)) for a in assignments]
+
+
+def _task_counts(tasks):
+    counts = {status: 0 for status in TASK_STATUSES}
+    for _assignment, _submission, status in tasks:
+        counts[status] += 1
+    counts['total'] = len(tasks)
+    counts['pending'] = counts['total'] - counts['completed']
+    return counts
 
 
 def _own_submission(assignment, student):
@@ -106,31 +157,52 @@ class BxiApiSupportAssignmentController(http.Controller):
 
     @http.route('/api/v1/assignments', type='http', auth='public', methods=['GET'], csrf=False)
     @require_auth
-    def list_assignments(self, student_id=None, state=None, **kwargs):
-        """With student_id: that student's published homework (family view,
-        each with `my_submission`). Without: the teacher's own assignments
-        (managers: all), optionally ?state=draft|publish|finish|cancel."""
+    def list_assignments(self, student_id=None, state=None, subject_id=None, due=None, status=None, **kwargs):
+        """Family / student view (student_id, or a student's or one-child
+        parent's own login): published homework with `my_submission` and
+        `task_status`, `counts` for the Tasks header, and filters subject_id,
+        due=today|week and status=overdue|due_today|upcoming|completed
+        (state=pending still works). Teacher view (no student): the
+        teacher's own assignments (managers: all), ?state=draft|publish|...."""
         limit, offset, error = parse_pagination(kwargs)
         if error:
             return error
         Assignment = request.env['op.assignment'].sudo()
-        if student_id:
-            student, error = get_viewable_student(request.env, student_id)
+        context = school_context(request.env)
+        if student_id or (context['students'] and not context['faculty'] and not _is_manager(request.env.user)):
+            student, error = get_app_student(request.env, student_id)
             if error:
                 return error
-            domain = [('allocation_ids', 'in', student.id), ('state', 'in', FAMILY_VISIBLE_STATES)]
+            tasks = _student_tasks(student)
+            counts = _task_counts(tasks)
+            if subject_id:
+                value, error = parse_int(subject_id, 'subject_id')
+                if error:
+                    return error
+                tasks = [t for t in tasks if t[0].subject_id.id == value]
+            if due:
+                if due not in ('today', 'week'):
+                    return api_error('due must be today or week.', status=400, code='invalid_due')
+                today = fields.Date.context_today(Assignment)
+                last = today if due == 'today' else today + timedelta(days=6 - today.weekday())
+                tasks = [t for t in tasks if t[0].submission_date and today <= fields.Datetime.context_timestamp(
+                    t[0], t[0].submission_date).date() <= last]
+            if status:
+                if status not in TASK_STATUSES:
+                    return api_error('status must be one of %s.' % ', '.join(TASK_STATUSES), status=400,
+                                     code='invalid_status')
+                tasks = [t for t in tasks if t[2] == status]
             if state == 'pending':
-                submitted = request.env['op.assignment.sub.line'].sudo().search([
-                    ('student_id', '=', student.id), ('state', 'in', ('submit', 'accept')),
-                ]).assignment_id
-                domain += [('state', '=', 'publish'), ('id', 'not in', submitted.ids)]
-            total = Assignment.search_count(domain)
-            assignments = Assignment.search(domain, limit=limit, offset=offset)
-            return api_response({'assignments': [
-                _assignment_dict(a, submission=_own_submission(a, student)) for a in assignments
-            ]}, meta={'total': total, 'limit': limit, 'offset': offset})
+                tasks = [t for t in tasks if t[2] != 'completed' and t[0].state == 'publish']
+            page = tasks[offset:offset + limit]
+            return api_response({
+                # An empty submission keeps `my_submission: null` in the row, as before.
+                'assignments': [dict(_assignment_dict(
+                    a, submission=sub or request.env['op.assignment.sub.line']), task_status=task_status)
+                                for a, sub, task_status in page],
+                'counts': counts,
+            }, meta={'total': len(tasks), 'limit': limit, 'offset': offset})
 
-        context = school_context(request.env)
         if _is_manager(request.env.user):
             domain = []
         elif context['faculty']:
@@ -148,11 +220,22 @@ class BxiApiSupportAssignmentController(http.Controller):
     @http.route('/api/v1/assignments/<int:assignment_id>', type='http', auth='public', methods=['GET'], csrf=False)
     @require_auth
     def get_assignment(self, assignment_id, student_id=None, **kwargs):
+        """For a student: also `task_status` and `related_tasks` (the
+        student's other homework in the same subject, as on Task Details)."""
         assignment, student, error = self._resolve(assignment_id, student_id)
         if error:
             return error
-        return api_response(_assignment_dict(
-            assignment, submission=_own_submission(assignment, student) if student else None, detail=True))
+        submission = _own_submission(assignment, student) if student else None
+        data = _assignment_dict(assignment, submission=submission, detail=True)
+        if student:
+            now, today = fields.Datetime.now(), fields.Date.context_today(assignment)
+            data['task_status'] = _task_status(assignment, submission, now, today)
+            related = [t for t in _student_tasks(student, [('subject_id', '=', assignment.subject_id.id)])
+                       if t[0] != assignment] if assignment.subject_id else []
+            data['related_tasks'] = [{'id': a.id, 'name': a.name, 'task_status': task_status,
+                                      'submission_date': date_str(a.submission_date)}
+                                     for a, _sub, task_status in related[:5]]
+        return api_response(data)
 
     @http.route('/api/v1/assignments/<int:assignment_id>/my-submission', type='http', auth='public', methods=['GET'], csrf=False)
     @require_auth

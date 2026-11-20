@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_career_list" model="ir.ui.view">
+        <field name="name">bxi.career.list</field>
+        <field name="model">bxi.career</field>
+        <field name="arch" type="xml">
+            <list string="Careers">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="demand"/>
+                <field name="icon" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_career_form" model="ir.ui.view">
+        <field name="name">bxi.career.form</field>
+        <field name="model">bxi.career</field>
+        <field name="arch" type="xml">
+            <form string="Career">
+                <sheet>
+                    <field name="active" invisible="1"/>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="demand"/>
+                            <field name="icon"/>
+                        </group>
+                        <group>
+                            <field name="description"/>
+                        </group>
+                    </group>
+                    <separator string="Subjects it leans on (keyword matched in subject names)"/>
+                    <field name="subject_line_ids">
+                        <list editable="bottom">
+                            <field name="keyword"/>
+                            <field name="weight"/>
+                        </list>
+                    </field>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_career" model="ir.actions.act_window">
+        <field name="name">Careers</field>
+        <field name="res_model">bxi.career</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

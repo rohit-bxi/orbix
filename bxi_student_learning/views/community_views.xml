@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Moderation of the student community: reported and hidden posts. -->
+    <record id="view_community_post_list" model="ir.ui.view">
+        <field name="name">bxi.community.post.list</field>
+        <field name="model">bxi.community.post</field>
+        <field name="arch" type="xml">
+            <list string="Community Posts" decoration-muted="state == 'hidden'">
+                <field name="create_date" string="Posted On"/>
+                <field name="student_id"/>
+                <field name="batch_id"/>
+                <field name="kind"/>
+                <field name="title"/>
+                <field name="report_count"/>
+                <field name="state" widget="badge" decoration-danger="state == 'hidden'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_community_post_form" model="ir.ui.view">
+        <field name="name">bxi.community.post.form</field>
+        <field name="model">bxi.community.post</field>
+        <field name="arch" type="xml">
+            <form string="Community Post">
+                <header>
+                    <button name="action_hide" type="object" string="Hide" class="btn-danger"
+                            invisible="state == 'hidden'"/>
+                    <button name="action_unhide" type="object" string="Show Again (clears reports)"
+                            invisible="state != 'hidden'"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="student_id" readonly="1"/>
+                            <field name="batch_id" readonly="1"/>
+                            <field name="kind" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="report_count"/>
+                            <field name="hidden_reason"/>
+                            <field name="hidden_by_id"/>
+                        </group>
+                    </group>
+                    <h3><field name="title" readonly="1"/></h3>
+                    <field name="body" readonly="1"/>
+                    <field name="attachment_ids" widget="many2many_binary" readonly="1"/>
+                    <notebook>
+                        <page string="Replies" name="replies">
+                            <field name="reply_ids">
+                                <list editable="bottom">
+                                    <field name="author_id" readonly="1"/>
+                                    <field name="body" readonly="1"/>
+                                    <field name="create_date"/>
+                                    <field name="state"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Reports" name="reports">
+                            <field name="report_ids" readonly="1">
+                                <list>
+                                    <field name="reporter_id"/>
+                                    <field name="reason"/>
+                                    <field name="create_date"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_community_post_search" model="ir.ui.view">
+        <field name="name">bxi.community.post.search</field>
+        <field name="model">bxi.community.post</field>
+        <field name="arch" type="xml">
+            <search string="Community Posts">
+                <field name="title"/>
+                <field name="student_id"/>
+                <field name="batch_id"/>
+                <filter string="Reported" name="reported" domain="[('report_count', '>', 0)]"/>
+                <filter string="Hidden" name="hidden" domain="[('state', '=', 'hidden')]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_community_post" model="ir.actions.act_window">
+        <field name="name">Student Community</field>
+        <field name="res_model">bxi.community.post</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_community_post_search"/>
+    </record>
+</odoo>
