@@ -302,7 +302,10 @@ class TestAadhaarEmailCodeLogin(AadhaarLoginCase):
         self.assertEqual(resp.status_code, 200, 'The first code is still the one to use')
 
     def test_email_code_switched_off(self):
-        self.company.bxi_aadhaar_login_otp_enabled = False
+        # /config answers for the whole database (any company offering it),
+        # so switch the email code off everywhere, not just here: the
+        # database may hold other companies with it on.
+        self.env['res.company'].sudo().search([]).bxi_aadhaar_login_otp_enabled = False
         resp = self._post('/api/v1/auth/aadhaar/otp-request', {'aadhaar': STUDENT_NO})
         self.assertEqual(resp.status_code, 200)
         self.assertFalse(self.sent)
