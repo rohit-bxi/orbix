@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data noupdate="1">
+    <!-- Careers the Career Pathway report adds from app usage. They carry no
+         subject keywords, so only the usage report recommends them. -->
+    <record id="career_app_developer" model="bxi.career">
+        <field name="name">Mobile App Developer</field>
+        <field name="icon">code</field>
+        <field name="demand">high</field>
+        <field name="sequence">80</field>
+        <field name="description">Building apps and software; high use of development tools and coding apps.</field>
+        <field name="usage_categories">development,productivity</field>
+    </record>
+    <record id="career_ux_designer" model="bxi.career">
+        <field name="name">UX/UI Designer</field>
+        <field name="icon">palette</field>
+        <field name="demand">growing</field>
+        <field name="sequence">90</field>
+        <field name="description">Designing screens and experiences; frequent use of design and creative apps.</field>
+        <field name="usage_categories">design</field>
+    </record>
+    <record id="career_digital_marketing" model="bxi.career">
+        <field name="name">Digital Marketing Specialist</field>
+        <field name="icon">megaphone</field>
+        <field name="demand">growing</field>
+        <field name="sequence">100</field>
+        <field name="description">Brands and campaigns online; active on social media and communication apps.</field>
+        <field name="usage_categories">social</field>
+    </record>
+    <record id="career_content_creator" model="bxi.career">
+        <field name="name">Content Creator</field>
+        <field name="icon">video</field>
+        <field name="demand">growing</field>
+        <field name="sequence">110</field>
+        <field name="description">Videos, writing and media; high engagement with multimedia and creative apps.</field>
+        <field name="usage_categories">entertainment,design</field>
+    </record>
+  </data>
+    <!-- Fill usage categories on the starter careers once (only where the
+         school has not set any). -->
+    <function model="bxi.career" name="_bxi_seed_usage_categories"/>
+</odoo>

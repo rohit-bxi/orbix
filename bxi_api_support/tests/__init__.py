@@ -52,3 +52,4 @@ from . import test_holiday_screen_api
 from . import test_lesson_plan_screen_api
 from . import test_student_app_api
 from . import test_student_records_api
+from . import test_student_settings_api

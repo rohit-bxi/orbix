@@ -9,4 +9,22 @@
         <field name="interval_type">days</field>
         <field name="active" eval="True"/>
     </record>
+    <record id="ir_cron_homework_reminders" model="ir.cron">
+        <field name="name">Orbix: Homework Due Tomorrow Reminders (app)</field>
+        <field name="model_id" ref="openeducat_assignment.model_op_assignment"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_bxi_homework_reminders()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="active" eval="True"/>
+    </record>
+    <record id="ir_cron_study_reminders" model="ir.cron">
+        <field name="name">Orbix: Student Study Reminders (app)</field>
+        <field name="model_id" ref="openeducat_core.model_op_student"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_bxi_study_reminders()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="active" eval="True"/>
+    </record>
 </odoo>

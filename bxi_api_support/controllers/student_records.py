@@ -42,6 +42,39 @@ def _student_header(student):
     }
 
 
+def _elearning_books(env, student):
+    """The Smart Book screen's cards: the eLearning courses the student has
+    joined, with "Chapter 5 of 12", completion and hours left. Empty when
+    eLearning is not installed or the student has no login partner."""
+    if 'slide.channel.partner' not in env or not student.partner_id:
+        return []
+    members = env['slide.channel.partner'].sudo().search([
+        ('partner_id', '=', student.partner_id.id), ('member_status', '!=', 'invited'),
+        ('channel_id.is_published', '=', True)])
+    Slide = env['slide.slide'].sudo()
+    done = set(env['slide.slide.partner'].sudo().search([
+        ('partner_id', '=', student.partner_id.id), ('completed', '=', True)]).slide_id.ids)
+    result = []
+    for member in members.sorted(lambda m: (m.channel_id.name or '', m.id)):
+        channel = member.channel_id
+        lessons = Slide.search([('channel_id', '=', channel.id), ('website_published', '=', True),
+                                ('is_category', '=', False)], order='sequence, id')
+        pending = lessons.filtered(lambda s: s.id not in done)
+        current = pending[:1] or lessons[-1:]
+        result.append({
+            'id': channel.id,
+            'name': channel.name,
+            'tags': [tag.name for tag in channel.tag_ids],
+            'completion': member.completion,
+            'completed': not pending and bool(lessons),
+            'chapter_index': list(lessons).index(current) + 1 if current else 0,
+            'chapter_count': len(lessons),
+            'current_lesson': ref(current),
+            'hours_left': round(sum(pending.mapped('completion_time')), 2),
+        })
+    return result
+
+
 def _percent(score, total):
     return round(100.0 * score / total, 1) if total else None
 
@@ -108,7 +141,8 @@ class BxiApiSupportStudentRecordsController(http.Controller):
         """The student's books: `smart_books` - the Smart Books of their
         class from an approved curriculum, with their reading progress -
         and `library` - the library books they have out now, due dates and
-        fines. `subject_id` filters the Smart Books."""
+        fines - plus `elearning_books`, the eLearning courses they joined
+        ("Chapter 5 of 12", hours left). `subject_id` filters smart_books."""
         env = request.env
         student, error = get_app_student(env, student_id)
         if error:
@@ -147,6 +181,7 @@ class BxiApiSupportStudentRecordsController(http.Controller):
         loan_rows = [_loan_dict(loan) for loan in loans]
         returned = env['op.media.movement'].sudo().search_count([
             ('student_id', '=', student.id), ('state', 'not in', ACTIVE_LOAN_STATES)])
+        courses = _elearning_books(env, student)
         return api_response({
             'student': _student_header(student),
             'summary': {
@@ -156,8 +191,10 @@ class BxiApiSupportStudentRecordsController(http.Controller):
                 'library_books_out': len(loan_rows),
                 'overdue': len([row for row in loan_rows if row['is_overdue']]),
                 'library_books_returned': returned,
+                'elearning_books': len(courses),
             },
             'smart_books': [book_dict(book) for book in books],
+            'elearning_books': courses,
             'library': loan_rows,
         })
 

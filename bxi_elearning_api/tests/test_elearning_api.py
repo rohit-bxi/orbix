@@ -114,6 +114,43 @@ class TestBxiElearningApi(HttpCase):
         self.assertTrue(joined.json()['data']['is_member'])
 
 
+    def test_reader_modes_language_and_audio(self):
+        self.article.write({
+            'html_content': '<p>Algebra uses symbols.</p>', 'completion_time': 0.25, 'bxi_level': 'intermediate',
+            'bxi_learning_objectives': 'Understand expressions\n- Identify variables\n\n',
+            'bxi_video_url': 'https://www.youtube.com/watch?v=abc',
+        })
+        headers = self._headers()
+        self._post(f'/api/v1/elearning/courses/{self.course.id}/join', headers)
+        data = self.url_open(f'/api/v1/elearning/lessons/{self.article.id}', headers=headers).json()['data']
+        self.assertEqual(data['read_minutes'], 15)
+        self.assertEqual(data['level'], 'intermediate')
+        self.assertEqual(data['learning_objectives'], ['Understand expressions', 'Identify variables'])
+        self.assertTrue(data['modes']['read'])
+        self.assertEqual(data['modes']['listen'], {'available': True, 'audio': False, 'text_to_speech': True})
+        self.assertEqual(data['modes']['watch']['video_url'], 'https://www.youtube.com/watch?v=abc')
+        self.assertIn('Algebra uses symbols.', data['tts_text'])
+        self.assertIn('en_US', [lang['code'] for lang in data['languages']])
+        no_audio = self.url_open(f'/api/v1/elearning/lessons/{self.article.id}/audio', headers=headers)
+        self.assertEqual(no_audio.json()['error']['code'], 'no_audio')
+
+        self.article.bxi_audio = base64.b64encode(b'ID3\x03\x00\x00\x00\x00\x00\x00audio')
+        self.article.bxi_audio_filename = 'chapter1.mp3'
+        audio = self.url_open(f'/api/v1/elearning/lessons/{self.article.id}/audio', headers=headers)
+        self.assertEqual(audio.status_code, 200)
+        self.assertTrue(audio.headers['Content-Type'].startswith('audio/'))
+        self.assertTrue(self.url_open(f'/api/v1/elearning/lessons/{self.article.id}', headers=headers)
+                        .json()['data']['modes']['listen']['audio'])
+
+        bad_lang = self.url_open(f'/api/v1/elearning/lessons/{self.article.id}?lang=xx_XX', headers=headers)
+        self.assertEqual(bad_lang.json()['error']['code'], 'invalid_language')
+        self.env['res.lang']._activate_lang('fr_FR')
+        self.article.with_context(lang='fr_FR').bxi_learning_objectives = 'Comprendre les expressions'
+        french = self.url_open(f'/api/v1/elearning/lessons/{self.article.id}?lang=fr_FR', headers=headers).json()['data']
+        self.assertEqual(french['language'], 'fr_FR')
+        self.assertEqual(french['learning_objectives'], ['Comprendre les expressions'])
+
+
 @tagged('post_install', '-at_install')
 class TestBxiElearningSmartBook(HttpCase):
     """The Smart Books list and reader: chapter progress, the lesson quiz
@@ -186,3 +223,4 @@ class TestBxiElearningSmartBook(HttpCase):
         self.assertEqual((lesson['previous_lesson']['id'], lesson['next_lesson']), (self.ch1.id, None))
         self.assertEqual(self._post(f'/api/v1/elearning/lessons/{self.ch2.id}/position', {'page': 50,
                                     'total_pages': 45}, headers).json()['error']['code'], 'invalid_position')
+

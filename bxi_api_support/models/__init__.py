@@ -6,3 +6,4 @@ from . import payment_order
 from . import push_triggers
 from . import people_service
 from . import people_account
+from . import student_preferences

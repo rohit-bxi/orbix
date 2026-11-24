@@ -17,6 +17,7 @@ from odoo import fields, http
 from odoo.exceptions import AccessError, UserError
 from odoo.fields import Domain
 from odoo.http import request
+from odoo.tools import html2plaintext
 from odoo.tools.mimetypes import guess_mimetype
 
 from odoo.addons.bxi_api.controllers.auth import (
@@ -129,7 +130,35 @@ def _lesson_dict(slide, content=False):
             'has_file': bool(slide.binary_content) or (slide.slide_category == 'infographic' and bool(slide.image_1920)),
             'website_url': slide.website_url or None,
         })
+        data.update(_reader_dict(slide))
     return data
+
+
+def _reader_dict(slide):
+    """The reader screen: what Read / Listen / Watch can open, the plain
+    text for the phone's text-to-speech, "15 min read", level, rating,
+    learning objectives and the languages the chapter can be read in."""
+    article = slide.slide_category == 'article' and bool(slide.html_content)
+    video_url = slide.bxi_video_url or (slide.url if slide.slide_category == 'video' else None)
+    read_minutes = slide.bxi_read_minutes or (round(slide.completion_time * 60) if slide.completion_time else None)
+    channel = slide.channel_id.sudo()
+    return {
+        'language': slide.env.lang or 'en_US',
+        'languages': [{'code': lang.code, 'name': lang.name}
+                      for lang in slide.env['res.lang'].sudo().search([('active', '=', True)], order='name')],
+        'read_minutes': read_minutes,
+        'level': slide.bxi_level or None,
+        'rating': round(channel.rating_avg_stars, 1) if channel.rating_count else None,
+        'learning_objectives': [line.strip(' -•\t') for line in (slide.bxi_learning_objectives or '').splitlines()
+                                if line.strip(' -•\t')],
+        'modes': {
+            'read': article or bool(slide.binary_content),
+            'listen': {'available': article or bool(slide.bxi_audio), 'audio': bool(slide.bxi_audio),
+                       'text_to_speech': article},
+            'watch': {'available': bool(video_url), 'video_url': video_url or None},
+        },
+        'tts_text': html2plaintext(slide.html_content) if article else None,
+    }
 
 
 def _visible_courses():
@@ -268,14 +297,37 @@ class BxiElearningApiController(http.Controller):
 
     @http.route('/api/v1/elearning/lessons/<int:slide_id>', type='http', auth='public', methods=['GET'], csrf=False)
     @require_auth
-    def lesson(self, slide_id, **kwargs):
-        """A lesson's content. Opening it as a member records it as viewed."""
+    def lesson(self, slide_id, lang=None, **kwargs):
+        """A lesson's content. Opening it as a member records it as viewed.
+        `lang` (e.g. hi_IN, one of the returned `languages`) reads the
+        chapter's translation; untranslated text falls back to the original."""
         slide, error = self._lesson(slide_id)
         if error:
             return error
+        if lang:
+            if not request.env['res.lang'].sudo().search_count([('code', '=', lang), ('active', '=', True)]):
+                return api_error('This language is not available.', status=400, code='invalid_language')
+            slide = slide.with_context(lang=lang)
         if slide.channel_id.is_member:
             slide._action_set_viewed(request.env.user.partner_id)
         return api_response(dict(_lesson_dict(slide, content=True), course=_ref(slide.channel_id)))
+
+    @http.route('/api/v1/elearning/lessons/<int:slide_id>/audio', type='http', auth='public', methods=['GET'], csrf=False)
+    @require_auth
+    def lesson_audio(self, slide_id, **kwargs):
+        """The chapter's uploaded narration for "Listen"."""
+        slide, error = self._lesson(slide_id)
+        if error:
+            return error
+        raw = slide.sudo().bxi_audio
+        if not raw:
+            return api_error('This lesson has no audio: use text_to_speech.', status=404, code='no_audio')
+        content = base64.b64decode(raw)
+        mimetype = guess_mimetype(content, default='audio/mpeg')
+        if not mimetype.startswith('audio/'):
+            mimetype = 'audio/mpeg'
+        filename = slide.bxi_audio_filename or 'lesson-%s.mp3' % slide.id
+        return api_file_response(content, filename, mimetype=mimetype)
 
     @http.route('/api/v1/elearning/lessons/<int:slide_id>/file', type='http', auth='public', methods=['GET'], csrf=False)
     @require_auth

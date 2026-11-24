@@ -2,7 +2,7 @@
 
 {
     'name': 'Orbix eLearning API',
-    'version': '19.0.1.1.0',
+    'version': '19.0.1.2.0',
     'category': 'Education',
     'summary': 'Orbix app API for eLearning courses organised by class and section',
     'description': """
@@ -23,7 +23,9 @@
         'bxi_api',
         'bxi_elearning_class_section',
     ],
-    'data': [],
+    'data': [
+        'views/slide_slide_views.xml',
+    ],
     'installable': True,
     'application': False,
     'license': 'OPL-1',

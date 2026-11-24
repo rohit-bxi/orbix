@@ -7,6 +7,7 @@ from odoo.exceptions import AccessDenied, UserError
 from odoo.http import request
 
 from .auth import api_error, api_response, get_current_token, json_field, rate_limit, require_auth, require_step_up
+from .two_factor import MFA_TOKEN_TTL, make_mfa_token
 
 
 def _token_dict(token, current):
@@ -44,6 +45,11 @@ class BxiApiAuthController(http.Controller):
             return api_error('Invalid login or password.', status=401, code='invalid_credentials')
 
         user = request.env['res.users'].sudo().browse(auth_info['uid'])
+        if user.totp_enabled:
+            # Password was right; the token waits for the authenticator code
+            # on /api/v1/auth/login/2fa.
+            return api_response({'mfa_required': True, 'mfa_method': 'totp',
+                                 'mfa_token': make_mfa_token(user), 'expires_in': MFA_TOKEN_TTL})
         return api_response(self._issue_login_response(user, payload.get('device_name')))
 
     @staticmethod

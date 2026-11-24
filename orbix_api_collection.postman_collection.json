@@ -223,6 +223,171 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "2FA - Login step 2",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/login/2fa",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login",
+                "2fa"
+              ]
+            },
+            "description": "No auth. When /auth/login answers {mfa_required: true, mfa_token, expires_in: 300}, send the mfa_token with the current 6-digit authenticator code; returns the same body as /auth/login. Errors: mfa_token_expired, invalid_code.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mfa_token\": \"{{mfa_token}}\",\n  \"code\": \"123456\",\n  \"device_name\": \"Phone\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "2FA - Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/2fa",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "2fa"
+              ]
+            },
+            "description": "Requires auth. {enabled}."
+          },
+          "response": []
+        },
+        {
+          "name": "2FA - Setup",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/2fa/setup",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "2fa",
+                "setup"
+              ]
+            },
+            "description": "Requires auth and a recent password login or /auth/step-up. Returns setup_id, secret (to type in), otpauth_url and qr_code_png_base64. Nothing changes until /auth/2fa/enable.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "2FA - Enable",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/2fa/enable",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "2fa",
+                "enable"
+              ]
+            },
+            "description": "Requires auth. The first code from the authenticator app turns 2FA on. From then on password login needs /auth/login/2fa.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"setup_id\": 1,\n  \"code\": \"123456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "2FA - Disable",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/2fa/disable",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "2fa",
+                "disable"
+              ]
+            },
+            "description": "Requires auth, a recent password confirmation (/auth/step-up) and a current code.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"123456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
         }
       ]
     },
@@ -18965,6 +19130,29 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "Lesson audio (Listen)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/elearning/lessons/{{slide_id}}/audio",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "elearning",
+                "lessons",
+                "{{slide_id}}",
+                "audio"
+              ]
+            },
+            "description": "Requires auth. The chapter's uploaded narration. 404 no_audio when none: use the lesson's tts_text with the phone's text-to-speech. The lesson detail (GET /elearning/lessons/{id}?lang=hi_IN) now returns modes {read, listen, watch}, tts_text, read_minutes, level, rating, learning_objectives, language and languages."
+          },
+          "response": []
         }
       ]
     },
@@ -20369,7 +20557,7 @@
                     }
                   ]
                 },
-                "description": "Requires auth. student_id is optional for a student login or a parent with one child (defaults to their own student); teachers of the student's section and office staff must send it. 403 for someone else's child. smart_books: Smart Books of the student's class from an approved curriculum, with reading progress; library: library books currently issued (due date, overdue days, fine); summary counts. subject_id filters smart_books."
+                "description": "Requires auth. student_id is optional for a student login or a parent with one child (defaults to their own student); teachers of the student's section and office staff must send it. 403 for someone else's child. smart_books: Smart Books of the student's class from an approved curriculum, with reading progress; library: library books currently issued (due date, overdue days, fine); summary counts. subject_id filters smart_books. elearning_books: eLearning courses the student joined (chapter_index of chapter_count, completion, hours_left)."
               },
               "response": []
             },
@@ -20402,6 +20590,200 @@
                   ]
                 },
                 "description": "Requires auth. student_id is optional for a student login or a parent with one child (defaults to their own student); teachers of the student's section and office staff must send it. 403 for someone else's child. exams: offline exam papers of the student's class (time, room, status upcoming/completed; result with marks/percentage/passed once the paper is Done). tests: online tests assigned to the student (date, time, duration, submission_status; score/percentage once graded). summary: counts and average_percentage. status=upcoming|completed|all."
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Settings & Career Pathway",
+          "item": [
+            {
+              "name": "Get preferences",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/me/preferences",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "me",
+                    "preferences"
+                  ]
+                },
+                "description": "Requires auth. notifications {assignment_reminders, exam_notifications, grade_updates, study_reminders}, app {language, theme, offline_mode, auto_sync}, languages, themes. A switch that is off stops the phone push for that kind; the inbox still lists it."
+              },
+              "response": []
+            },
+            {
+              "name": "Update preferences",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/me/preferences",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "me",
+                    "preferences"
+                  ]
+                },
+                "description": "Requires auth. Keys not sent keep their value.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"notifications\": {\n    \"grade_updates\": false\n  },\n  \"app\": {\n    \"theme\": \"dark\",\n    \"offline_mode\": true,\n    \"language\": \"en_US\"\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Career report",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/student/career-report?student_id={{student_id}}&days=7",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "student",
+                    "career-report"
+                  ],
+                  "query": [
+                    {
+                      "key": "student_id",
+                      "value": "{{student_id}}",
+                      "disabled": true
+                    },
+                    {
+                      "key": "days",
+                      "value": "7",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "Requires auth: the student, their parent or office staff (not teachers). usage (null without consent): daily_screen_time_hours, apps_used_per_day, productivity_score, primary_interest, category_analysis. careers: match from app usage and/or results, with reason and sources."
+              },
+              "response": []
+            },
+            {
+              "name": "Usage consent - get",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/student/usage/consent?student_id={{student_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "student",
+                    "usage",
+                    "consent"
+                  ],
+                  "query": [
+                    {
+                      "key": "student_id",
+                      "value": "{{student_id}}",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "Requires auth. {consent, given_by, date}."
+              },
+              "response": []
+            },
+            {
+              "name": "Usage consent - set",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/student/usage/consent",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "student",
+                    "usage",
+                    "consent"
+                  ]
+                },
+                "description": "Requires auth. A parent or the office gives consent; the student may only withdraw it. Withdrawing deletes stored usage.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"student_id\": \"{{student_id}}\",\n  \"consent\": true\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Upload daily usage",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/student/usage",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "student",
+                    "usage"
+                  ]
+                },
+                "description": "Student login only, after consent (403 consent_required). Daily minutes per category - never app names. Categories: education, reading, productivity, development, design, social, entertainment, games, other. date: today or up to 7 days back; sending a day again replaces it.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"date\": \"2026-11-24\",\n  \"categories\": [\n    {\n      \"category\": \"development\",\n      \"minutes\": 95,\n      \"app_count\": 4\n    },\n    {\n      \"category\": \"social\",\n      \"minutes\": 40,\n      \"app_count\": 6\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
               },
               "response": []
             }

@@ -3,7 +3,7 @@
 # License OPL-1 (Odoo Proprietary License v1.0, see LICENSE file for full text).
 import re
 
-from odoo import api, models
+from odoo import api, fields, models
 from odoo.tools import SQL
 
 
@@ -16,6 +16,22 @@ def normalize_phone(phone):
 
 class ResUsers(models.Model):
     _inherit = 'res.users'
+
+    bxi_muted_notification_categories = fields.Char(
+        string='Muted Notification Categories', copy=False,
+        help='Comma-separated bxi.notification categories this person switched off in the app: they '
+             'still appear in the in-app inbox, but are not pushed to the phone.')
+
+    def _bxi_muted_categories(self):
+        self.ensure_one()
+        return {c.strip() for c in (self.bxi_muted_notification_categories or '').split(',') if c.strip()}
+
+    def _bxi_is_muted(self, category):
+        return bool(category) and category in self._bxi_muted_categories()
+
+    def _bxi_set_muted_categories(self, categories):
+        self.ensure_one()
+        self.sudo().bxi_muted_notification_categories = ','.join(sorted(set(categories))) or False
 
     @api.model
     def _bxi_find_users_by_phone(self, phone):

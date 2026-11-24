@@ -9,3 +9,4 @@ from . import community
 from . import school_info
 from . import assignment
 from . import admission
+from . import device_usage

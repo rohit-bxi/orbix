@@ -60,3 +60,5 @@ access_bxi_career_staff,bxi.career.staff,model_bxi_career,base.group_user,1,0,0,
 access_bxi_career_subject_staff,bxi.career.subject.staff,model_bxi_career_subject,base.group_user,1,0,0,0
 access_bxi_school_value_staff,bxi.school.value.staff,model_bxi_school_value,base.group_user,1,0,0,0
 access_bxi_school_team_member_staff,bxi.school.team.member.staff,model_bxi_school_team_member,base.group_user,1,0,0,0
+access_bxi_device_usage_manager,bxi.device.usage.manager,model_bxi_device_usage,bxi_academic_management.group_academic_manager,1,0,0,1
+access_bxi_device_usage_office,bxi.device.usage.office,model_bxi_device_usage,openeducat_core.group_op_back_office_admin,1,0,0,1

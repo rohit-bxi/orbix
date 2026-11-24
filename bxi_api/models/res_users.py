@@ -45,6 +45,7 @@ class ResUsers(models.Model):
             'company': {'id': self.company_id.id, 'name': self.company_id.name},
             'is_admin': self.has_group('base.group_system'),
             'must_change_password': self.sudo().bxi_must_change_password,
+            'two_factor_enabled': self.sudo().totp_enabled,
         }
 
     def _bxi_check_step_up(self, payload):
