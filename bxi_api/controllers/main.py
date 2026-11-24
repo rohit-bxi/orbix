@@ -7,6 +7,7 @@ from odoo.exceptions import AccessDenied, UserError
 from odoo.http import request
 
 from .auth import api_error, api_response, get_current_token, json_field, rate_limit, require_auth, require_step_up
+from .two_factor import MFA_TOKEN_TTL, make_mfa_token
 
 
 def _token_dict(token, current):
@@ -36,14 +37,23 @@ class BxiApiAuthController(http.Controller):
             return api_error('login and password are required.', status=400, code='missing_credentials')
 
         try:
+            # Interactive: a person typing their password in the app. With
+            # Odoo 2FA on, a non-interactive password login is refused
+            # outright ("API keys only"); here the password is only step one
+            # and /api/v1/auth/login/2fa then demands the authenticator code.
             auth_info = request.env['res.users'].sudo().authenticate(
                 {'type': 'password', 'login': login, 'password': password},
-                {'interactive': False},
+                {'interactive': True},
             )
         except AccessDenied:
             return api_error('Invalid login or password.', status=401, code='invalid_credentials')
 
         user = request.env['res.users'].sudo().browse(auth_info['uid'])
+        if user.totp_enabled:
+            # Password was right; the token waits for the authenticator code
+            # on /api/v1/auth/login/2fa.
+            return api_response({'mfa_required': True, 'mfa_method': 'totp',
+                                 'mfa_token': make_mfa_token(user), 'expires_in': MFA_TOKEN_TTL})
         return api_response(self._issue_login_response(user, payload.get('device_name')))
 
     @staticmethod

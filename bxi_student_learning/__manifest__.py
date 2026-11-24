@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Orbix Student Learning',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.1.0',
     'category': 'Education',
     'summary': 'Study notes, doubts, reading progress, career guidance, student community, school info '
                'and the online admission application behind the Orbix student app',
@@ -42,6 +42,7 @@
         'security/ir.model.access.csv',
         'security/student_learning_security.xml',
         'data/career_data.xml',
+        'data/career_usage_data.xml',
         'report/study_note_report.xml',
         'views/study_note_views.xml',
         'views/doubt_views.xml',

@@ -16,7 +16,7 @@ PLATFORMS = ('android', 'ios', 'web')
 # created with (bxi_api_support/models/push_triggers.py and the student
 # app's notes, doubts and community). Anything else is "system".
 TABS = {
-    'assignments': ('homework', 'doubt', 'note'),
+    'assignments': ('homework', 'homework_reminder', 'study_reminder', 'doubt', 'note'),
     'exams': ('exam', 'result'),
     'announcements': ('announcement', 'event', 'ptm', 'community'),
     'achievements': ('certificate', 'achievement'),

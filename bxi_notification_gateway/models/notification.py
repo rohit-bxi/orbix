@@ -41,7 +41,9 @@ class BxiNotification(models.Model):
     def _notify(self, users, title, body=None, category=None, record=None, push=True):
         """Create one inbox entry per user in `users` and queue the push.
         Returns the created notifications. Safe to call with an empty
-        recordset or with duplicate users."""
+        recordset or with duplicate users. A user who switched `category`
+        off (res.users.bxi_muted_notification_categories) still gets the
+        inbox entry, but no push."""
         users = users.filtered('active')
         if not users:
             return self.browse()
@@ -52,9 +54,9 @@ class BxiNotification(models.Model):
             'category': category or False,
             'res_model': record._name if record else False,
             'res_id': record.id if record else False,
-            'push_state': 'pending' if push else 'disabled',
+            'push_state': 'pending' if push and not user.sudo()._bxi_is_muted(category) else 'disabled',
         } for user in users])
-        if push:
+        if any(n.push_state == 'pending' for n in notifications):
             cron = self.env.ref('bxi_notification_gateway.ir_cron_send_push_notifications', raise_if_not_found=False)
             if cron:
                 cron._trigger()

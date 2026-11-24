@@ -54,3 +54,5 @@ from . import student_app
 from . import digital_library
 from . import admission_application
 from . import student_records
+from . import preferences
+from . import career_report

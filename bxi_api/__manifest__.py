@@ -2,7 +2,7 @@
 
 {
     'name': 'Orbix API',
-    'version': '19.0.1.5.0',
+    'version': '19.0.1.6.0',
     'category': 'Education',
     'summary': 'Token-authenticated REST API layer for the Orbix mobile app',
     'description': """
@@ -30,6 +30,7 @@
     'website': 'https://bxitech.com/',
     'depends': [
         'base',
+        'auth_totp',
     ],
     'data': [
         'security/api_groups.xml',
