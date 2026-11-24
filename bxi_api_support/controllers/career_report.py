@@ -61,7 +61,7 @@ def _usage_summary(rows, days):
         by_category[row.category] += row.minutes
         apps_by_day[row.date] += row.app_count
     days_with_data = len(set(rows.mapped('date')))
-    ranked = sorted(by_category.items(), key=lambda kv: -kv[1])
+    ranked = sorted(by_category.items(), key=lambda kv: (-kv[1], kv[0]))
     top = next((cat for cat, _m in ranked if cat != 'other'), ranked[0][0] if ranked else None)
     return total, by_category, {
         'days': days,

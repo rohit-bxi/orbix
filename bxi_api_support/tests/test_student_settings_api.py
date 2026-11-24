@@ -162,7 +162,7 @@ class TestStudentSettingsApi(ApiSupportHttpCase):
         self.assertEqual(report['productivity_score'], 60)  # development 180 of 300
         self.assertEqual(report['primary_interest']['key'], 'development')
         self.assertEqual(report['primary_interest']['label'], 'Tech')
-        self.assertEqual([c['category'] for c in report['category_analysis']], ['development', 'social', 'games'])
+        self.assertEqual([c['category'] for c in report['category_analysis']], ['development', 'games', 'social'], 'Ties sort by key.')
         careers = self._data(self._get('/api/v1/student/career-report'))['careers']
         self.assertEqual(careers[0]['name'], 'Mobile App Developer')
         self.assertEqual(careers[0]['match'], 100)

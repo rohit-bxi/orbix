@@ -37,9 +37,13 @@ class BxiApiAuthController(http.Controller):
             return api_error('login and password are required.', status=400, code='missing_credentials')
 
         try:
+            # Interactive: a person typing their password in the app. With
+            # Odoo 2FA on, a non-interactive password login is refused
+            # outright ("API keys only"); here the password is only step one
+            # and /api/v1/auth/login/2fa then demands the authenticator code.
             auth_info = request.env['res.users'].sudo().authenticate(
                 {'type': 'password', 'login': login, 'password': password},
-                {'interactive': False},
+                {'interactive': True},
             )
         except AccessDenied:
             return api_error('Invalid login or password.', status=401, code='invalid_credentials')
