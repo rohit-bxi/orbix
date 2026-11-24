@@ -219,3 +219,23 @@ class TestStudentRecordsApi(ApiSupportHttpCase):
         # Another class's student sees none of it.
         other = self._data(self._get('/api/v1/student/exams', 'sr_other', 'OtherPass1!'))
         self.assertEqual((other['exams'], other['tests']), ([], []))
+
+    def test_books_elearning_courses_joined_by_login(self):
+        """The student joins courses as their login's contact, not the
+        op.student contact."""
+        if 'slide.channel' not in self.env:
+            self.skipTest('eLearning not installed')
+        channel = self.env['slide.channel'].create({'name': 'SR Algebra', 'enroll': 'public',
+                                                    'visibility': 'connected', 'is_published': True})
+        Slide = self.env['slide.slide']
+        first = Slide.create({'name': 'SR Ch1', 'channel_id': channel.id, 'slide_category': 'article',
+                              'html_content': '<p>x</p>', 'is_published': True, 'sequence': 1, 'completion_time': 0.5})
+        Slide.create({'name': 'SR Ch2', 'channel_id': channel.id, 'slide_category': 'article',
+                      'html_content': '<p>y</p>', 'is_published': True, 'sequence': 2, 'completion_time': 1.0})
+        channel._action_add_members(self.student_user.partner_id)
+        self.assertNotEqual(self.student_user.partner_id, self.student.partner_id)
+        first.with_user(self.student_user)._action_mark_completed()
+        books = self._data(self._get('/api/v1/student/books', 'sr_parent', 'ParentPass1!'))['elearning_books']
+        self.assertEqual(len(books), 1)
+        self.assertEqual((books[0]['id'], books[0]['chapter_index'], books[0]['chapter_count'], books[0]['hours_left']),
+                         (channel.id, 2, 2, 1.0))

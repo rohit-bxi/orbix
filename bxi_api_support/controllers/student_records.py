@@ -45,15 +45,18 @@ def _student_header(student):
 def _elearning_books(env, student):
     """The Smart Book screen's cards: the eLearning courses the student has
     joined, with "Chapter 5 of 12", completion and hours left. Empty when
-    eLearning is not installed or the student has no login partner."""
-    if 'slide.channel.partner' not in env or not student.partner_id:
+    eLearning is not installed. A student joins courses as their login's
+    contact, which is not the op.student contact - both are looked at."""
+    partners = (student.sudo().user_id.partner_id | student.sudo().partner_id)
+    if 'slide.channel.partner' not in env or not partners:
         return []
     members = env['slide.channel.partner'].sudo().search([
-        ('partner_id', '=', student.partner_id.id), ('member_status', '!=', 'invited'),
+        ('partner_id', 'in', partners.ids), ('member_status', '!=', 'invited'),
         ('channel_id.is_published', '=', True)])
+    members = members.filtered(lambda m: m == members.filtered(lambda o: o.channel_id == m.channel_id)[:1])
     Slide = env['slide.slide'].sudo()
     done = set(env['slide.slide.partner'].sudo().search([
-        ('partner_id', '=', student.partner_id.id), ('completed', '=', True)]).slide_id.ids)
+        ('partner_id', 'in', partners.ids), ('completed', '=', True)]).slide_id.ids)
     result = []
     for member in members.sorted(lambda m: (m.channel_id.name or '', m.id)):
         channel = member.channel_id
