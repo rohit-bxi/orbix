@@ -147,3 +147,14 @@ class TestAnnouncement(TransactionCase):
         # No enrollment matches this course/batch combination.
         announcement.action_publish()
         self.assertEqual(announcement.state, 'published')
+
+    def test_sms_announcement_goes_by_email_once(self):
+        """No SMS provider yet: SMS is delivered by email, one per person."""
+        self.student.partner_id.email = 'ann.student@example.com'
+        mails = self.env['mail.mail'].sudo()
+        for email_too in (False, True):
+            announcement = self._make_announcement(channel_in_app=False, channel_email=email_too, channel_sms=True)
+            announcement.action_publish()
+            sent = mails.search([('model', '=', 'bxi.announcement'), ('res_id', '=', announcement.id),
+                                 ('email_to', '=', 'ann.student@example.com')])
+            self.assertEqual(len(sent), 1, 'email ticked too: %s' % email_too)

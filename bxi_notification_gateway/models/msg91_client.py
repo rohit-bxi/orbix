@@ -33,6 +33,17 @@ class Msg91Client(models.AbstractModel):
             'template_id': ICP.get_param('bxi_notification_gateway.msg91_otp_template_id'),
         }
 
+    def _is_configured(self, kind='otp'):
+        """True when MSG91 can send this kind of SMS ('otp' or
+        'credentials'): an auth key and that template's ID are set."""
+        config = self._get_config()
+        if kind == 'credentials':
+            template_id = self.env['ir.config_parameter'].sudo().get_param(
+                'bxi_notification_gateway.msg91_credentials_template_id')
+        else:
+            template_id = config['template_id']
+        return bool(config['auth_key'] and template_id)
+
     def send_credentials_sms(self, phone, username, password):
         """Send a new login (username + one-time password) to `phone` via
         the MSG91 credentials template. Returns True on success, False when

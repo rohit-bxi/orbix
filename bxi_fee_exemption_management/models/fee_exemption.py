@@ -3,6 +3,7 @@
 # License OPL-1 (Odoo Proprietary License v1.0, see LICENSE file for full text).
 from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError
+from odoo.tools.misc import format_amount, format_date
 
 from .fee_exemption_request import EXEMPTION_TYPES
 
@@ -10,7 +11,7 @@ from .fee_exemption_request import EXEMPTION_TYPES
 class FeeExemption(models.Model):
     _name = 'bxi.fee.exemption'
     _description = 'Fee Exemption'
-    _inherit = ['mail.thread', 'mail.activity.mixin']
+    _inherit = ['mail.thread', 'mail.activity.mixin', 'bxi.family.mail.mixin']
     _order = 'valid_from desc'
 
     name = fields.Char(string='Exemption ID', copy=False, readonly=True, default=lambda self: _('New'))
@@ -100,7 +101,7 @@ class FeeExemption(models.Model):
 
     # Notification Settings
     notify_parent = fields.Boolean(string='Notify parent/guardian about changes')
-    notify_sms = fields.Boolean(string='Send SMS notification')
+    notify_sms = fields.Boolean(string='Send SMS notification', help='There is no SMS provider yet, so this is sent by email.')
     notify_email = fields.Boolean(string='Send email notification')
 
     internal_notes = fields.Text()
@@ -178,9 +179,39 @@ class FeeExemption(models.Model):
             'approved_by': self.env.user.id,
             'approval_date': fields.Date.context_today(self),
         })
+        self._bxi_notify_family('approved')
 
     def action_reject(self):
         self.write({'approval_status': 'rejected'})
+        self._bxi_notify_family('rejected')
+
+    def _bxi_notify_family(self, event):
+        """Email the family that the exemption was 'approved' or
+        'rejected', where a notification option is ticked (there is no
+        SMS provider yet, so an SMS tick is sent by email)."""
+        types = dict(EXEMPTION_TYPES)
+        for exemption in self.filtered(lambda e: e.notify_parent or e.notify_email or e.notify_sms):
+            student = exemption.student_id.name
+            if event == 'approved':
+                if exemption.exemption_method == 'percentage':
+                    value = '%s%%' % ('%g' % exemption.coverage_percentage)
+                else:
+                    value = format_amount(exemption.env, exemption.fixed_amount or exemption.max_exemption_amount,
+                                          exemption.currency_id)
+                exemption._bxi_email_family(
+                    _('Fee exemption approved for %s', student),
+                    _('We are pleased to let you know that a fee exemption has been approved for %s.', student),
+                    [(_('Reference'), exemption.name), (_('Exemption type'), types.get(exemption.exemption_type)),
+                     (_('Exemption'), value),
+                     (_('Valid from'), format_date(exemption.env, exemption.valid_from)),
+                     (_('Valid until'), format_date(exemption.env, exemption.valid_until))],
+                    note=exemption.approval_notes)
+            else:
+                exemption._bxi_email_family(
+                    _('Fee exemption not approved for %s', student),
+                    _('The fee exemption for %s could not be approved. Please contact the school office for '
+                      'details.', student),
+                    [(_('Reference'), exemption.name), (_('Exemption type'), types.get(exemption.exemption_type))])
 
     def action_reset_to_draft(self):
         self.write({'approval_status': 'draft', 'approved_by': False, 'approval_date': False})

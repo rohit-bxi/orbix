@@ -214,11 +214,29 @@ class BxiPeopleService(models.AbstractModel):
         """Send `user`'s username and one-time password. Never raises: a
         send that failed comes back as {'sent': False, 'reason': ...}."""
         if channel == 'sms':
-            phone = self._phone(record)
-            if not phone:
-                return {'channel': channel, 'sent': False, 'reason': 'no_phone'}
-            sent = self.env['bxi.msg91.client'].sudo().send_credentials_sms(phone, user.login, password)
-            return {'channel': channel, 'sent': sent, 'reason': None if sent else 'sms_not_sent'}
+            # While SMS is not set up (Settings > Orbix Notifications), an
+            # SMS request goes out by email instead; "SMS and email" sends
+            # both and reports the SMS.
+            channels = self.env['bxi.otp.request'].sudo()._delivery_channels('credentials')
+            sms_result = None
+            if 'sms' in channels:
+                phone = self._phone(record)
+                if not phone:
+                    sms_result = {'channel': 'sms', 'sent': False, 'reason': 'no_phone'}
+                else:
+                    sent = self.env['bxi.msg91.client'].sudo().send_credentials_sms(phone, user.login, password)
+                    sms_result = {'channel': 'sms', 'sent': sent, 'reason': None if sent else 'sms_not_sent'}
+                if 'email' not in channels:
+                    return sms_result
+            email_result = self._send_credentials_email(record, user, password)
+            if sms_result and (sms_result['sent'] or not email_result['sent']):
+                return sms_result
+            return dict(email_result, requested_channel='sms')
+        return self._send_credentials_email(record, user, password)
+
+    @api.model
+    def _send_credentials_email(self, record, user, password):
+        channel = 'email'
         email = self._partner(record).email or user.email
         if not email:
             return {'channel': channel, 'sent': False, 'reason': 'no_email'}

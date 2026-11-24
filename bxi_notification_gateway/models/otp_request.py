@@ -18,6 +18,15 @@ OTP_MAX_ATTEMPTS = 5
 # for an account, so the route can't be used to flood someone's inbox.
 EMAIL_RESEND_SECONDS = 60
 EMAIL_MAX_PER_HOUR = 5
+# Settings > Orbix Notifications: how codes and new logins are delivered.
+DELIVERY_MODES = [
+    ('auto', 'Automatic (SMS once set up, else email)'),
+    ('email', 'Email only'),
+    ('sms', 'SMS only'),
+    ('both', 'SMS and email'),
+]
+# Wording of the emailed code per purpose (subject and body).
+PURPOSE_LABELS = {'login': 'login', 'password_reset': 'password reset', 'step_up': 'verification'}
 
 
 class BxiOtpRequest(models.Model):
@@ -51,32 +60,91 @@ class BxiOtpRequest(models.Model):
         return hashlib.sha256(code.encode()).hexdigest()
 
     @api.model
-    def _generate_and_send(self, phone, purpose='login'):
-        """Create a fresh OTP for `phone` and send it via MSG91. Returns
-        True if the SMS was handed off successfully, False otherwise (the
-        OTP record is created either way, so a retry can reuse it until it
-        expires rather than spamming new codes).
-        """
+    def _delivery_channels(self, kind='otp'):
+        """The channels codes (`kind` 'otp') or new logins ('credentials')
+        go out on, from the delivery setting: ('sms',), ('email',) or
+        ('sms', 'email'). Automatic - the default - texts once MSG91 is
+        set up and emails until then; "both" without MSG91 is email."""
+        mode = self.env['ir.config_parameter'].sudo().get_param('bxi_notification_gateway.otp_delivery') or 'auto'
+        if mode == 'sms':
+            return ('sms',)
+        if mode == 'email':
+            return ('email',)
+        sms_ready = self.env['bxi.msg91.client'].sudo()._is_configured(kind)
+        if mode == 'both' and sms_ready:
+            return ('sms', 'email')
+        return ('sms',) if sms_ready and mode == 'auto' else ('email',)
+
+    @api.model
+    def _generate_and_deliver(self, phone=None, user=None, purpose='login'):
+        """Create a fresh code and send it on the configured channels: SMS
+        to `phone`, email to `user`'s address. Returns {sent, channel
+        ('sms' | 'email' | 'both' | None), email, reason}; reason is
+        'throttled' (emailed less than a minute ago - the last code still
+        works), 'no_phone' / 'no_email' / 'no_contact' (nothing to send
+        to: no code is made) or 'not_sent' (the provider refused it; the
+        code is kept so a retry can still use it)."""
+        channels = self._delivery_channels('otp')
+        phone = (phone or '').strip() or False
+        user = user.sudo() if user else self.env['res.users']
+        email = user and user._bxi_get_otp_email() or False
+        by_sms = 'sms' in channels and bool(phone)
+        by_email = 'email' in channels and bool(email)
+        result = {'sent': False, 'channel': None, 'email': email or None, 'reason': None}
+        if not (by_sms or by_email):
+            result['reason'] = {('sms',): 'no_phone', ('email',): 'no_email'}.get(channels, 'no_contact')
+            return result
+        if by_email and self._email_throttled(user):
+            if not by_sms:
+                result.update(channel='email', reason='throttled')
+                return result
+            by_email = False
         code = f'{secrets.randbelow(1000000):06d}'
         self.sudo().create({
+            'channel': 'email' if by_email else 'sms',
             'phone': phone,
+            'user_id': user.id or False,
+            'email': email if by_email else False,
             'purpose': purpose,
             'code_hash': self._hash(code),
             'expires_at': fields.Datetime.now() + timedelta(minutes=OTP_TTL_MINUTES),
         })
-        return self.env['bxi.msg91.client'].sudo().send_otp_sms(phone, code)
+        sms_sent = by_sms and self.env['bxi.msg91.client'].sudo().send_otp_sms(phone, code)
+        email_sent = by_email and self._send_otp_email(user, email, code, purpose=purpose)
+        result['channel'] = 'both' if by_sms and by_email else 'sms' if by_sms else 'email'
+        result['sent'] = bool(sms_sent or email_sent)
+        if not result['sent']:
+            result['reason'] = 'not_sent'
+        return result
 
     @api.model
-    def _verify(self, phone, code, purpose='login'):
+    def _generate_and_send(self, phone, purpose='login'):
+        """Create a fresh OTP for `phone` and deliver it (see
+        _generate_and_deliver; an email goes to the one account behind
+        the number). Returns True if it was handed off successfully."""
+        users = self.env['res.users'].sudo()._bxi_find_users_by_phone(phone)
+        user = users if len(users) == 1 else None
+        return self._generate_and_deliver(phone, user, purpose)['sent']
+
+    @api.model
+    def _verify(self, phone, code, purpose='login', user=None):
         """Returns (ok: bool, reason: str|None). `reason` is one of
         'not_found', 'expired', 'too_many_attempts', 'invalid_code' when
-        ok is False.
+        ok is False. With `user`, the latest code sent for that account
+        (to its phone or its email) counts as well.
         """
-        otp = self.sudo().search([
-            ('phone', '=', phone),
+        if phone and user:
+            target = ['|', ('phone', '=', phone), ('user_id', '=', user.id)]
+        elif phone:
+            target = [('phone', '=', phone)]
+        elif user:
+            target = [('user_id', '=', user.id)]
+        else:
+            return False, 'not_found'
+        otp = self.sudo().search(target + [
             ('purpose', '=', purpose),
             ('verified_at', '=', False),
-        ], order='create_date desc', limit=1)
+        ], order='create_date desc, id desc', limit=1)
         if not otp:
             return False, 'not_found'
         if otp.expires_at < fields.Datetime.now():
@@ -128,7 +196,7 @@ class BxiOtpRequest(models.Model):
         if not email:
             status = 'no_email'
         else:
-            status = 'sent' if self._send_otp_email(user, email, code) else 'failed'
+            status = 'sent' if self._send_otp_email(user, email, code, purpose=purpose) else 'failed'
         return (status, code) if return_code else status
 
     @api.model
@@ -151,7 +219,7 @@ class BxiOtpRequest(models.Model):
         return False
 
     @api.model
-    def _send_otp_email(self, user, email, code):
+    def _send_otp_email(self, user, email, code, purpose='login'):
         """Send `code` now with the 'Orbix: Login Code' email template.
         The mail record is deleted afterwards, sent or not, so the code is
         never kept in the outgoing mail queue. Returns True when sent."""
@@ -163,6 +231,7 @@ class BxiOtpRequest(models.Model):
         email_from = self._bxi_email_sender(company)
         mail_id = template.sudo().with_context(
             otp_code=code, otp_minutes=OTP_TTL_MINUTES, lang=user.lang,
+            otp_label=PURPOSE_LABELS.get(purpose, 'login'),
         ).send_mail(user.id, email_values={
             # Exactly one recipient: `email`. Clearing recipient_ids keeps a
             # template edited back to "default recipients" from also mailing

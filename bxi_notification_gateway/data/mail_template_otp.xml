@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Login code emailed by bxi.otp.request._generate_and_email (Aadhaar
-         login). The school may edit the wording; keep the code placeholder. -->
+    <!-- Code emailed by bxi.otp.request (Aadhaar login, and phone login,
+         password reset and step-up while codes go by email). The school may edit the wording; keep the code placeholder. -->
     <record id="mail_template_otp_email" model="mail.template">
         <field name="name">Orbix: Login Code</field>
         <field name="model_id" ref="base.model_res_users"/>
-        <field name="subject">Your {{ object.company_id.name }} login code</field>
+        <field name="subject">Your {{ object.company_id.name }} {{ ctx.get('otp_label') or 'login' }} code</field>
         <field name="auto_delete" eval="True"/>
         <!-- Only the address chosen by the code (email_to): no default
              recipients, or Odoo also sends a copy to the user's contact. -->
@@ -13,10 +13,10 @@
         <field name="body_html" type="html">
 <div style="font-family: Arial, sans-serif; font-size: 14px;">
     <p>Hello <t t-out="object.name or ''"/>,</p>
-    <p>Your login code for <t t-out="object.company_id.name or ''"/> is:</p>
+    <p>Your <t t-out="ctx.get('otp_label') or 'login'"/> code for <t t-out="object.company_id.name or ''"/> is:</p>
     <p style="font-size: 24px; font-weight: bold; letter-spacing: 4px;"><t t-out="ctx.get('otp_code') or ''"/></p>
     <p>It expires in <t t-out="ctx.get('otp_minutes') or 10"/> minutes and can be used once.</p>
-    <p>If you did not try to log in, you can ignore this email. Never share this code with anyone.</p>
+    <p>If you did not ask for this code, you can ignore this email. Never share this code with anyone.</p>
 </div>
         </field>
     </record>

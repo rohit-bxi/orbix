@@ -49,16 +49,22 @@ class ResUsers(models.Model):
         self.ensure_one()
         return self.phone
 
+    def _bxi_get_otp_email(self):
+        """The address a code for this account is emailed to while codes go
+        by email; bxi_api_support adds the parent record's email."""
+        self.ensure_one()
+        return (self.email or '').strip() or False
+
     def _bxi_check_step_up(self, payload):
         """Accept an OTP (sent by /api/v1/auth/step-up/otp-request to this
-        account's own phone) instead of a password, for parents who only
-        ever log in by phone."""
+        account's own phone or email) instead of a password, for parents
+        who only ever log in by phone."""
         code = (payload.get('otp') or '').strip()
         if code and not payload.get('password'):
             phone = self._bxi_get_otp_phone()
-            if not phone:
+            if not phone and not self._bxi_get_otp_email():
                 return False, 'no_phone'
-            ok, reason = self.env['bxi.otp.request'].sudo()._verify(phone, code, purpose='step_up')
+            ok, reason = self.env['bxi.otp.request'].sudo()._verify(phone, code, purpose='step_up', user=self)
             return (True, None) if ok else (False, reason or 'invalid_code')
         return super()._bxi_check_step_up(payload)
 

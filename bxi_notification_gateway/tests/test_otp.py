@@ -29,6 +29,8 @@ class TestBxiOtp(HttpCase):
 
     def setUp(self):
         super().setUp()
+        # These cover the SMS path: force it (the default sends by email until MSG91 is set up).
+        self.env['ir.config_parameter'].sudo().set_param('bxi_notification_gateway.otp_delivery', 'sms')
         CAPTURED.clear()
         # url_open() in this test setup shares the test's own transaction rather than
         # a separately-committed connection, so a plain unlink() here is enough to hide

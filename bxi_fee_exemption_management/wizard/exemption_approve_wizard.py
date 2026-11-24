@@ -60,7 +60,7 @@ class FeeExemptionApproveWizard(models.TransientModel):
 
     # Notification Settings
     notify_parent = fields.Boolean(string='Send approval notification to parent via email')
-    notify_sms = fields.Boolean(string='Send SMS notification to registered mobile number')
+    notify_sms = fields.Boolean(string='Send SMS notification to registered mobile number', help='There is no SMS provider yet, so this is sent by email.')
     notify_update_portal = fields.Boolean(string='Update parent portal with exemption details')
     notify_auto_adjust_pending = fields.Boolean(string='Automatically adjust pending fee amount')
 
@@ -115,9 +115,11 @@ class FeeExemptionApproveWizard(models.TransientModel):
             'document_ids': [(6, 0, self.document_ids.ids)],
             'notify_parent': self.notify_parent,
             'notify_sms': self.notify_sms,
-            'notify_email': self.notify_parent,
+            'notify_email': self.notify_parent or self.notify_sms,
         }
         exemption = self.env['bxi.fee.exemption'].create(exemption_vals)
+        # Approval email (an SMS tick goes by email - no SMS provider yet).
+        exemption._bxi_notify_family('approved')
         request.write({
             'status': 'approved',
             'exemption_id': exemption.id,

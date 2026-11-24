@@ -174,3 +174,10 @@ class ResUsers(models.Model):
         if phone:
             return phone
         return self.env['op.parent'].sudo().search([('user_id', '=', self.id)], limit=1).mobile
+
+    def _bxi_get_otp_email(self):
+        email = super()._bxi_get_otp_email()
+        if email:
+            return email
+        parent = self.env['op.parent'].sudo().search([('user_id', '=', self.id)], limit=1)
+        return (parent.name.email or '').strip() or False

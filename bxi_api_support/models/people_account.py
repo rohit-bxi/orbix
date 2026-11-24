@@ -73,6 +73,7 @@ class BxiPeopleAccountMixin(models.AbstractModel):
             raise UserError(_('This person has no login yet. Create one first.'))
         titles = {'create': _('Create Login'), 'reset': _('Reset Password'), 'send': _('Send Login Credentials')}
         partner = self.env['bxi.people.service']._partner(self)
+        sms_channels = self.env['bxi.otp.request'].sudo()._delivery_channels('credentials')
         return {
             'type': 'ir.actions.act_window',
             'name': titles[mode],
@@ -84,7 +85,7 @@ class BxiPeopleAccountMixin(models.AbstractModel):
                 'default_res_id': self.id,
                 'default_mode': mode,
                 'default_username': self.user_id.login if self.user_id else (partner.email or False),
-                'default_channel': 'email' if partner.email else 'sms',
+                'default_channel': 'email' if partner.email or 'sms' not in sms_channels else 'sms',
             },
         }
 
@@ -219,6 +220,8 @@ class BxiPeopleAccountWizard(models.TransientModel):
         if result.get('sent'):
             sent = _('The username and one-time password were sent by %s.',
                      dict(CHANNELS).get(result['channel'], result['channel']))
+            if result.get('requested_channel') == 'sms':
+                sent += ' ' + _('(SMS is not set up yet, so they went by email.)')
         elif result.get('channel'):
             sent = _('They could NOT be sent: %s.', NOT_SENT_REASONS.get(result.get('reason'), result.get('reason')))
         else:

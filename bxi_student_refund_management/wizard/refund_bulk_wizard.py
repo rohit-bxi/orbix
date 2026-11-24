@@ -57,7 +57,7 @@ class RefundBulkWizard(models.TransientModel):
         string='Supporting Documents (Common for All)')
 
     notify_parent = fields.Boolean(string='Notify all parents/guardians about refund requests')
-    notify_sms = fields.Boolean(string='Send SMS notification')
+    notify_sms = fields.Boolean(string='Send SMS notification', help='There is no SMS provider yet, so this is sent by email.')
     notify_email = fields.Boolean(string='Send email notification')
     notify_auto_update = fields.Boolean(string='Auto-update on status change')
 
@@ -122,6 +122,7 @@ class RefundBulkWizard(models.TransientModel):
                 'notify_email': self.notify_email,
                 'notify_auto_update': self.notify_auto_update,
             })
+        created.filtered(lambda r: r.status != 'draft')._bxi_notify_family('submitted')
         return {
             'type': 'ir.actions.act_window',
             'name': _('Refund Requests'),

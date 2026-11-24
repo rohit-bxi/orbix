@@ -136,9 +136,9 @@ class TestBxiApiSupportPeopleAccount(ApiSupportHttpCase):
         self.assertTrue(user.is_student)
         self.assertTrue(user.has_group('base.group_portal'))
         self.assertTrue(user.bxi_must_change_password, 'A typed password is still a one-time password.')
-        self.assertFalse(data['credentials']['sent'])
-        # The student has a phone (required), but no SMS provider is set up.
-        self.assertEqual(data['credentials']['reason'], 'sms_not_sent')
+        # No SMS provider is set up: the SMS request goes out by email.
+        self.assertTrue(data['credentials']['sent'], data['credentials'])
+        self.assertEqual((data['credentials']['channel'], data['credentials']['requested_channel']), ('email', 'sms'))
         self.assertNotIn('one_time_password', data['credentials'], 'The office typed it; it is not echoed back.')
 
         parent = self._post('/api/v1/parents', {**self._parent_screen_fields(),
@@ -210,8 +210,14 @@ class TestBxiApiSupportPeopleAccount(ApiSupportHttpCase):
         self.assertEqual(self._login('route.teacher', 'BrandNew123').status_code, 401,
                          'Sending credentials issues a fresh one-time password.')
         sms = self._post(base + '/send-credentials', {'channel': 'sms'}).json()['data']['credentials']
-        self.assertFalse(sms['sent'])
+        self.assertTrue(sms['sent'], 'Sent by email while SMS is not set up.')
+        self.assertEqual(sms['channel'], 'email')
+        self.assertNotIn('one_time_password', sms)
+        self.env['ir.config_parameter'].sudo().set_param('bxi_notification_gateway.otp_delivery', 'sms')
+        sms = self._post(base + '/send-credentials', {'channel': 'sms'}).json()['data']['credentials']
+        self.assertEqual((sms['sent'], sms['reason']), (False, 'sms_not_sent'), 'SMS only, no provider.')
         self.assertTrue(sms['one_time_password'])
+        self.env['ir.config_parameter'].sudo().set_param('bxi_notification_gateway.otp_delivery', 'auto')
 
         renamed = self._post(base, {'username': 'route.teacher2'}).json()['data']
         self.assertEqual(renamed['account']['username'], 'route.teacher2')

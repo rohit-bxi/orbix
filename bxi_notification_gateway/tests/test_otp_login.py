@@ -39,6 +39,8 @@ class TestBxiOtpLogin(HttpCase):
 
     def setUp(self):
         super().setUp()
+        # These cover the SMS path: force it (the default sends by email until MSG91 is set up).
+        self.env['ir.config_parameter'].sudo().set_param('bxi_notification_gateway.otp_delivery', 'sms')
         CAPTURED.clear()
 
     def _request_otp(self, phone):

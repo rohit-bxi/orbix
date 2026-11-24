@@ -3,12 +3,13 @@
 # License OPL-1 (Odoo Proprietary License v1.0, see LICENSE file for full text).
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError, ValidationError
+from odoo.tools.misc import format_amount, format_date
 
 
 class StudentRefundRequest(models.Model):
     _name = 'bxi.student.refund.request'
     _description = 'Student Fee Refund Request'
-    _inherit = ['mail.thread', 'mail.activity.mixin']
+    _inherit = ['mail.thread', 'mail.activity.mixin', 'bxi.family.mail.mixin']
     _order = 'request_date desc'
 
     name = fields.Char(string='Refund ID', copy=False, readonly=True, default=lambda self: _('New'))
@@ -119,9 +120,11 @@ class StudentRefundRequest(models.Model):
         column1='refund_request_id', column2='attachment_id',
         string='Supporting Documents')
 
-    # Notification Settings (flags only, no email/SMS sent in v1)
+    # Notification Settings: any of these ticked emails the family when the
+    # request is submitted, approved, rejected or completed (no SMS provider
+    # yet, so an SMS tick is sent by email).
     notify_parent = fields.Boolean(string='Notify parent/guardian about refund request')
-    notify_sms = fields.Boolean(string='Send SMS notification')
+    notify_sms = fields.Boolean(string='Send SMS notification', help='There is no SMS provider yet, so this is sent by email.')
     notify_email = fields.Boolean(string='Send email notification')
     notify_auto_update = fields.Boolean(string='Auto-update on status change')
 
@@ -188,9 +191,40 @@ class StudentRefundRequest(models.Model):
                 vals['name'] = self.env['ir.sequence'].next_by_code('bxi.student.refund.request') or _('New')
         return super().create(vals_list)
 
+    def _bxi_notify_family(self, event):
+        """Email the family about `event` ('submitted', 'approved',
+        'rejected' or 'completed') on requests that asked for it."""
+        for refund in self.filtered(lambda r: r.notify_parent or r.notify_email or r.notify_sms):
+            amount = format_amount(refund.env, refund.refund_amount, refund.currency_id)
+            student = refund.student_id.name
+            rows = [(_('Refund ID'), refund.name), (_('Student'), student), (_('Amount'), amount),
+                    (_('Refund type'), dict(refund._fields['refund_type']._description_selection(refund.env)).get(
+                        refund.refund_type))]
+            if event == 'submitted':
+                subject = _('Refund request %s received', refund.name)
+                intro = _('We have received the fee refund request for %s. We will let you know once it has '
+                          'been reviewed.', student)
+            elif event == 'approved':
+                subject = _('Refund request %s approved', refund.name)
+                intro = _('The fee refund request for %s has been approved. The refund will be processed '
+                          'shortly.', student)
+                rows.append((_('Refund mode'), dict(refund._fields['preferred_refund_mode']._description_selection(
+                    refund.env)).get(refund.preferred_refund_mode)))
+            elif event == 'rejected':
+                subject = _('Refund request %s not approved', refund.name)
+                intro = _('The fee refund request for %s could not be approved. Please contact the school '
+                          'office for details.', student)
+            else:
+                subject = _('Refund %s completed', refund.name)
+                intro = _('The fee refund for %s has been paid.', student)
+                rows += [(_('Transaction ID (UTR)'), refund.refund_utr),
+                         (_('Completed on'), format_date(refund.env, refund.refund_completion_date))]
+            refund._bxi_email_family(subject, intro, rows)
+
     def action_submit(self):
         self._check_status(('draft',), _('submit for review'))
         self.write({'status': 'pending_review'})
+        self._bxi_notify_family('submitted')
 
     def action_start_review(self):
         self._check_status(('pending_review',), _('start review'))
@@ -203,10 +237,12 @@ class StudentRefundRequest(models.Model):
             'approved_by': self.env.user.id,
             'approval_date': fields.Date.context_today(self),
         })
+        self._bxi_notify_family('approved')
 
     def action_reject(self):
         self._check_status(('pending_review', 'under_review', 'approved'), _('reject'))
         self.write({'status': 'rejected'})
+        self._bxi_notify_family('rejected')
 
     def action_start_processing(self):
         self._check_status(('approved',), _('start processing'))
@@ -227,6 +263,7 @@ class StudentRefundRequest(models.Model):
                 'refund_completion_date': fields.Date.context_today(self),
                 'payment_id': payment.id,
             })
+        self._bxi_notify_family('completed')
 
     def _create_refund_payment(self):
         """Record this refund as a real outbound customer payment instead of

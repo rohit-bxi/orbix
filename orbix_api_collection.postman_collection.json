@@ -769,7 +769,7 @@
                 "request"
               ]
             },
-            "description": "Public. Sends an OTP via MSG91 to the given phone number."
+            "description": "Public. Sends a 6-digit code for the given phone number: by SMS, or (while SMS is not set up) by email to the one account registered with that number. Response {sent, channel: \"sms\" | \"email\" | \"both\"}; by email it answers the same whether or not the number is registered, and a second code within a minute is not sent (the last one still works). Delivery follows Settings > Orbix Notifications > \"Send codes and logins by\" (default Automatic: SMS once MSG91 is set up, email until then)."
           },
           "response": []
         },
@@ -880,7 +880,7 @@
                 "forgot"
               ]
             },
-            "description": "Send a password-reset OTP to the phone on the account (by login or by phone). Always answers requested:true. Rate limited.",
+            "description": "Send a password-reset OTP to the phone or email on the account (by login or by phone). By login, an account with only an email address works too. Response {requested: true, channel}. Always answers requested:true. Rate limited. Delivery follows Settings > Orbix Notifications > \"Send codes and logins by\" (default Automatic: SMS once MSG91 is set up, email until then).",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"login\": \"parent@example.com\"\n}"
@@ -914,7 +914,7 @@
                 "reset"
               ]
             },
-            "description": "Use the same login/phone as Forgot Password. Revokes all existing tokens.",
+            "description": "Use the same login/phone as Forgot Password. Revokes all existing tokens. The code may have come by SMS or email.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"login\": \"parent@example.com\",\n  \"otp\": \"123456\",\n  \"new_password\": \"new-password\"\n}"
@@ -948,7 +948,7 @@
                 "otp-request"
               ]
             },
-            "description": "Requires auth. Texts an OTP (purpose step_up) to the logged-in account's own phone; returns {sent, phone_hint}. Then POST /api/v1/auth/step-up {\"otp\": \"...\"}. 400 no_phone if the account has no number.",
+            "description": "Requires auth. Sends an OTP (purpose step_up) to the logged-in account's own phone (SMS) or email; returns {sent, channel, phone_hint, email_hint}. Then POST /api/v1/auth/step-up {\"otp\": \"...\"}. 400 no_phone if the account has no number. 400 no_phone (SMS only, no phone) / no_email (no email address), 429 otp_throttled (a code was emailed less than a minute ago). Delivery follows Settings > Orbix Notifications > \"Send codes and logins by\" (default Automatic: SMS once MSG91 is set up, email until then).",
             "body": {
               "mode": "raw",
               "raw": "{}"
@@ -15922,7 +15922,7 @@
                 }
               ]
             },
-            "description": "Issues a fresh one-time password and sends it with the username (email or sms).",
+            "description": "Issues a fresh one-time password and sends it with the username (email or sms). While SMS is not set up, \"sms\" is delivered by email: credentials.channel is \"email\" and requested_channel \"sms\".",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"channel\": \"email\"\n}"

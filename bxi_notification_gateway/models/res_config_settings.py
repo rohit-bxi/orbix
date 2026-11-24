@@ -4,10 +4,17 @@
 
 from odoo import fields, models
 
+from .otp_request import DELIVERY_MODES
+
 
 class ResConfigSettings(models.TransientModel):
     _inherit = 'res.config.settings'
 
+    bxi_otp_delivery = fields.Selection(
+        DELIVERY_MODES, string='Send codes and logins by', default='auto',
+        help='How one-time codes (login, password reset, confirmations) and new logins reach people. '
+             'Automatic sends an SMS once MSG91 is set up below and an email until then.',
+        config_parameter='bxi_notification_gateway.otp_delivery')
     msg91_auth_key = fields.Char(
         string='MSG91 Auth Key', config_parameter='bxi_notification_gateway.msg91_auth_key')
     msg91_sender_id = fields.Char(

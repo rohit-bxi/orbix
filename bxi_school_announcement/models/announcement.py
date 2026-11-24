@@ -50,7 +50,9 @@ class Announcement(models.Model):
 
     channel_in_app = fields.Boolean(string='In-App', default=True)
     channel_email = fields.Boolean(string='Email', default=True)
-    channel_sms = fields.Boolean(string='SMS')
+    channel_sms = fields.Boolean(
+        string='SMS', help='There is no SMS provider yet, so an SMS announcement is sent by email '
+                           '(once per person, even with Email ticked too).')
     channel_push = fields.Boolean(string='Push')
 
     schedule_date = fields.Datetime(
@@ -137,7 +139,8 @@ class Announcement(models.Model):
                 subject=self.title,
                 subtype_xmlid='mail.mt_note',
             )
-        if self.channel_email:
+        if self.channel_email or self.channel_sms:
+            # SMS is not wired to a provider yet: it goes out by email.
             template = self.env.ref('bxi_school_announcement.mail_template_announcement', raise_if_not_found=False)
             if template:
                 for partner in partners.filtered('email'):
