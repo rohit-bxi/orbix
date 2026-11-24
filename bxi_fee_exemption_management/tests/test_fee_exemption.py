@@ -303,3 +303,56 @@ class TestFeeExemption(TransactionCase):
         })
         wizard.action_confirm_delete()
         self.assertFalse(exemption.exists())
+
+    # -- Family emails ------------------------------------------------------------
+
+    def _family_mails(self, record):
+        return self.env['mail.mail'].sudo().search([('model', '=', record._name), ('res_id', '=', record.id)])
+
+    def test_approval_emailed_when_sms_ticked(self):
+        """No SMS provider yet: the SMS tick sends the approval by email."""
+        self.student.partner_id.email = 'exempt.student@example.com'
+        request = self._make_request()
+        request.action_submit()
+        wizard = self.env['bxi.fee.exemption.approve.wizard'].create({
+            'request_id': request.id, 'approval_type': 'full_approval', 'exemption_method': 'fixed_amount',
+            'approved_amount': 300.0, 'valid_from': fields.Date.today(),
+            'valid_until': fields.Date.today() + timedelta(days=90), 'notify_sms': True,
+            'approval_notes': 'Well deserved.',
+        })
+        wizard.action_confirm_approve()
+        mails = self._family_mails(request.exemption_id)
+        self.assertEqual(len(mails), 1)
+        self.assertEqual(mails.email_to, 'exempt.student@example.com')
+        self.assertIn('approved', mails.subject)
+        self.assertIn('Well deserved.', mails.body_html)
+
+    def test_rejection_emailed_with_reason(self):
+        self.student.partner_id.email = 'exempt.student@example.com'
+        request = self._make_request()
+        request.action_submit()
+        self.env['bxi.fee.exemption.reject.wizard'].create({
+            'request_id': request.id, 'rejection_reason_category': 'not_eligible',
+            'detailed_rejection_reason': 'Income above the threshold.', 'notify_parent': True,
+            'allow_reapplication': True, 'confirmation_text': 'REJECT',
+        }).action_confirm_reject()
+        mails = self._family_mails(request)
+        self.assertEqual(len(mails), 1)
+        self.assertIn('Income above the threshold.', mails.body_html)
+        self.assertIn('30 days', mails.body_html)
+
+    def test_no_email_without_notification(self):
+        self.student.partner_id.email = 'exempt.student@example.com'
+        request = self._make_request()
+        request.action_submit()
+        self.env['bxi.fee.exemption.reject.wizard'].create({
+            'request_id': request.id, 'rejection_reason_category': 'not_eligible',
+            'detailed_rejection_reason': 'No.', 'confirmation_text': 'REJECT',
+        }).action_confirm_reject()
+        self.assertFalse(self._family_mails(request))
+
+    def test_direct_exemption_approval_emailed(self):
+        self.student.partner_id.email = 'exempt.student@example.com'
+        exemption = self._make_exemption(notify_email=True)
+        exemption.action_approve()
+        self.assertEqual(len(self._family_mails(exemption)), 1)

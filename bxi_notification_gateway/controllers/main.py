@@ -23,6 +23,18 @@ def _resolve_single_user(phone):
     return users, None
 
 
+def _channel_name(channels):
+    return 'both' if len(channels) > 1 else channels[0]
+
+
+def _mask_email(email):
+    """'piyush.mathur@nzeroone.com' -> 'pi****@nzeroone.com'."""
+    if not email or '@' not in email:
+        return None
+    local, domain = email.rsplit('@', 1)
+    return '%s****@%s' % (local[:2], domain)
+
+
 class BxiOtpController(http.Controller):
 
     @http.route('/api/v1/otp/request', type='http', auth='public', methods=['POST'], csrf=False)
@@ -33,8 +45,16 @@ class BxiOtpController(http.Controller):
         if not phone:
             return api_error('phone is required.', status=400, code='missing_phone')
 
-        sent = request.env['bxi.otp.request'].sudo()._generate_and_send(phone)
-        return api_response({'sent': sent})
+        Otp = request.env['bxi.otp.request'].sudo()
+        channels = Otp._delivery_channels()
+        users = request.env['res.users'].sudo()._bxi_find_users_by_phone(phone)
+        result = Otp._generate_and_deliver(phone, users if len(users) == 1 else None)
+        if 'email' in channels:
+            # Emailed codes go to the account behind the number: answer the
+            # same whether or not there is one, so the route can't be used
+            # to find out which numbers are registered.
+            return api_response({'sent': True, 'channel': _channel_name(channels)})
+        return api_response({'sent': result['sent'], 'channel': 'sms'})
 
     @http.route('/api/v1/otp/verify', type='http', auth='public', methods=['POST'], csrf=False)
     # Each code already allows only a few attempts; this also caps how
@@ -78,23 +98,38 @@ class BxiOtpController(http.Controller):
     @rate_limit('step_up_otp', limit=5)
     @require_auth
     def request_step_up_otp(self, **kwargs):
-        """Text an OTP to the logged-in account's own phone, to be sent to
-        POST /api/v1/auth/step-up as `otp`. The number is never taken from
-        the request, so this can't be pointed at someone else's phone."""
-        phone = request.env.user.sudo()._bxi_get_otp_phone()
-        if not phone:
+        """Send an OTP to the logged-in account's own phone (SMS) or email,
+        to be sent to POST /api/v1/auth/step-up as `otp`. The number and
+        address are never taken from the request, so this can't be pointed
+        at someone else."""
+        user = request.env.user.sudo()
+        phone = user._bxi_get_otp_phone()
+        result = request.env['bxi.otp.request'].sudo()._generate_and_deliver(phone, user, purpose='step_up')
+        if result['reason'] == 'no_phone':
             return api_error('No phone number is registered on this account. Use your password.',
                              status=400, code='no_phone')
-        sent = request.env['bxi.otp.request'].sudo()._generate_and_send(phone, purpose='step_up')
-        digits = ''.join(ch for ch in phone if ch.isdigit())
-        return api_response({'sent': sent, 'phone_hint': '******' + digits[-4:] if digits else None})
+        if result['reason'] in ('no_email', 'no_contact'):
+            return api_error('No email address is registered on this account. Use your password.',
+                             status=400, code='no_email')
+        if result['reason'] == 'throttled':
+            return api_error('A code was sent less than a minute ago. Use that code or try again shortly.',
+                             status=429, code='otp_throttled')
+        by_sms = result['channel'] in ('sms', 'both')
+        by_email = result['channel'] in ('email', 'both')
+        digits = ''.join(ch for ch in phone or '' if ch.isdigit())
+        return api_response({
+            'sent': result['sent'], 'channel': result['channel'],
+            'phone_hint': '******' + digits[-4:] if by_sms and digits else None,
+            'email_hint': _mask_email(result['email']) if by_email else None,
+        })
 
     @http.route('/api/v1/auth/password/forgot', type='http', auth='public', methods=['POST'], csrf=False)
     @rate_limit('password_forgot', limit=5)
     def forgot_password(self, **kwargs):
-        """Sends a password-reset OTP to the account's phone. Always answers
-        `requested: true`, whether or not the account exists, so it can't
-        be used to discover registered logins or numbers."""
+        """Sends a password-reset OTP to the account's phone (SMS) or email.
+        Always answers `requested: true`, whether or not the account
+        exists, so it can't be used to discover registered logins or
+        numbers."""
         payload = request.get_json_data()
         phone = (payload.get('phone') or '').strip()
         login = (payload.get('login') or '').strip()
@@ -103,8 +138,9 @@ class BxiOtpController(http.Controller):
 
         user, phone = self._reset_target(phone, login)
         if user:
-            request.env['bxi.otp.request'].sudo()._generate_and_send(phone, purpose='password_reset')
-        return api_response({'requested': True})
+            request.env['bxi.otp.request'].sudo()._generate_and_deliver(phone, user, purpose='password_reset')
+        channels = request.env['bxi.otp.request'].sudo()._delivery_channels()
+        return api_response({'requested': True, 'channel': _channel_name(channels)})
 
     @http.route('/api/v1/auth/password/reset', type='http', auth='public', methods=['POST'], csrf=False)
     @rate_limit('password_reset', limit=10)
@@ -121,7 +157,7 @@ class BxiOtpController(http.Controller):
         user, phone = self._reset_target(phone, login)
         if not user:
             return api_error('OTP verification failed.', status=400, code='not_found')
-        ok, reason = request.env['bxi.otp.request'].sudo()._verify(phone, code, purpose='password_reset')
+        ok, reason = request.env['bxi.otp.request'].sudo()._verify(phone, code, purpose='password_reset', user=user)
         if not ok:
             return api_error('OTP verification failed.', status=400, code=reason)
         try:
@@ -135,10 +171,10 @@ class BxiOtpController(http.Controller):
     @staticmethod
     def _reset_target(phone, login):
         """(user, phone_to_text) for a reset request, or (None, None). By
-        login, the OTP goes to the phone on that account."""
+        login, the OTP goes to the phone (or email) on that account - phone
+        may then be False."""
         if login:
             user = request.env['res.users'].sudo().search([('login', '=', login)], limit=1)
-            user_phone = user and user._bxi_get_otp_phone()
-            return (user, user_phone) if user_phone else (None, None)
+            return (user, user._bxi_get_otp_phone() or False) if user else (None, None)
         users = request.env['res.users'].sudo()._bxi_find_users_by_phone(phone)
         return (users, phone) if len(users) == 1 else (None, None)

@@ -2,7 +2,7 @@
 
 {
     'name': 'Orbix Notification Gateway',
-    'version': '19.0.1.5.0',
+    'version': '19.0.1.6.0',
     'category': 'Education',
     'summary': 'SMS/OTP (MSG91) and push (FCM) notifications for the Orbix mobile app',
     'description': """
@@ -13,6 +13,10 @@
 
         - MSG91 credentials (auth key, sender ID, OTP flow/template ID),
           configured under Settings.
+        - "Send codes and logins by" setting: Automatic (the default) texts
+          once MSG91 is set up and emails until then; Email, SMS or both
+          can be forced. Phone login, password reset (by phone or login),
+          step-up codes and new logins all follow it.
         - A generic `send_sms(phone, message)` service other modules can
           call.
         - Phone-number OTP: generate + send a one-time code, then verify it

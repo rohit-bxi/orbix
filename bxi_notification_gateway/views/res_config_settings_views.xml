@@ -7,7 +7,13 @@
         <field name="arch" type="xml">
             <xpath expr="//form" position="inside">
                 <app string="Orbix Notifications" name="bxi_notification_gateway" logo="/bxi_notification_gateway/static/description/icon.png">
-                    <block title="MSG91 SMS / OTP" help="Used to deliver OTP codes and any other feature with an SMS/push option (announcements, exemption/refund notifications).">
+                    <block title="Code &amp; Login Delivery" help="Until SMS is set up, everything that would go by SMS is sent by email.">
+                        <setting id="bxi_otp_delivery" string="Send codes and logins by"
+                                 help="Automatic: SMS once MSG91 is set up, otherwise email.">
+                            <field name="bxi_otp_delivery"/>
+                        </setting>
+                    </block>
+                    <block title="MSG91 SMS / OTP" help="Used to deliver OTP codes and new logins by SMS.">
                         <setting id="msg91_auth_key" string="Auth Key">
                             <field name="msg91_auth_key" password="True"/>
                         </setting>

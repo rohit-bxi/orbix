@@ -234,3 +234,47 @@ class TestStudentRefundRequest(TransactionCase):
         })
         wizard.action_confirm_delete()
         self.assertFalse(refund.exists())
+
+    # -- Family emails --------------------------------------------------------------
+
+    def _family_mails(self, refund):
+        return self.env['mail.mail'].sudo().search(
+            [('model', '=', refund._name), ('res_id', '=', refund.id)], order='id')
+
+    def test_family_emailed_at_each_step_when_asked(self):
+        """An SMS tick is delivered by email (no SMS provider yet)."""
+        self.student.partner_id.email = 'refund.student@example.com'
+        refund = self._make_refund(notify_sms=True)
+        refund.action_submit()
+        refund.action_approve()
+        refund.action_start_processing()
+        refund.refund_utr = 'UTR998877'
+        refund.action_complete()
+        mails = self._family_mails(refund)
+        self.assertEqual(len(mails), 3)
+        self.assertEqual(set(mails.mapped('email_to')), {'refund.student@example.com'})
+        self.assertIn('received', mails[0].subject)
+        self.assertIn('approved', mails[1].subject)
+        self.assertIn('completed', mails[2].subject)
+        self.assertIn('UTR998877', mails[2].body_html)
+
+    def test_rejection_emailed(self):
+        self.student.partner_id.email = 'refund.student@example.com'
+        refund = self._make_refund(notify_email=True)
+        refund.action_submit()
+        refund.action_reject()
+        self.assertIn('not approved', self._family_mails(refund)[-1].subject)
+
+    def test_no_email_unless_asked(self):
+        self.student.partner_id.email = 'refund.student@example.com'
+        refund = self._make_refund()
+        refund.action_submit()
+        refund.action_approve()
+        self.assertFalse(self._family_mails(refund))
+
+    def test_no_address_leaves_a_note(self):
+        self.student.partner_id.email = False
+        refund = self._make_refund(notify_parent=True)
+        refund.action_submit()
+        self.assertFalse(self._family_mails(refund))
+        self.assertTrue(refund.message_ids.filtered(lambda m: 'No email sent' in (m.body or '')))

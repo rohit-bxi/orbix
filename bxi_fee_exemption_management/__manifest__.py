@@ -2,7 +2,7 @@
 
 {
     'name': 'Fee Exemption Management',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.1.0',
     'category': 'Education',
     'summary': 'Review, approve and track fee exemption requests against a student\'s fee structure',
     'description': """
@@ -24,6 +24,9 @@
           category breakdown snapshot, eligibility criteria, validity
           period and its own draft/approve/reject workflow for exemptions
           created directly by staff (bypassing a parent request).
+        - Family emails: approving or rejecting with a notification option
+          ticked emails the parents (else the student), with the rejection
+          reason. There is no SMS provider yet, so an SMS tick goes by email.
         - Tracking-only: approving, editing or deleting an exemption never
           creates or changes accounting entries or invoices.
         - Guarded delete wizard with a financial impact preview.

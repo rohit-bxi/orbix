@@ -7,3 +7,4 @@ from . import test_otp_request_model
 from . import test_otp_login
 from . import test_push
 from . import test_otp_email
+from . import test_otp_delivery

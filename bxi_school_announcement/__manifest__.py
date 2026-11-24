@@ -2,7 +2,7 @@
 
 {
     'name': 'School Announcements',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.1.0',
     'category': 'Education',
     'summary': 'Compose and broadcast school announcements to students, teachers and parents',
     'description': """
@@ -18,8 +18,9 @@
           audience at publish time.
         - In-app delivery logs a message on the announcement (visible via
           chatter/follower notifications); email delivery uses a mail
-          template. SMS and push are accepted as delivery-channel choices
-          but not yet wired to a live provider/mobile app.
+          template. SMS is not wired to a provider yet, so an SMS
+          announcement is sent by email (one email per person). Push is
+          accepted as a delivery-channel choice.
     """,
     'author': 'BXI Technology Pvt. Ltd.',
     'maintainer': 'BXI Technology Pvt. Ltd.',

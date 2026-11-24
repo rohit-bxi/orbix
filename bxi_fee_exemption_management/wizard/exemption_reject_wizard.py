@@ -32,7 +32,7 @@ class FeeExemptionRejectWizard(models.TransientModel):
 
     # Notification Settings
     notify_parent = fields.Boolean(string='Send rejection notification to parent')
-    notify_sms = fields.Boolean(string='Send SMS notification')
+    notify_sms = fields.Boolean(string='Send SMS notification', help='There is no SMS provider yet, so this is sent by email.')
     notify_update_portal = fields.Boolean(string='Update parent portal with rejection status')
     allow_reapplication = fields.Boolean(string='Allow reapplication after 30 days')
 
@@ -52,4 +52,7 @@ class FeeExemptionRejectWizard(models.TransientModel):
             'allow_reapplication_after_days': 30 if self.allow_reapplication else 0,
             'internal_notes': self.internal_notes,
         })
+        if self.notify_parent or self.notify_sms:
+            # No SMS provider yet: an SMS tick is sent by email.
+            self.request_id._bxi_notify_rejected()
         return {'type': 'ir.actions.act_window_close'}

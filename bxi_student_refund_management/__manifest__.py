@@ -2,7 +2,7 @@
 
 {
     'name': 'Student Fee Refund Management',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.1.0',
     'category': 'Education',
     'summary': 'Track and process fee refund requests (overpayment, withdrawal, cancelled services) with an approval workflow',
     'description': """
@@ -21,6 +21,10 @@
           refund type/method/amount-calculation rule.
         - Guarded delete wizard with a financial/impact preview that
           permanently removes a refund request and its documents.
+        - Family emails: with any notification option ticked, the parents
+          (else the student) are emailed when a request is submitted,
+          approved, rejected or completed. There is no SMS provider yet,
+          so an SMS tick is delivered by email.
         - Smart button on the Student form; list/search filterable by
           Class, Section and Status.
     """,

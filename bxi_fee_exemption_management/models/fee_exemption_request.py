@@ -27,7 +27,7 @@ REJECTION_REASON_CATEGORIES = [
 class FeeExemptionRequest(models.Model):
     _name = 'bxi.fee.exemption.request'
     _description = 'Fee Exemption Request'
-    _inherit = ['mail.thread', 'mail.activity.mixin']
+    _inherit = ['mail.thread', 'mail.activity.mixin', 'bxi.family.mail.mixin']
     _order = 'submitted_date desc'
 
     name = fields.Char(string='Request ID', copy=False, readonly=True, default=lambda self: _('New'))
@@ -147,6 +147,20 @@ class FeeExemptionRequest(models.Model):
             if vals.get('name', _('New')) == _('New'):
                 vals['name'] = self.env['ir.sequence'].next_by_code('bxi.fee.exemption.request') or _('New')
         return super().create(vals_list)
+
+    def _bxi_notify_rejected(self):
+        """Email the family the rejection reason and any suggestions."""
+        for req in self:
+            note = req.rejection_reason or ''
+            if req.reapplication_suggestions:
+                note += '\n\n' + _('Suggestions: %s', req.reapplication_suggestions)
+            if req.allow_reapplication_after_days:
+                note += '\n\n' + _('You may apply again after %s days.', req.allow_reapplication_after_days)
+            req._bxi_email_family(
+                _('Fee exemption request %s not approved', req.name),
+                _('The fee exemption request for %s could not be approved.', req.student_id.name),
+                [(_('Request'), req.name), (_('Exemption type'), dict(EXEMPTION_TYPES).get(req.exemption_type))],
+                note=note.strip() or None)
 
     def action_submit(self):
         self._check_status(('draft',), _('submit for review'))
