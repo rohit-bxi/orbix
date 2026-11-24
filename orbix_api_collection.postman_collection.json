@@ -20305,6 +20305,107 @@
               "response": []
             }
           ]
+        },
+        {
+          "name": "Student Records (Timetable, Books, Exams)",
+          "item": [
+            {
+              "name": "Student Timetable (weekly)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/student/timetable?student_id={{student_id}}&day=monday",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "student",
+                    "timetable"
+                  ],
+                  "query": [
+                    {
+                      "key": "student_id",
+                      "value": "{{student_id}}"
+                    },
+                    {
+                      "key": "day",
+                      "value": "monday",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "Requires auth. student_id is optional for a student login or a parent with one child (defaults to their own student); teachers of the student's section and office staff must send it. 403 for someone else's child. Weekly timetable of the student's section, Monday-Saturday: days[].periods with start_time/end_time (HH:MM), subject, teacher; time_slots for grid columns; today. day=monday..saturday narrows to one day. message is set when no timetable exists yet."
+              },
+              "response": []
+            },
+            {
+              "name": "Student Books",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/student/books?student_id={{student_id}}&subject_id=",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "student",
+                    "books"
+                  ],
+                  "query": [
+                    {
+                      "key": "student_id",
+                      "value": "{{student_id}}"
+                    },
+                    {
+                      "key": "subject_id",
+                      "value": "",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "Requires auth. student_id is optional for a student login or a parent with one child (defaults to their own student); teachers of the student's section and office staff must send it. 403 for someone else's child. smart_books: Smart Books of the student's class from an approved curriculum, with reading progress; library: library books currently issued (due date, overdue days, fine); summary counts. subject_id filters smart_books."
+              },
+              "response": []
+            },
+            {
+              "name": "Student Exams & Tests",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/student/exams?student_id={{student_id}}&status=all",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "student",
+                    "exams"
+                  ],
+                  "query": [
+                    {
+                      "key": "student_id",
+                      "value": "{{student_id}}"
+                    },
+                    {
+                      "key": "status",
+                      "value": "all",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "Requires auth. student_id is optional for a student login or a parent with one child (defaults to their own student); teachers of the student's section and office staff must send it. 403 for someone else's child. exams: offline exam papers of the student's class (time, room, status upcoming/completed; result with marks/percentage/passed once the paper is Done). tests: online tests assigned to the student (date, time, duration, submission_status; score/percentage once graded). summary: counts and average_percentage. status=upcoming|completed|all."
+              },
+              "response": []
+            }
+          ]
         }
       ]
     }
