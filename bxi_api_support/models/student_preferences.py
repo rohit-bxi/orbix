@@ -3,12 +3,22 @@
 # License OPL-1 (Odoo Proprietary License v1.0, see LICENSE file for full text).
 """The app's Settings screen (notification switches, theme, offline mode,
 auto sync) and the two reminders those switches control: homework due
-tomorrow and the student's daily study reminder."""
+within a day and the student's daily study reminder."""
 from datetime import timedelta
+
+import pytz
 
 from odoo import _, api, fields, models
 
 from .push_triggers import _notify
+
+
+def _school_time(env, value):
+    """A UTC datetime in the school's time zone (the company's working
+    calendar, else UTC): crons run as the superuser, whose own tz says
+    nothing about the school."""
+    tz = env.company.sudo().resource_calendar_id.tz or 'UTC'
+    return pytz.utc.localize(value).astimezone(pytz.timezone(tz))
 
 # Settings switch -> the bxi.notification categories it silences.
 NOTIFICATION_SWITCHES = {
@@ -69,13 +79,20 @@ class OpAssignment(models.Model):
         handed_in = {(s.assignment_id.id, s.student_id.id) for s in self.env['op.assignment.sub.line'].sudo().search([
             ('assignment_id', 'in', assignments.ids), ('state', 'in', DONE_SUBMISSION_STATES)])}
         sent = _already_sent(self.env, 'homework_reminder', self._name, assignments.ids, now - timedelta(days=2))
+        today = _school_time(self.env, now).date()
         for assignment in assignments:
             students = assignment.allocation_ids.filtered(lambda s: (assignment.id, s.id) not in handed_in)
             users = students._bxi_family_users().filtered(lambda u: (u.id, assignment.id) not in sent)
-            _notify(self.env, users, _('Due tomorrow: %s', assignment.name),
-                    _('"%(name)s" is due on %(due)s. Hand it in on time.',
-                      name=assignment.name, due=fields.Datetime.to_string(assignment.submission_date)),
-                    'homework_reminder', assignment)
+            due = _school_time(self.env, assignment.submission_date)
+            if due.date() == today:
+                title = _('Due today: %s', assignment.name)
+                body = _('"%(name)s" is due today at %(time)s. Hand it in on time.',
+                         name=assignment.name, time=due.strftime('%I:%M %p'))
+            else:
+                title = _('Due tomorrow: %s', assignment.name)
+                body = _('"%(name)s" is due tomorrow at %(time)s. Hand it in on time.',
+                         name=assignment.name, time=due.strftime('%I:%M %p'))
+            _notify(self.env, users, title, body, 'homework_reminder', assignment)
 
 
 class OpStudent(models.Model):
@@ -110,7 +127,7 @@ class OpStudent(models.Model):
             parts = []
             if own_exams:
                 parts.append(_('Revise %(subject)s - exam on %(date)s.', subject=own_exams[0].subject_id.name or own_exams[0].name,
-                               date=fields.Datetime.context_timestamp(own_exams[0], own_exams[0].start_time).strftime('%d %b')))
+                               date=_school_time(self.env, own_exams[0].start_time).strftime('%d %b')))
             if todo:
                 parts.append(_('%s homework to finish.', len(todo)))
             _notify(self.env, student.user_id, _('Study reminder'), ' '.join(parts), 'study_reminder', student)

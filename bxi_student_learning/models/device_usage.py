@@ -85,11 +85,17 @@ class BxiCareer(models.Model):
     usage_categories = fields.Char(
         'App Usage Categories',
         help='Comma-separated app categories that point to this career in the Career Pathway report, '
-             'e.g. "development,productivity". Keys: %s.' % ', '.join(key for key, _label in USAGE_CATEGORIES))
+             'main one first, e.g. "development,productivity": the student must spend time in the main '
+             'one for usage to suggest the career. Keys: %s.' % ', '.join(key for key, _label in USAGE_CATEGORIES))
 
     def _bxi_usage_categories(self):
+        """The usage categories in order, main one first, without repeats."""
         self.ensure_one()
-        return {c.strip() for c in (self.usage_categories or '').split(',') if c.strip()}
+        seen = []
+        for category in (self.usage_categories or '').split(','):
+            if category.strip() and category.strip() not in seen:
+                seen.append(category.strip())
+        return seen
 
     @api.model
     def _bxi_seed_usage_categories(self):

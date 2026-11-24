@@ -82,16 +82,18 @@ def _usage_summary(rows, days):
 def _careers(env, student, total, by_category):
     """Careers matched from both signals: app usage (share of screen time
     in the career's categories) and results (bxi.career rules); a career
-    with both gets their average."""
+    with both gets their average. A career's first usage category is its
+    main one: without any time there, usage does not point to it."""
     by_results = {row['career'].id: row for row in env['bxi.career'].sudo()._bxi_recommend(student, limit=100)}
     result = []
     for career in env['bxi.career'].sudo().search([]):
-        scores, reasons, sources = [], [], []
+        scores, reasons, sources, share = [], [], [], 0.0
         categories = career._bxi_usage_categories()
-        if total and categories:
+        if total and categories and by_category.get(categories[0]):
             minutes = sum(by_category.get(cat, 0) for cat in categories)
             if minutes:
-                scores.append(min(100, round(100.0 * minutes / total / FULL_MATCH_SHARE)))
+                share = minutes / total
+                scores.append(min(100, round(100.0 * share / FULL_MATCH_SHARE)))
                 best = max(categories, key=lambda cat: by_category.get(cat, 0))
                 reasons.append('High use of %s apps' % CATEGORY_LABELS.get(best, best).split(' &')[0].lower())
                 sources.append('usage')
@@ -106,9 +108,13 @@ def _careers(env, student, total, by_category):
             'id': career.id, 'name': career.name, 'description': career.description or None,
             'icon': career.icon or None, 'demand': career.demand,
             'match': round(sum(scores) / len(scores)), 'reason': '; '.join(reasons),
-            'sources': sources,
+            'sources': sources, '_share': share,
         })
-    result.sort(key=lambda row: (-row['match'], row['name']))
+    # Equal matches (e.g. several capped at 100 %): the larger real share of
+    # screen time first.
+    result.sort(key=lambda row: (-row['match'], -row['_share'], row['name']))
+    for row in result:
+        del row['_share']
     return result[:TOP_CAREERS]
 
 

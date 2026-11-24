@@ -95,6 +95,7 @@ class TestStudentSettingsApi(ApiSupportHttpCase):
         return assignment
 
     def test_homework_and_study_reminders(self):
+        self.env.company.resource_calendar_id.tz = 'Asia/Kolkata'
         now = fields.Datetime.now()
         due_soon = self._homework('SS Fractions', now + timedelta(hours=10))
         self._homework('SS Later', now + timedelta(days=4))
@@ -106,6 +107,11 @@ class TestStudentSettingsApi(ApiSupportHttpCase):
         reminders = self.Notification.search([('category', '=', 'homework_reminder')])
         self.assertEqual(set(reminders.mapped('res_id')), {due_soon.id})
         self.assertEqual(reminders.user_id, self.student_user | self.parent_user)
+        # School time, not UTC: due 10 hours from now in Asia/Kolkata.
+        local_due = fields.Datetime.context_timestamp(self.env['res.users'].with_context(tz='Asia/Kolkata'),
+                                                      due_soon.submission_date)
+        self.assertIn(local_due.strftime('%I:%M %p'), reminders[0].body)
+        self.assertNotIn(fields.Datetime.to_string(due_soon.submission_date), reminders[0].body)
         Assignment._cron_bxi_homework_reminders()
         self.assertEqual(self.Notification.search_count([('category', '=', 'homework_reminder')]), 2, 'Once only.')
 
@@ -167,6 +173,9 @@ class TestStudentSettingsApi(ApiSupportHttpCase):
         self.assertEqual(careers[0]['name'], 'Mobile App Developer')
         self.assertEqual(careers[0]['match'], 100)
         self.assertEqual(careers[0]['sources'], ['usage'])
+        # Content Creator's main category is entertainment, unused here: design
+        # or social time alone does not suggest it.
+        self.assertNotIn('Content Creator', [c['name'] for c in careers])
 
         # Teachers don't see a student's app usage.
         self._error(self._get('/api/v1/student/career-report?student_id=%s' % self.student.id,
